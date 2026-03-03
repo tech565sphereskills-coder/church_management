@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import {
   Search, Plus, MoreVertical, Phone, Calendar,
   Users as UsersIcon, QrCode, ChevronLeft, ChevronRight, Pencil, MessageSquare,
+  FileUp
 } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
@@ -26,6 +27,7 @@ import { DeleteMemberDialog } from '@/components/members/DeleteMemberDialog';
 import { BulkActionsBar } from '@/components/members/BulkActionsBar';
 import { QRCodeDisplay } from '@/components/qr/QRCodeDisplay';
 import { SendSMSDialog } from '@/components/sms/SendSMSDialog';
+import { CSVImportDialog } from '@/components/members/CSVImportDialog';
 import { useMembers, MemberStatus, Member } from '@/hooks/useMembers';
 import { useAuth } from '@/hooks/useAuth';
 import { NewMemberData } from '@/components/members/NewMemberDialog';
@@ -55,6 +57,7 @@ export default function Members() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [smsRecipients, setSmsRecipients] = useState<{ id: string | null; phone: string; name: string }[] | null>(null);
+  const [isImportOpen, setIsImportOpen] = useState(false);
 
   const filteredMembers = useMemo(() => {
     return members.filter((member) => {
@@ -223,9 +226,14 @@ export default function Members() {
               </Button>
             )}
             {canManageAttendance && (
-              <Button onClick={() => setIsNewMemberOpen(true)} className="btn-gold">
-                <Plus className="mr-2 h-4 w-4" /> Add Member
-              </Button>
+              <>
+                <Button variant="outline" onClick={() => setIsImportOpen(true)}>
+                  <FileUp className="mr-2 h-4 w-4" /> Import CSV
+                </Button>
+                <Button onClick={() => setIsNewMemberOpen(true)} className="btn-gold">
+                  <Plus className="mr-2 h-4 w-4" /> Add Member
+                </Button>
+              </>
             )}
           </div>
         </motion.div>
@@ -366,6 +374,12 @@ export default function Members() {
           recipients={smsRecipients}
         />
       )}
+
+      <CSVImportDialog 
+        open={isImportOpen} 
+        onOpenChange={setIsImportOpen} 
+        onImportComplete={fetchMembers}
+      />
     </div>
   );
 }
