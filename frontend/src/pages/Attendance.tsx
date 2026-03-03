@@ -1,8 +1,9 @@
 import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Check, UserPlus, Calendar, QrCode, Camera, Users, Filter } from 'lucide-react';
+import { Search, Check, UserPlus, Calendar, QrCode, Camera, Users, Filter, Download } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
+import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -163,6 +164,21 @@ export default function Attendance() {
     }
   };
 
+  const handleExport = async () => {
+    try {
+      const response = await api.get('/attendance/export_excel/', { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'attendance_export.xlsx');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error('Export failed', error);
+    }
+  };
+
   const handleQRScan = async (qrCode: string) => {
     const member = await searchByQRCode(qrCode);
     
@@ -279,6 +295,10 @@ export default function Attendance() {
             <Button onClick={() => setIsScannerOpen(true)} variant="outline" className="gap-2">
               <Camera className="h-4 w-4" />
               Scan QR Code
+            </Button>
+            <Button onClick={handleExport} variant="outline" className="gap-2">
+              <Download className="h-4 w-4" />
+              Export Today
             </Button>
           </motion.div>
         )}

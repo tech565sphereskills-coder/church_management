@@ -4,9 +4,10 @@ import { motion } from 'framer-motion';
 import {
   Search, Plus, MoreVertical, Phone, Calendar,
   Users as UsersIcon, QrCode, ChevronLeft, ChevronRight, Pencil, MessageSquare,
-  FileUp
+  FileUp, FileDown
 } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
+import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -160,6 +161,22 @@ export default function Members() {
     setSmsRecipients(selected.map(m => ({ id: m.id, phone: m.phone, name: m.full_name })));
   };
 
+  const handleExport = async () => {
+    try {
+      const response = await api.get('/members/export_excel/', { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'members_export.xlsx');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast({ title: 'Export Successful', description: 'Your member list has been exported to Excel.' });
+    } catch (error) {
+      toast({ title: 'Export Failed', description: 'Failed to export member list.', variant: 'destructive' });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen">
@@ -268,7 +285,10 @@ export default function Members() {
             {canManageAttendance && (
               <>
                 <Button variant="outline" onClick={() => setIsImportOpen(true)}>
-                  <FileUp className="mr-2 h-4 w-4" /> Import CSV
+                  <FileUp className="mr-2 h-4 w-4" /> Import
+                </Button>
+                <Button variant="outline" onClick={handleExport}>
+                  <FileDown className="mr-2 h-4 w-4" /> Export
                 </Button>
                 <Button onClick={() => setIsNewMemberOpen(true)} className="btn-gold">
                   <Plus className="mr-2 h-4 w-4" /> Add Member

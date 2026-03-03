@@ -4,7 +4,8 @@ from .views import (
     ProfileViewSet, MemberViewSet, ServiceViewSet, AttendanceRecordViewSet,
     MemberFollowUpViewSet, RegisterView, StatsViewSet, SMSViewSet, 
     SettingsViewSet, ContributionViewSet, DepartmentViewSet,
-    ChildViewSet, ChildCheckInViewSet, PrayerRequestViewSet
+    ChildViewSet, ChildCheckInViewSet, PrayerRequestViewSet,
+    CommunicationLogViewSet
 )
 
 router = DefaultRouter()
@@ -15,7 +16,8 @@ router.register(r'services', ServiceViewSet)
 router.register(r'attendance', AttendanceRecordViewSet)
 router.register(r'follow-ups', MemberFollowUpViewSet)
 router.register(r'sms', SMSViewSet, basename='sms')
-router.register(r'settings', SettingsViewSet, basename='settings')
+router.register(r'communication-logs', CommunicationLogViewSet)
+# Settings moved to manual path below for singleton behavior
 router.register(r'contributions', ContributionViewSet)
 router.register(r'departments', DepartmentViewSet)
 router.register(r'children', ChildViewSet)
@@ -23,5 +25,6 @@ router.register(r'child-checkins', ChildCheckInViewSet)
 router.register(r'prayer-requests', PrayerRequestViewSet)
 
 urlpatterns = [
+    path('settings/', SettingsViewSet.as_view({'get': 'list', 'patch': 'partial_update'})),
     path('', include(router.urls)),
 ]

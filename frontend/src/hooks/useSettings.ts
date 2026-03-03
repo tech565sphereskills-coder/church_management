@@ -8,9 +8,15 @@ export interface ChurchSettings {
   church_name: string;
   address: string | null;
   contact_email: string | null;
+  logo_url: string | null;
   attendance_reminders: boolean;
   new_member_alerts: boolean;
   weekly_reports: boolean;
+  smtp_server: string | null;
+  smtp_port: number;
+  smtp_user: string | null;
+  smtp_password: string | null;
+  smtp_use_tls: boolean;
   updated_at: string;
 }
 
@@ -26,7 +32,7 @@ export function useSettings() {
       setLoading(true);
       const response = await api.get('/settings/');
       setSettings(response.data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching settings:', error);
       toast({
         title: 'Error',
@@ -50,11 +56,13 @@ export function useSettings() {
       });
 
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating settings:', error);
+      const axiosError = error as { response?: { data?: { error?: string; detail?: string } } };
+      const errorMessage = axiosError.response?.data?.error || axiosError.response?.data?.detail || 'Failed to save settings';
       toast({
         title: 'Error',
-        description: 'Failed to save settings',
+        description: errorMessage,
         variant: 'destructive',
       });
       return false;
@@ -75,11 +83,12 @@ export function useSettings() {
       });
 
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error changing password:', error);
+      const axiosError = error as { response?: { data?: { detail?: string } } };
       toast({
         title: 'Error',
-        description: error.response?.data?.detail || 'Failed to change password',
+        description: axiosError.response?.data?.detail || 'Failed to change password',
         variant: 'destructive',
       });
       return false;

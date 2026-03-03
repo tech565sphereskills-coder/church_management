@@ -12,6 +12,7 @@ import {
   Filter
 } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
+import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -70,6 +71,21 @@ export default function Financials() {
       style: 'currency',
       currency: 'NGN',
     }).format(amount);
+  };
+
+  const handleExport = async () => {
+    try {
+      const response = await api.get('/contributions/export_excel/', { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'financials_export.xlsx');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error('Export failed', error);
+    }
   };
 
   if (loading) {
@@ -164,7 +180,7 @@ export default function Financials() {
             </Select>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline">
+            <Button variant="outline" onClick={handleExport}>
               <Download className="mr-2 h-4 w-4" /> Export
             </Button>
             <Button onClick={() => setIsDialogOpen(true)} className="btn-gold">

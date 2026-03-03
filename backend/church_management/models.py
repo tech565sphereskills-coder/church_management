@@ -1,6 +1,6 @@
+import uuid
 from django.db import models
 from django.contrib.auth.models import User
-import uuid
 
 class Role(models.TextChoices):
     ADMIN = 'admin', 'Admin'
@@ -219,3 +219,38 @@ class PrayerRequest(models.Model):
     def __str__(self):
         name = "Anonymous" if self.is_anonymous else (self.member.full_name if self.member else self.requester_name)
         return f"Prayer for {name} - {self.status}"
+class ChurchSettings(models.Model):
+    church_name = models.CharField(max_length=255, default='RCCG Emmanuel Sanctuary')
+    address = models.TextField(blank=True, null=True)
+    contact_email = models.EmailField(blank=True, null=True)
+    logo_url = models.TextField(blank=True, null=True, default='/rccg_logo.png')
+    attendance_reminders = models.BooleanField(default=True)
+    new_member_alerts = models.BooleanField(default=True)
+    weekly_reports = models.BooleanField(default=False)
+    
+    # SMTP configuration
+    smtp_server = models.CharField(max_length=255, blank=True, null=True)
+    smtp_port = models.IntegerField(default=587)
+    smtp_user = models.CharField(max_length=255, blank=True, null=True)
+    smtp_password = models.CharField(max_length=255, blank=True, null=True)
+    smtp_use_tls = models.BooleanField(default=True)
+    
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.church_name
+
+class CommunicationLog(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    channel = models.CharField(max_length=10, choices=[('sms', 'SMS'), ('email', 'Email')])
+    recipient_name = models.CharField(max_length=255)
+    recipient_contact = models.CharField(max_length=255) # Phone or Email
+    subject = models.CharField(max_length=255, blank=True, null=True)
+    message = models.TextField()
+    status = models.CharField(max_length=20, default='sent') # sent, failed, pending
+    error_message = models.TextField(blank=True, null=True)
+    sent_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.channel} to {self.recipient_name} - {self.status}"

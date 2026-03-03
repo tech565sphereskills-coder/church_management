@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { QRCodeCanvas } from 'qrcode.react';
 import { 
   HandHelping, 
   Send, 
@@ -12,11 +13,16 @@ import {
   MoreVertical,
   Check,
   MessageSquare,
-  HelpingHand
+  HelpingHand,
+  Share2,
+  QrCode,
+  Copy,
+  ExternalLink
 } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 import { usePrayer, PrayerRequest } from '@/hooks/usePrayer';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -44,8 +50,10 @@ import { format } from 'date-fns';
 export default function PrayerRequests() {
   const { requests, loading, submitRequest, updateStatus, deleteRequest } = usePrayer();
   const { user, isPrayerOfficer, isAdmin } = useAuth();
+  const { toast } = useToast();
   
   const [isSubmitOpen, setIsSubmitOpen] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
   const [filter, setFilter] = useState<'all' | 'pending' | 'praying' | 'answered'>('all');
   
   const [newRequest, setNewRequest] = useState({
@@ -54,10 +62,36 @@ export default function PrayerRequests() {
     is_anonymous: false,
   });
 
+  const SHAREABLE_LINK = `${window.location.origin}/submit-prayer`;
+
   const filteredRequests = requests.filter(req => {
     if (filter === 'all') return true;
     return req.status === filter;
   });
+
+  const handleShareLink = () => {
+    const url = SHAREABLE_LINK;
+    
+    // Robust copy to clipboard
+    const textArea = document.createElement("textarea");
+    textArea.value = url;
+    document.body.appendChild(textArea);
+    textArea.select();
+    try {
+      document.execCommand('copy');
+      toast({
+        title: "Link Copied!",
+        description: "You can now share this prayer request link with members.",
+      });
+    } catch (err) {
+      console.error('Fallback copy failed', err);
+    }
+    document.body.removeChild(textArea);
+    
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).catch(() => {});
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -123,7 +157,67 @@ export default function PrayerRequests() {
             </Button>
           </div>
 
-          <Dialog open={isSubmitOpen} onOpenChange={setIsSubmitOpen}>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={handleShareLink}
+            >
+              <Share2 className="h-4 w-4" />
+              Copy Share Link
+            </Button>
+
+            <Dialog open={isShareOpen} onOpenChange={setIsShareOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <QrCode className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Share Prayer Request Form</DialogTitle>
+                </DialogHeader>
+                <div className="flex flex-col items-center justify-center space-y-6 py-6 font-primary text-center">
+                  <div className="rounded-2xl bg-white p-6 shadow-xl border-2 border-primary/5">
+                    <QRCodeCanvas 
+                      value={SHAREABLE_LINK} 
+                      size={200}
+                      level={"H"}
+                      includeMargin={false}
+                      imageSettings={{
+                        src: "/rccg_logo.png",
+                        x: undefined,
+                        y: undefined,
+                        height: 50,
+                        width: 50,
+                        excavate: true,
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground font-medium uppercase tracking-widest">Scan to Submit</p>
+                    <p className="text-xs text-muted-foreground max-w-[240px]">
+                      Members can scan this QR code to quickly access the prayer submission form on their phones.
+                    </p>
+                  </div>
+                  <div className="flex w-full items-center space-x-2 bg-muted/50 p-2 rounded-lg border border-dashed">
+                    <code className="text-[10px] sm:text-xs flex-1 truncate px-2 font-mono text-primary font-bold">
+                      {SHAREABLE_LINK}
+                    </code>
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={handleShareLink}>
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  <Button variant="link" className="text-xs gap-1" asChild>
+                    <a href={SHAREABLE_LINK} target="_blank" rel="noreferrer">
+                      Open in browser <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={isSubmitOpen} onOpenChange={setIsSubmitOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2 shadow-primary">
                 <Plus className="h-4 w-4" />
@@ -186,6 +280,7 @@ export default function PrayerRequests() {
               </form>
             </DialogContent>
           </Dialog>
+        </div>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

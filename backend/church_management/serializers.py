@@ -1,5 +1,9 @@
 from rest_framework import serializers
-from .models import Profile, Member, Service, AttendanceRecord, MemberFollowUp, Contribution, Department, Child, ChildCheckIn, PrayerRequest
+from .models import (
+    Profile, Member, Service, AttendanceRecord, MemberFollowUp, 
+    Contribution, Department, Child, ChildCheckIn, PrayerRequest, 
+    ChurchSettings, CommunicationLog
+)
 from django.contrib.auth.models import User
 
 class UserSerializer(serializers.ModelSerializer):
@@ -94,4 +98,16 @@ class PrayerRequestSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PrayerRequest
+        fields = '__all__'
+
+class ChurchSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChurchSettings
+        fields = '__all__'
+
+class CommunicationLogSerializer(serializers.ModelSerializer):
+    sent_by_name = serializers.CharField(source='sent_by.username', read_only=True)
+
+    class Meta:
+        model = CommunicationLog
         fields = '__all__'

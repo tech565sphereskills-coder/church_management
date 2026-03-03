@@ -22,6 +22,7 @@ import Departments from "./pages/Departments";
 import Auth from "./pages/Auth";
 import Children from "./pages/Children";
 import PrayerRequests from "./pages/PrayerRequests";
+import SubmitPrayer from "./pages/SubmitPrayer";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
@@ -41,6 +42,7 @@ const App = () => (
               {/* Public route */}
               <Route path="/auth" element={<Auth />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/submit-prayer" element={<SubmitPrayer />} />
               
               {/* Protected routes */}
               <Route element={<ProtectedRoute />}>

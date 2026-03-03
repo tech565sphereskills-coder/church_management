@@ -1,19 +1,25 @@
 from django.utils import timezone
 from datetime import timedelta
+import pandas as pd
+import io
+from django.http import HttpResponse
 from django.contrib.auth.models import User
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
+from django.db.models import Count, Q, Avg
+from django.db.models.functions import TruncMonth
 from .models import (
     Profile, Member, Service, AttendanceRecord, MemberFollowUp, 
-    Contribution, Department, Child, ChildCheckIn, PrayerRequest
+    Contribution, Department, Child, ChildCheckIn, PrayerRequest, ChurchSettings,
+    CommunicationLog
 )
 from .serializers import (
     AttendanceRecordSerializer, MemberFollowUpSerializer,
     UserSerializer, RegisterSerializer, ContributionSerializer,
     DepartmentSerializer, ProfileSerializer, MemberSerializer,
     ServiceSerializer, ChildSerializer, ChildCheckInSerializer,
-    PrayerRequestSerializer
+    PrayerRequestSerializer, ChurchSettingsSerializer, CommunicationLogSerializer
 )
 from .permissions import (
     IsAdmin, IsFinanceOfficer, IsAttendanceOfficerOrHigher, 
@@ -98,6 +104,65 @@ class MemberViewSet(viewsets.ModelViewSet):
             'total_services': total_services
         })
 
+    @action(detail=False, methods=['post'], permission_classes=[IsAdmin])
+    def import_members(self, request):
+        file = request.FILES.get('file')
+        if not file:
+            return Response({'error': 'No file provided'}, status=400)
+            
+        try:
+            if file.name.endswith('.csv'):
+                df = pd.read_csv(file)
+            elif file.name.endswith(('.xls', '.xlsx')):
+                df = pd.read_excel(file)
+            else:
+                return Response({'error': 'Unsupported file format'}, status=400)
+                
+            required_fields = ['full_name', 'email']
+            for field in required_fields:
+                if field not in df.columns:
+                    return Response({'error': f'Missing required column: {field}'}, status=400)
+            
+            created_count = 0
+            for _, row in df.iterrows():
+                # Basic cleaned data
+                data = {
+                    'full_name': str(row['full_name']),
+                    'email': str(row['email']) if pd.notna(row['email']) else None,
+                    'phone': str(row['phone']) if 'phone' in df.columns and pd.notna(row['phone']) else None,
+                    'address': str(row['address']) if 'address' in df.columns and pd.notna(row['address']) else None,
+                    'status': str(row['status']).lower() if 'status' in df.columns and pd.notna(row['status']) else 'active',
+                }
+                
+                # Check for existing by email if provided
+                if data['email']:
+                    member, created = Member.objects.get_or_create(email=data['email'], defaults=data)
+                    if created: created_count += 1
+                else:
+                    Member.objects.create(**data)
+                    created_count += 1
+                    
+            return Response({'status': f'Successfully imported {created_count} members'})
+        except Exception as e:
+            return Response({'error': str(e)}, status=400)
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAdmin])
+    def export_excel(self, request):
+        members = Member.objects.all().values()
+        df = pd.DataFrame(list(members))
+        
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Members')
+        
+        output.seek(0)
+        response = HttpResponse(
+            output.read(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename=members_export.xlsx'
+        return response
+
 class ServiceViewSet(viewsets.ModelViewSet):
     queryset = Service.objects.all()
     serializer_class = ServiceSerializer
@@ -165,18 +230,50 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
                 'service_name': r.service.name,
             })
         
+        total_services = Service.objects.count()
+        total_attendance = AttendanceRecord.objects.count()
+        
         # Simple stats
         stats = {
-            'totalServices': Service.objects.count(),
-            'totalAttendance': AttendanceRecord.objects.count(),
-            'averageAttendance': 0,
-            'attendanceByType': {}
+            'totalServices': total_services,
+            'totalAttendance': total_attendance,
+            'averageAttendance': round(total_attendance / total_services) if total_services else 0,
+            'attendanceByType': dict(
+                AttendanceRecord.objects.values('service__service_type')
+                .annotate(count=Count('id'))
+                .values_list('service__service_type', 'count')
+            )
         }
         
         return Response({
             'records': data,
             'stats': stats
         })
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAdmin])
+    def export_excel(self, request):
+        records = AttendanceRecord.objects.select_related('member', 'service').all()
+        data = []
+        for r in records:
+            data.append({
+                'Date': r.marked_at,
+                'Member': r.member.full_name,
+                'Service': r.service.name,
+                'Service Date': r.service.service_date,
+            })
+            
+        df = pd.DataFrame(data)
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Attendance')
+            
+        output.seek(0)
+        response = HttpResponse(
+            output.read(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename=attendance_export.xlsx'
+        return response
 
     @action(detail=False, methods=['post'])
     def mark(self, request):
@@ -231,40 +328,96 @@ class StatsViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['get'])
     def service_comparison(self, request):
-        # Mock data/Simple implementation
-        return Response([
-            {'month': 'Jan', 'sunday': 45, 'midweek': 30, 'special': 10},
-            {'month': 'Feb', 'sunday': 50, 'midweek': 35, 'special': 5},
-        ])
+        # Last 6 months service comparison
+        six_months_ago = timezone.now() - timedelta(days=180)
+        
+        comparison = (
+            AttendanceRecord.objects.filter(marked_at__gte=six_months_ago)
+            .annotate(month=TruncMonth('marked_at'))
+            .values('month', 'service__service_type')
+            .annotate(count=Count('id'))
+            .order_by('month')
+        )
+        
+        # Format for frontend
+        data_map = {}
+        for entry in comparison:
+            m_str = entry['month'].strftime('%b')
+            if m_str not in data_map:
+                data_map[m_str] = {'month': m_str, 'sunday': 0, 'midweek': 0, 'special': 0}
+            
+            s_type = entry['service__service_type']
+            if s_type == 'sunday_service':
+                data_map[m_str]['sunday'] += entry['count']
+            elif s_type == 'midweek_service':
+                data_map[m_str]['midweek'] += entry['count']
+            elif s_type == 'special_program':
+                data_map[m_str]['special'] += entry['count']
+                
+        return Response(list(data_map.values()))
 
     @action(detail=False, methods=['get'])
     def monthly_attendance(self, request):
-        return Response([
-            {'date': '2024-01', 'attendance': 120},
-            {'date': '2024-02', 'attendance': 145},
-        ])
+        one_year_ago = timezone.now() - timedelta(days=365)
+        stats = (
+            AttendanceRecord.objects.filter(marked_at__gte=one_year_ago)
+            .annotate(month=TruncMonth('marked_at'))
+            .values('month')
+            .annotate(attendance=Count('id'))
+            .order_by('month')
+        )
+        data = [{'date': s['month'].strftime('%Y-%m'), 'attendance': s['attendance']} for s in stats]
+        return Response(data)
 
     @action(detail=False, methods=['get'])
     def member_growth(self, request):
-        return Response([
-            {'month': 'Jan', 'totalMembers': 100, 'newMembers': 5},
-            {'month': 'Feb', 'totalMembers': 108, 'newMembers': 8},
-        ])
+        one_year_ago = timezone.now() - timedelta(days=365)
+        growth = (
+            Member.objects.filter(created_at__gte=one_year_ago)
+            .annotate(month=TruncMonth('created_at'))
+            .values('month')
+            .annotate(newMembers=Count('id'))
+            .order_by('month')
+        )
+        
+        total = Member.objects.filter(created_at__lt=one_year_ago).count()
+        data = []
+        for g in growth:
+            total += g['newMembers']
+            data.append({
+                'month': g['month'].strftime('%b'),
+                'totalMembers': total,
+                'newMembers': g['newMembers']
+            })
+        return Response(data)
 
     @action(detail=False, methods=['get'])
     def department_distribution(self, request):
-        return Response([
-            {'name': 'Choir', 'value': 25},
-            {'name': 'Ushering', 'value': 15},
-        ])
+        dist = (
+            Member.objects.values('department__name')
+            .annotate(value=Count('id'))
+            .order_by('-value')
+        )
+        data = [{'name': d['department__name'] or 'None', 'value': d['value']} for d in dist]
+        return Response(data)
 
     @action(detail=False, methods=['get'])
     def quick_stats(self, request):
+        total_members = Member.objects.count()
+        if total_members == 0:
+            return Response({'averageAttendance': 0, 'retentionRate': 0, 'firstTimerConversion': 0, 'inactiveMembers': 0})
+            
+        inactive = Member.objects.filter(status='inactive').count()
+        first_timers = Member.objects.filter(status='first_timer').count()
+        
+        # Average attendance per service
+        avg_att = AttendanceRecord.objects.values('service').annotate(count=Count('id')).aggregate(Avg('count'))['count__avg'] or 0
+        
         return Response({
-            'averageAttendance': 42,
-            'retentionRate': 85,
-            'firstTimerConversion': 40,
-            'inactiveMembers': 12,
+            'averageAttendance': round(avg_att),
+            'retentionRate': round(((total_members - inactive) / total_members) * 100),
+            'firstTimerConversion': round((first_timers / total_members) * 100) if total_members else 0,
+            'inactiveMembers': inactive,
         })
 
 class SMSViewSet(viewsets.ViewSet):
@@ -280,24 +433,45 @@ class SMSViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['post'])
     def send(self, request):
-        return Response({'status': 'sent'})
+        recipients = request.data.get('recipients', [])
+        message = request.data.get('message', '')
+        
+        # Log each message
+        for r in recipients:
+            CommunicationLog.objects.create(
+                channel='sms',
+                recipient_name=r.get('name', 'Unknown'),
+                recipient_contact=r.get('phone', 'Unknown'),
+                message=message,
+                sent_by=request.user,
+                status='sent' # Simulated success
+            )
+            
+        return Response({'status': f'Simulation: Message sent to {len(recipients)} recipients'})
+
+class CommunicationLogViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = CommunicationLog.objects.all().order_by('-created_at')
+    serializer_class = CommunicationLogSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
 
 class SettingsViewSet(viewsets.ViewSet):
     permission_classes = [IsAdmin]
 
     def list(self, request):
-        return Response({
-            'id': '1',
-            'church_name': 'RCCG Sanctuary',
-            'address': '',
-            'contact_email': '',
-            'attendance_reminders': True,
-            'new_member_alerts': True,
-            'weekly_reports': True,
-        })
+        settings, created = ChurchSettings.objects.get_or_create(id=1)
+        serializer = ChurchSettingsSerializer(settings)
+        return Response(serializer.data)
 
-    def partial_update(self, request):
-        return Response({'status': 'updated'})
+    def partial_update(self, request, pk=None):
+        try:
+            settings, created = ChurchSettings.objects.get_or_create(id=1)
+            serializer = ChurchSettingsSerializer(settings, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class ContributionViewSet(viewsets.ModelViewSet):
     queryset = Contribution.objects.all().order_by('-date', '-created_at')
@@ -319,6 +493,33 @@ class ContributionViewSet(viewsets.ModelViewSet):
             
         summary_data = queryset.values('contribution_type').annotate(total=Sum('amount'))
         return Response(list(summary_data))
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAdmin])
+    def export_excel(self, request):
+        contributions = Contribution.objects.select_related('member', 'recorded_by').all()
+        data = []
+        for c in contributions:
+            data.append({
+                'Date': c.date,
+                'Member': c.member.full_name if c.member else 'Anonymous',
+                'Type': c.contribution_type,
+                'Amount': c.amount,
+                'Note': c.notes,
+                'Recorded By': c.recorded_by.username,
+            })
+            
+        df = pd.DataFrame(data)
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Contributions')
+            
+        output.seek(0)
+        response = HttpResponse(
+            output.read(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename=financials_export.xlsx'
+        return response
 
 class DepartmentViewSet(viewsets.ModelViewSet):
     queryset = Department.objects.all().order_by('name')

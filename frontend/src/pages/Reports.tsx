@@ -30,35 +30,35 @@ export default function Reports() {
   const { data: departmentData, loading: departmentLoading } = useDepartmentDistribution();
   const { stats, loading: statsLoading } = useQuickStats();
 
-  const exportAttendanceCSV = async () => {
+  const exportAttendanceExcel = async () => {
     try {
       setExporting('attendance');
-      const response = await api.get('/attendance/export/', { responseType: 'blob' });
+      const response = await api.get('/attendance/export_excel/', { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `attendance-export-${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute('download', `attendance-report-${new Date().toISOString().split('T')[0]}.xlsx`);
       document.body.appendChild(link);
       link.click();
-      toast({ title: 'Export Complete', description: `Attendance records exported successfully.` });
+      toast({ title: 'Export Complete', description: `Attendance report generated as Excel file.` });
     } catch (error) {
-      toast({ title: 'Export Failed', description: 'Failed to export attendance records', variant: 'destructive' });
+      toast({ title: 'Export Failed', description: 'Failed to generate attendance report', variant: 'destructive' });
     } finally { setExporting(null); }
   };
 
-  const exportMembersCSV = async () => {
+  const exportMembersExcel = async () => {
     try {
       setExporting('members');
-      const response = await api.get('/members/export/', { responseType: 'blob' });
+      const response = await api.get('/members/export_excel/', { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `members-export-${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute('download', `members-directory-${new Date().toISOString().split('T')[0]}.xlsx`);
       document.body.appendChild(link);
       link.click();
-      toast({ title: 'Export Complete', description: `Members exported successfully.` });
+      toast({ title: 'Export Complete', description: `Member directory generated as Excel file.` });
     } catch (error) {
-      toast({ title: 'Export Failed', description: 'Failed to export members', variant: 'destructive' });
+      toast({ title: 'Export Failed', description: 'Failed to generate member directory', variant: 'destructive' });
     } finally { setExporting(null); }
   };
 
@@ -74,13 +74,13 @@ export default function Reports() {
       <div className="p-6">
         {/* Export Actions */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-6 flex flex-wrap gap-3">
-          <Button variant="outline" onClick={exportAttendanceCSV} disabled={exporting !== null}>
+          <Button variant="outline" onClick={exportAttendanceExcel} disabled={exporting !== null}>
             {exporting === 'attendance' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-2 h-4 w-4" />}
-            Export Attendance CSV
+            Export Attendance Excel
           </Button>
-          <Button variant="outline" onClick={exportMembersCSV} disabled={exporting !== null}>
+          <Button variant="outline" onClick={exportMembersExcel} disabled={exporting !== null}>
             {exporting === 'members' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-            Export Members CSV
+            Export Members Excel
           </Button>
           <Button variant="outline" onClick={exportPDF} className="print:hidden">
             <FileText className="mr-2 h-4 w-4" /> Export PDF
