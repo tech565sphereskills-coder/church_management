@@ -13,8 +13,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchUserProfile = async () => {
     try {
       const response = await api.get('/profiles/me/');
-      setUser(response.data.user);
-      setRole(response.data.role);
+      const { id, email, username, role: userRole } = response.data;
+      setUser({ id, email, username });
+      setRole(userRole);
     } catch (error) {
       console.error('Error fetching profile:', error);
       setUser(null);
@@ -35,14 +36,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const response = await api.post('/token/', { username: email, password });
-      localStorage.setItem('access_token', response.data.access);
-      localStorage.setItem('refresh_token', response.data.refresh);
+      console.log('Attempting sign-in for:', email);
+      const response = await api.post('/auth/login/', { email, password });
+      
+      // Handle different possible token structures
+      const accessToken = response.data.access || response.data.access_token || response.data.token;
+      const refreshToken = response.data.refresh || response.data.refresh_token;
+      
+      console.log('Sign-in response received. Tokens found:', !!accessToken, !!refreshToken);
+      
+      if (accessToken) {
+        localStorage.setItem('access_token', accessToken);
+        api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+      }
+      if (refreshToken) localStorage.setItem('refresh_token', refreshToken);
+      
+      // Fetch profile and ensure it succeeds
       await fetchUserProfile();
+      
       return { error: null };
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
-        return { error: error.response?.data?.detail || 'Login failed' };
+        console.error('Sign-in API Error:', error.response?.data);
+        const detail = error.response?.data?.detail || 
+                      error.response?.data?.non_field_errors?.[0] || 
+                      JSON.stringify(error.response?.data) ||
+                      'Login failed';
+        return { error: detail };
       }
       return { error: 'Login failed' };
     }
@@ -55,8 +75,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('refresh_token', response.data.refresh);
       await fetchUserProfile();
       return { error: null };
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
+        console.error('Google Sign-in API Error:', error.response?.data);
         return { error: error.response?.data?.detail || 'Google login failed' };
       }
       return { error: 'Google login failed' };
@@ -67,8 +88,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await api.post('/register/', { username: email, email, password, full_name: fullName });
       return { error: null };
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
+        console.error('Signup API Error:', error.response?.data);
         return { error: error.response?.data || 'Sign up failed' };
       }
       return { error: 'Sign up failed' };

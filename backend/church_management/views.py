@@ -29,23 +29,32 @@ class ProfileViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def assign_role(self, request, pk=None):
+        if not (hasattr(request.user, 'profile') and request.user.profile.role == 'admin'):
+            return Response({'error': 'Permission denied'}, status=403)
+            
         profile = self.get_object()
         role = request.data.get('role')
         if role in ['admin', 'attendance_officer', 'viewer']:
             profile.role = role
             profile.save()
-            return Response({'status': 'role assigned'})
+            return Response({'status': f'role {role} assigned'})
         return Response({'error': 'invalid role'}, status=400)
 
     @action(detail=True, methods=['post'])
     def remove_role(self, request, pk=None):
+        if not (hasattr(request.user, 'profile') and request.user.profile.role == 'admin'):
+            return Response({'error': 'Permission denied'}, status=403)
+            
         profile = self.get_object()
-        profile.role = None
+        profile.role = 'viewer' # Default to viewer instead of None
         profile.save()
-        return Response({'status': 'role removed'})
+        return Response({'status': 'role reset to viewer'})
 
     def get_queryset(self):
-        return self.queryset.filter(user=self.request.user)
+        user = self.request.user
+        if hasattr(user, 'profile') and user.profile.role == 'admin':
+            return self.queryset
+        return self.queryset.filter(user=user)
 
 class MemberViewSet(viewsets.ModelViewSet):
     queryset = Member.objects.all()

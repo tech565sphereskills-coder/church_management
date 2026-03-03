@@ -28,10 +28,12 @@ class RegisterSerializer(serializers.ModelSerializer):
         return user
 
 class ProfileSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
+    email = serializers.EmailField(source='user.email', read_only=True)
+    username = serializers.CharField(source='user.username', read_only=True)
+
     class Meta:
         model = Profile
-        fields = '__all__'
+        fields = ('id', 'email', 'username', 'full_name', 'role', 'avatar_url', 'created_at', 'updated_at')
 
 class MemberSerializer(serializers.ModelSerializer):
     class Meta:

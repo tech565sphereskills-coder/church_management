@@ -184,42 +184,52 @@ export default function Auth() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-auth p-4 relative overflow-hidden">
+      {/* Decorative elements for premium feel */}
+      <div className="absolute top-[-10%] left-[-10%] w-[30%] h-[30%] bg-primary/20 rounded-full blur-[120px]" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] bg-primary/10 rounded-full blur-[100px]" />
+      
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md"
+        transition={{ duration: 0.6, ease: "easeOut" }}
+        className="w-full max-w-md z-10"
       >
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-white p-2 shadow-lg">
+          <motion.div 
+            initial={{ scale: 0.8 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+            className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-white/90 p-3 shadow-2xl backdrop-blur-sm"
+          >
             <img 
               src={RCCG_LOGO_URL} 
               alt="RCCG Logo" 
               className="h-full w-full object-contain"
             />
-          </div>
-          <h1 className="text-2xl font-bold text-foreground">RCCG Emmanuel Sanctuary</h1>
-          <p className="mt-2 text-muted-foreground">Church Attendance Management System</p>
+          </motion.div>
+          <h1 className="text-3xl font-bold text-white tracking-tight drop-shadow-lg">RCCG Emmanuel Sanctuary</h1>
+          <p className="mt-2 text-white/80 font-medium">Sanctuary of Excellence & Grace</p>
         </div>
 
-        <Card className="border-border/50 shadow-xl">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-center text-xl">Welcome</CardTitle>
-            <CardDescription className="text-center">
-              Sign in to your account or create a new one
+        <Card className="glass border-white/20 text-white shadow-2xl overflow-hidden">
+          <CardHeader className="pb-4 border-b border-white/10 bg-white/5">
+            <CardTitle className="text-center text-2xl font-bold tracking-tight text-white">Welcome</CardTitle>
+            <CardDescription className="text-center text-white/70">
+              Sign in to manage church records & attendance
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Login</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 bg-white/10 border border-white/20">
+                <TabsTrigger value="login" className="text-white data-[state=active]:bg-white/20 data-[state=active]:text-white">Login</TabsTrigger>
+                <TabsTrigger value="signup" className="text-white data-[state=active]:bg-white/20 data-[state=active]:text-white">Sign Up</TabsTrigger>
               </TabsList>
 
               <TabsContent value="login" className="mt-6">
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="login-email">Email</Label>
+                    <Label htmlFor="login-email" className="text-white/90">Email Address</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
@@ -228,14 +238,14 @@ export default function Auth() {
                         placeholder="Enter your email"
                         value={loginEmail}
                         onChange={(e) => setLoginEmail(e.target.value)}
-                        className="pl-10"
+                        className="pl-10 bg-white/5 border-white/20 text-white placeholder:text-white/40 focus:bg-white/10"
                         required
                       />
                     </div>
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="login-password">Password</Label>
+                    <Label htmlFor="login-password" className="text-white/90">Password</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
@@ -244,7 +254,7 @@ export default function Auth() {
                         placeholder="Enter your password"
                         value={loginPassword}
                         onChange={(e) => setLoginPassword(e.target.value)}
-                        className="pl-10 pr-10"
+                        className="pl-10 pr-10 bg-white/5 border-white/20 text-white placeholder:text-white/40 focus:bg-white/10"
                         required
                       />
                       <button
@@ -264,7 +274,7 @@ export default function Auth() {
                   <button
                     type="button"
                     onClick={() => setForgotOpen(true)}
-                    className="w-full text-center text-sm text-primary hover:underline"
+                    className="w-full text-center text-sm text-white/60 hover:text-white hover:underline transition-colors"
                   >
                     Forgot Password?
                   </button>
@@ -312,54 +322,54 @@ export default function Auth() {
                 <form onSubmit={handleSignup} className="space-y-4">
                   {/* ... existing fields ... */}
                   <div className="space-y-2">
-                    <Label htmlFor="signup-name">Full Name</Label>
+                    <Label htmlFor="signup-name" className="text-white/90">Full Name</Label>
                     <div className="relative">
-                      <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
                       <Input
                         id="signup-name"
                         type="text"
                         placeholder="Enter your full name"
                         value={signupFullName}
                         onChange={(e) => setSignupFullName(e.target.value)}
-                        className="pl-10"
+                        className="pl-10 bg-white/5 border-white/20 text-white placeholder:text-white/40 focus:bg-white/10"
                         required
                       />
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
+                    <Label htmlFor="signup-email" className="text-white/90">Email Address</Label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
                       <Input
                         id="signup-email"
                         type="email"
                         placeholder="Enter your email"
                         value={signupEmail}
                         onChange={(e) => setSignupEmail(e.target.value)}
-                        className="pl-10"
+                        className="pl-10 bg-white/5 border-white/20 text-white placeholder:text-white/40 focus:bg-white/10"
                         required
                       />
                     </div>
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password</Label>
+                    <Label htmlFor="signup-password" className="text-white/90">Password</Label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
                       <Input
                         id="signup-password"
                         type={showPassword ? 'text' : 'password'}
                         placeholder="Create a password"
                         value={signupPassword}
                         onChange={(e) => setSignupPassword(e.target.value)}
-                        className="pl-10 pr-10"
+                        className="pl-10 pr-10 bg-white/5 border-white/20 text-white placeholder:text-white/40 focus:bg-white/10"
                         required
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
                       >
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
@@ -367,45 +377,45 @@ export default function Auth() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="signup-confirm">Confirm Password</Label>
+                    <Label htmlFor="signup-confirm" className="text-white/90">Confirm Password</Label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
                       <Input
                         id="signup-confirm"
                         type={showConfirmPassword ? 'text' : 'password'}
                         placeholder="Confirm your password"
                         value={signupConfirmPassword}
                         onChange={(e) => setSignupConfirmPassword(e.target.value)}
-                        className="pl-10 pr-10"
+                        className="pl-10 pr-10 bg-white/5 border-white/20 text-white placeholder:text-white/40 focus:bg-white/10"
                         required
                       />
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
                       >
                         {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
                   </div>
 
-                  <Button type="submit" className="w-full" disabled={isLoading}>
+                  <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white font-bold h-11" disabled={isLoading}>
                     {isLoading ? 'Creating account...' : 'Create Account'}
                   </Button>
 
-                  <div className="relative my-4">
+                  <div className="relative my-6">
                     <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t border-border" />
+                      <span className="w-full border-t border-white/10" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-white px-2 text-muted-foreground font-medium">Or continue with</span>
+                      <span className="bg-transparent px-2 text-white/50 font-medium">Or continue with</span>
                     </div>
                   </div>
 
                   <Button 
                     type="button" 
                     variant="outline" 
-                    className="w-full" 
+                    className="w-full bg-white/5 border-white/20 text-white hover:bg-white/10 hover:text-white h-11" 
                     onClick={() => googleLogin()}
                     disabled={isLoading}
                   >
