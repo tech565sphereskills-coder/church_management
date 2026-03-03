@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import api from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -98,35 +98,28 @@ export function useOfflineAttendance() {
 
       for (const record of pendingRecords) {
         try {
-          const { error } = await supabase
-            .from('attendance_records')
-            .insert({
-              member_id: record.memberId,
-              service_id: record.serviceId,
-              marked_by: user?.id,
-              marked_at: record.timestamp,
-            });
+          await api.post('/attendance/mark/', {
+            member_id: record.memberId,
+            service_id: record.serviceId,
+            timestamp: record.timestamp,
+          });
 
-          if (error) {
-            // If duplicate key error, mark as synced anyway
-            if (error.code === '23505') {
-              const idx = allRecords.findIndex(r => r.id === record.id);
-              if (idx !== -1) {
-                allRecords[idx].synced = true;
-              }
-              syncedCount++;
-            } else {
-              console.error('Error syncing record:', error);
-            }
-          } else {
+          const idx = allRecords.findIndex(r => r.id === record.id);
+          if (idx !== -1) {
+            allRecords[idx].synced = true;
+          }
+          syncedCount++;
+        } catch (err: any) {
+          // If duplicate or other error, handle it
+          if (err.response?.status === 409) {
             const idx = allRecords.findIndex(r => r.id === record.id);
             if (idx !== -1) {
               allRecords[idx].synced = true;
             }
             syncedCount++;
+          } else {
+            console.error('Error syncing record:', err);
           }
-        } catch (err) {
-          console.error('Error syncing individual record:', err);
         }
       }
 

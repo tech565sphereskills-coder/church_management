@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import api from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -24,16 +24,8 @@ export function useSettings() {
   const fetchSettings = useCallback(async () => {
     try {
       setLoading(true);
-      
-      const { data, error } = await supabase
-        .from('church_settings')
-        .select('*')
-        .limit(1)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      setSettings(data);
+      const response = await api.get('/settings/');
+      setSettings(response.data);
     } catch (error: any) {
       console.error('Error fetching settings:', error);
       toast({
@@ -47,22 +39,9 @@ export function useSettings() {
   }, [toast]);
 
   const updateSettings = async (updates: Partial<Omit<ChurchSettings, 'id' | 'updated_at'>>): Promise<boolean> => {
-    if (!settings?.id) return false;
-
     try {
       setSaving(true);
-
-      const { error } = await supabase
-        .from('church_settings')
-        .update({
-          ...updates,
-          updated_by: user?.id,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', settings.id);
-
-      if (error) throw error;
-
+      await api.patch('/settings/', updates);
       setSettings(prev => prev ? { ...prev, ...updates } : null);
 
       toast({
@@ -86,11 +65,9 @@ export function useSettings() {
 
   const changePassword = async (newPassword: string): Promise<boolean> => {
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword,
+      await api.post('/auth/password/change/', {
+        new_password: newPassword,
       });
-
-      if (error) throw error;
 
       toast({
         title: 'Password Changed',
@@ -102,7 +79,7 @@ export function useSettings() {
       console.error('Error changing password:', error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to change password',
+        description: error.response?.data?.detail || 'Failed to change password',
         variant: 'destructive',
       });
       return false;

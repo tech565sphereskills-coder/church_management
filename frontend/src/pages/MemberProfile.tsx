@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import api from '@/lib/api';
 import { Header } from '@/components/layout/Header';
 import { motion } from 'framer-motion';
 import { 
@@ -16,11 +16,8 @@ import { MemberAttendanceHistory } from '@/components/members/MemberAttendanceHi
 import { EditMemberDialog } from '@/components/members/EditMemberDialog';
 import { SendSMSDialog } from '@/components/sms/SendSMSDialog';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
-import { Database } from '@/integrations/supabase/types';
-import { useMembers } from '@/hooks/useMembers';
+import { useMembers, type Member } from '@/hooks/useMembers';
 import { useAuth } from '@/hooks/useAuth';
-
-type Member = Database['public']['Tables']['members']['Row'];
 
 const statusConfig: Record<string, { label: string; color: string }> = {
   active: {
@@ -54,14 +51,8 @@ export default function MemberProfile() {
 
       try {
         setLoading(true);
-        const { data, error } = await supabase
-          .from('members')
-          .select('*')
-          .eq('id', memberId)
-          .maybeSingle();
-
-        if (error) throw error;
-        setMember(data);
+        const response = await api.get(`/members/${memberId}/`);
+        setMember(response.data);
       } catch (error) {
         console.error('Error fetching member:', error);
       } finally {
@@ -323,8 +314,12 @@ export default function MemberProfile() {
               const success = await updateMember(id, data);
               if (success) {
                 // Refetch member
-                const { data: updated } = await supabase.from('members').select('*').eq('id', id).maybeSingle();
-                if (updated) setMember(updated);
+                try {
+                  const response = await api.get(`/members/${id}/`);
+                  setMember(response.data);
+                } catch (error) {
+                  console.error('Error refetching member:', error);
+                }
               }
               return success;
             }}

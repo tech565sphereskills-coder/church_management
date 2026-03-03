@@ -3,10 +3,9 @@ import { motion } from 'framer-motion';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
-import { supabase } from '@/integrations/supabase/client';
+import api from '@/lib/api';
 import { Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 
 interface ServiceData {
   month: string;
@@ -22,35 +21,9 @@ export function ServiceComparisonChart() {
   useEffect(() => {
     const fetch = async () => {
       try {
-        const months = [];
-        for (let i = 5; i >= 0; i--) {
-          const date = subMonths(new Date(), i);
-          months.push({
-            start: startOfMonth(date),
-            end: endOfMonth(date),
-            label: format(date, 'MMM'),
-          });
-        }
-
-        const { data: records } = await supabase
-          .from('attendance_records')
-          .select('marked_at, services:service_id(service_type)')
-          .gte('marked_at', months[0].start.toISOString());
-
-        const result: ServiceData[] = months.map(({ start, end, label }) => {
-          const inRange = (records || []).filter((r: any) => {
-            const d = new Date(r.marked_at);
-            return d >= start && d <= end;
-          });
-          return {
-            month: label,
-            sunday: inRange.filter((r: any) => r.services?.service_type === 'sunday_service').length,
-            midweek: inRange.filter((r: any) => r.services?.service_type === 'midweek_service').length,
-            special: inRange.filter((r: any) => r.services?.service_type === 'special_program').length,
-          };
-        });
-
-        setData(result);
+        setLoading(true);
+        const response = await api.get('/stats/service_comparison/');
+        setData(response.data);
       } catch (e) {
         console.error('Error fetching service comparison:', e);
       } finally {

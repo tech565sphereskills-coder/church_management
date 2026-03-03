@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import api from '@/lib/api';
 import { z } from 'zod';
 
 const RCCG_LOGO_URL = 'https://res.cloudinary.com/dnglp9qfd/image/upload/v1770460225/Rccg_logo_ttgxko.png';
@@ -28,24 +28,9 @@ export default function ResetPassword() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isReady, setIsReady] = useState(false);
-
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setIsReady(true);
-      }
-    });
-
-    // Also check if we already have a session (user clicked the link)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setIsReady(true);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  // Password reset via Django will be implemented later. 
+  // For now, we assume the user is already authenticated or has a valid session.
+  const [isReady, setIsReady] = useState(true);
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,13 +45,13 @@ export default function ResetPassword() {
     }
 
     setIsLoading(true);
-    const { error } = await supabase.auth.updateUser({ password });
-
-    if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-    } else {
+    try {
+      // TODO: Implement Django password reset endpoint
+      await api.post('/auth/password/reset/confirm/', { password });
       toast({ title: 'Password Updated', description: 'Your password has been reset successfully.' });
       navigate('/auth');
+    } catch (error: any) {
+      toast({ title: 'Error', description: 'Failed to reset password. Please contact admin.', variant: 'destructive' });
     }
     setIsLoading(false);
   };

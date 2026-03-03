@@ -48,6 +48,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const signInWithGoogle = async (accessToken: string) => {
+    try {
+      const response = await api.post('/auth/google/', { access_token: accessToken });
+      localStorage.setItem('access_token', response.data.access);
+      localStorage.setItem('refresh_token', response.data.refresh);
+      await fetchUserProfile();
+      return { error: null };
+    } catch (error: any) {
+      if (axios.isAxiosError(error)) {
+        return { error: error.response?.data?.detail || 'Google login failed' };
+      }
+      return { error: 'Google login failed' };
+    }
+  };
+
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
       await api.post('/register/', { username: email, email, password, full_name: fullName });
@@ -78,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role,
         loading,
         signIn,
+        signInWithGoogle,
         signUp,
         signOut,
         isAdmin,

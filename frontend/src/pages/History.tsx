@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { supabase } from '@/integrations/supabase/client';
+import api from '@/lib/api';
 import { useEffect, useMemo } from 'react';
 
 const SERVICE_TYPE_LABELS: Record<string, string> = {
@@ -29,66 +29,17 @@ export default function History() {
   });
   const [serviceType, setServiceType] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [markedByNames, setMarkedByNames] = useState<Record<string, string>>({});
 
   const { records, stats, loading } = useAttendanceHistory(dateRange, serviceType, searchQuery);
 
-  // Fetch marked_by profile names
-  useEffect(() => {
-    const fetchMarkedByProfiles = async () => {
-      // Get all unique marked_by user IDs from attendance records
-      const { data } = await supabase
-        .from('attendance_records')
-        .select('marked_by')
-        .not('marked_by', 'is', null);
-
-      if (!data) return;
-      const uniqueIds = [...new Set(data.map(r => r.marked_by).filter(Boolean))] as string[];
-      if (uniqueIds.length === 0) return;
-
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name, email')
-        .in('id', uniqueIds);
-
-      if (profiles) {
-        const map: Record<string, string> = {};
-        profiles.forEach(p => { map[p.id] = p.full_name || p.email; });
-        setMarkedByNames(map);
-      }
-    };
-    fetchMarkedByProfiles();
-  }, []);
-
-  // Fetch marked_by for each record
-  const [recordMarkedBy, setRecordMarkedBy] = useState<Record<string, string | null>>({});
-  
-  useEffect(() => {
-    const fetchRecordMarkedBy = async () => {
-      if (records.length === 0) return;
-      // Get attendance records with marked_by
-      const { data } = await supabase
-        .from('attendance_records')
-        .select('id, marked_by');
-      
-      if (data) {
-        const map: Record<string, string | null> = {};
-        data.forEach(r => { map[r.id] = r.marked_by; });
-        setRecordMarkedBy(map);
-      }
-    };
-    fetchRecordMarkedBy();
-  }, [records]);
-
   const exportToCSV = () => {
-    const headers = ['Member Name', 'Service Date', 'Service Type', 'Service Name', 'Marked At', 'Marked By'];
+    const headers = ['Member Name', 'Service Date', 'Service Type', 'Service Name', 'Marked At'];
     const rows = records.map((record) => [
       record.member_name,
       record.service_date,
       SERVICE_TYPE_LABELS[record.service_type] || record.service_type,
       record.service_name,
       format(new Date(record.marked_at), 'PPp'),
-      recordMarkedBy[record.id] ? (markedByNames[recordMarkedBy[record.id]!] || 'Unknown') : '-',
     ]);
 
     const csvContent = [headers.join(','), ...rows.map((row) => row.map(c => `"${c}"`).join(','))].join('\n');
@@ -273,7 +224,7 @@ export default function History() {
                   <TableHead>Service Type</TableHead>
                   <TableHead>Service Name</TableHead>
                   <TableHead>Checked In</TableHead>
-                  <TableHead>Marked By</TableHead>
+                  <TableHead>Checked In</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -305,18 +256,6 @@ export default function History() {
                     <TableCell>{record.service_name}</TableCell>
                     <TableCell className="text-muted-foreground">
                       {format(new Date(record.marked_at), 'p')}
-                    </TableCell>
-                    <TableCell>
-                      {recordMarkedBy[record.id] ? (
-                        <div className="flex items-center gap-1.5">
-                          <Shield className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-sm text-muted-foreground">
-                            {markedByNames[recordMarkedBy[record.id]!] || 'Officer'}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">—</span>
-                      )}
                     </TableCell>
                   </TableRow>
                 ))}

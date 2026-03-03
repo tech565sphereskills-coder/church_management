@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import api from '@/lib/api';
 import { format } from 'date-fns';
 import { Loader2, Calendar, Clock, Flame } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -55,31 +55,9 @@ export function MemberAttendanceHistory({ memberId }: MemberAttendanceHistoryPro
     const fetchHistory = async () => {
       try {
         setLoading(true);
-        const { data: attendanceData, error: attendanceError } = await supabase
-          .from('attendance_records')
-          .select(`
-            id,
-            marked_at,
-            services:service_id (id, name, service_date, service_type)
-          `)
-          .eq('member_id', memberId)
-          .order('marked_at', { ascending: false });
-
-        if (attendanceError) throw attendanceError;
-
-        const transformedRecords = (attendanceData || []).map((record: any) => ({
-          id: record.id,
-          marked_at: record.marked_at,
-          service: record.services,
-        })).filter((r: any) => r.service);
-
-        setRecords(transformedRecords);
-
-        const { count } = await supabase
-          .from('services')
-          .select('*', { count: 'exact', head: true });
-
-        setTotalServices(count || 0);
+        const response = await api.get(`/members/${memberId}/attendance/`);
+        setRecords(response.data.records);
+        setTotalServices(response.data.total_services);
       } catch (error) {
         console.error('Error fetching attendance history:', error);
       } finally {
