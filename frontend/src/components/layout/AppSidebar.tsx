@@ -18,6 +18,8 @@ import {
   Building2,
   Baby,
   HandHelping,
+  CalendarDays,
+  Calendar as CalendarIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -38,6 +40,7 @@ interface MenuItem {
 
 const menuItems: MenuItem[] = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
+  { icon: CalendarIcon, label: 'Calendar', path: '/calendar' },
   { icon: UserCheck, label: 'Attendance', path: '/attendance' },
   { icon: Users, label: 'Members', path: '/members' },
   { icon: MessageSquare, label: 'Messaging', path: '/messaging' },

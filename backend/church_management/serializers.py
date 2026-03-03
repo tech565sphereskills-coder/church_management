@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import (
     Profile, Member, Service, AttendanceRecord, MemberFollowUp, 
     Contribution, Department, Child, ChildCheckIn, PrayerRequest, 
-    ChurchSettings, CommunicationLog, Expense
+    ChurchSettings, CommunicationLog, Expense, CalendarEvent
 )
 from django.contrib.auth.models import User
 
@@ -117,4 +117,12 @@ class ExpenseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Expense
+        fields = '__all__'
+
+class CalendarEventSerializer(serializers.ModelSerializer):
+    organizer_name = serializers.CharField(source='organizer.username', read_only=True)
+    department_name = serializers.CharField(source='department.name', read_only=True)
+
+    class Meta:
+        model = CalendarEvent
         fields = '__all__'

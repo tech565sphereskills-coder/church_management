@@ -24,6 +24,7 @@ import Children from "./pages/Children";
 import PrayerRequests from "./pages/PrayerRequests";
 import SubmitPrayer from "./pages/SubmitPrayer";
 import ResetPassword from "./pages/ResetPassword";
+import Calendar from "./pages/Calendar";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -48,6 +49,7 @@ const App = () => (
               <Route element={<ProtectedRoute />}>
                 <Route element={<MainLayout />}>
                   <Route path="/" element={<Dashboard />} />
+                  <Route path="/calendar" element={<Calendar />} />
                   <Route path="/attendance" element={<Attendance />} />
                   <Route path="/members" element={<Members />} />
                   <Route path="/members/:memberId" element={<MemberProfile />} />

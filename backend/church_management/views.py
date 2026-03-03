@@ -12,7 +12,7 @@ from django.db.models.functions import TruncMonth
 from .models import (
     Profile, Member, Service, AttendanceRecord, MemberFollowUp, 
     Contribution, Department, Child, ChildCheckIn, PrayerRequest, ChurchSettings,
-    CommunicationLog, Expense
+    CommunicationLog, Expense, CalendarEvent
 )
 from .serializers import (
     AttendanceRecordSerializer, MemberFollowUpSerializer,
@@ -20,7 +20,7 @@ from .serializers import (
     DepartmentSerializer, ProfileSerializer, MemberSerializer,
     ServiceSerializer, ChildSerializer, ChildCheckInSerializer,
     PrayerRequestSerializer, ChurchSettingsSerializer, CommunicationLogSerializer,
-    ExpenseSerializer
+    ExpenseSerializer, CalendarEventSerializer
 )
 from .permissions import (
     IsAdmin, IsFinanceOfficer, IsAttendanceOfficerOrHigher, 
@@ -569,6 +569,49 @@ class ExpenseViewSet(viewsets.ModelViewSet):
         )
         response['Content-Disposition'] = 'attachment; filename=expenses_export.xlsx'
         return response
+
+class CalendarEventViewSet(viewsets.ModelViewSet):
+    queryset = CalendarEvent.objects.all().order_by('start_time')
+    serializer_class = CalendarEventSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [permissions.IsAuthenticated(), IsAdmin()]
+        return super().get_permissions()
+
+    def perform_create(self, serializer):
+        serializer.save(organizer=self.request.user)
+
+    @action(detail=False, methods=['get'])
+    def unified_feed(self, request):
+        """Returns both CalendarEvents and Services in a single feed."""
+        start_date = request.query_params.get('start')
+        end_date = request.query_params.get('end')
+        
+        events_qs = self.get_queryset()
+        services_qs = Service.objects.all()
+        
+        if start_date and end_date:
+            events_qs = events_qs.filter(start_time__date__range=[start_date, end_date])
+            services_qs = services_qs.filter(service_date__range=[start_date, end_date])
+            
+        events = CalendarEventSerializer(events_qs, many=True).data
+        # Map Service objects to a similar structure
+        services = []
+        for s in services_qs:
+            services.append({
+                'id': f"service-{s.id}",
+                'title': s.name,
+                'description': s.description,
+                'event_type': 'service',
+                'start_time': f"{s.service_date}T08:00:00Z", # Default time for Sunday/Midweek
+                'end_time': f"{s.service_date}T10:00:00Z",
+                'location': 'Main Sanctuary',
+                'is_service_model': True
+            })
+            
+        return Response(events + services)
 
 class DepartmentViewSet(viewsets.ModelViewSet):
     queryset = Department.objects.all().order_by('name')

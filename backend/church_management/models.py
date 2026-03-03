@@ -54,6 +54,14 @@ class ExpenseCategory(models.TextChoices):
     OUTREACH = 'outreach', 'Outreach / Evangelism'
     OTHER = 'other', 'Other'
 
+class EventType(models.TextChoices):
+    SERVICE = 'service', 'Church Service'
+    MEETING = 'meeting', 'Group Meeting'
+    CONFERENCE = 'conference', 'Conference / Seminar'
+    SPECIAL = 'special', 'Special Program'
+    REHEARSAL = 'rehearsal', 'Rehearsal'
+    OTHER = 'other', 'Other'
+
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     full_name = models.CharField(max_length=255, blank=True, null=True)
@@ -193,6 +201,22 @@ class Expense(models.Model):
 
     def __str__(self):
         return f"{self.description} - {self.amount}"
+
+class CalendarEvent(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    event_type = models.CharField(max_length=50, choices=EventType.choices, default=EventType.SERVICE)
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField()
+    location = models.CharField(max_length=255, blank=True, null=True)
+    department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True, related_name='events')
+    organizer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='organized_events')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.title} ({self.start_time.date()})"
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
