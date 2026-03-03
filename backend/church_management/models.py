@@ -1,0 +1,123 @@
+from django.db import models
+from django.contrib.auth.models import User
+import uuid
+
+class Role(models.TextChoices):
+    ADMIN = 'admin', 'Admin'
+    ATTENDANCE_OFFICER = 'attendance_officer', 'Attendance Officer'
+    VIEWER = 'viewer', 'Viewer'
+
+class Gender(models.TextChoices):
+    MALE = 'male', 'Male'
+    FEMALE = 'female', 'Female'
+
+class MemberStatus(models.TextChoices):
+    ACTIVE = 'active', 'Active'
+    INACTIVE = 'inactive', 'Inactive'
+    FIRST_TIMER = 'first_timer', 'First Timer'
+
+class ServiceType(models.TextChoices):
+    SUNDAY_SERVICE = 'sunday_service', 'Sunday Service'
+    MIDWEEK_SERVICE = 'midweek_service', 'Midweek Service'
+    SPECIAL_PROGRAM = 'special_program', 'Special Program'
+
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    full_name = models.CharField(max_length=255, blank=True, null=True)
+    avatar_url = models.URLField(max_length=500, blank=True, null=True)
+    role = models.CharField(max_length=50, choices=Role.choices, default=Role.VIEWER)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.user.email
+
+class Member(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    full_name = models.CharField(max_length=255)
+    phone = models.CharField(max_length=20, unique=True)
+    gender = models.CharField(max_length=10, choices=Gender.choices)
+    department = models.CharField(max_length=255, blank=True, null=True)
+    date_joined = models.DateField(auto_now_add=True)
+    status = models.CharField(max_length=20, choices=MemberStatus.choices, default=MemberStatus.FIRST_TIMER)
+    invited_by = models.CharField(max_length=255, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    address = models.TextField(blank=True, null=True)
+    qr_code = models.CharField(max_length=50, unique=True, blank=True, null=True)
+    photo_url = models.URLField(max_length=500, blank=True, null=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_members')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.full_name
+
+    def save(self, *args, **kwargs):
+        if not self.qr_code:
+            # Generate QR code if not exists
+            self.qr_code = f"RCCG-{str(uuid.uuid4())[:8].upper()}"
+        super().save(*args, **kwargs)
+
+class Service(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255)
+    service_type = models.CharField(max_length=50, choices=ServiceType.choices)
+    service_date = models.DateField()
+    description = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.service_date})"
+
+class AttendanceRecord(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='attendance_records')
+    service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='attendance_records')
+    marked_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='marked_attendance')
+    marked_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('member', 'service')
+
+class MemberFollowUp(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    member = models.OneToOneField(Member, on_delete=models.CASCADE, related_name='follow_up')
+    missed_consecutive_count = models.IntegerField(default=0)
+    last_attended_date = models.DateField(blank=True, null=True)
+    needs_follow_up = models.BooleanField(default=False)
+    follow_up_notes = models.TextField(blank=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    @classmethod
+    def recalculate(cls):
+        active_members = Member.objects.filter(status='active')
+        recent_services = Service.objects.all().order_by('-service_date')[:10]
+        
+        if not recent_services:
+            return
+
+        for member in active_members:
+            consecutive_missed = 0
+            last_attended_date = None
+            
+            for service in recent_services:
+                attended = AttendanceRecord.objects.filter(member=member, service=service).exists()
+                if attended:
+                    last_attended_date = service.service_date
+                    break
+                consecutive_missed += 1
+                
+            if consecutive_missed >= 2:
+                cls.objects.update_or_create(
+                    member=member,
+                    defaults={
+                        'missed_consecutive_count': consecutive_missed,
+                        'last_attended_date': last_attended_date,
+                        'needs_follow_up': True
+                    }
+                )
+            else:
+                cls.objects.filter(member=member).update(needs_follow_up=False)
+
+    def __str__(self):
+        return f"Follow up for {self.member.full_name}"
