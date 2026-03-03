@@ -9,6 +9,7 @@ import { QuickActions } from '@/components/dashboard/QuickActions';
 import { WelcomeCard } from '@/components/dashboard/WelcomeCard';
 import { ServiceComparisonChart } from '@/components/dashboard/ServiceComparisonChart';
 import { MostConsistentMembers } from '@/components/dashboard/MostConsistentMembers';
+import { BirthdayCelebrants } from '@/components/dashboard/BirthdayCelebrants';
 import { useAttendance } from '@/hooks/useAttendance';
 import { useMembers } from '@/hooks/useMembers';
 import { useFollowUp } from '@/hooks/useFollowUp';
@@ -157,7 +158,8 @@ export default function Dashboard() {
           <div className="lg:col-span-2">
             <ServiceComparisonChart />
           </div>
-          <div>
+          <div className="space-y-6">
+            <BirthdayCelebrants />
             <MostConsistentMembers />
           </div>
         </div>

@@ -43,7 +43,7 @@ const departments = [
 
 export default function Members() {
   const navigate = useNavigate();
-  const { members, loading, createMember, updateMember, deleteMember } = useMembers();
+  const { members, loading, createMember, updateMember, deleteMember, fetchMembers } = useMembers();
   const { canManageAttendance, isAdmin } = useAuth();
   const { toast } = useToast();
 
@@ -104,7 +104,11 @@ export default function Members() {
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
   };

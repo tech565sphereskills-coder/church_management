@@ -17,6 +17,7 @@ export interface Member {
   invited_by: string | null;
   email: string | null;
   address: string | null;
+  date_of_birth: string | null;
   qr_code: string | null;
   photo_url: string | null;
   created_by: string | null;
@@ -32,6 +33,7 @@ export interface NewMemberData {
   invited_by?: string;
   email?: string;
   address?: string;
+  date_of_birth?: string;
 }
 
 export function useMembers() {

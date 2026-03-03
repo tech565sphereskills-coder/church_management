@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { UserPlus, Clock, ChevronRight } from 'lucide-react';
+import { UserPlus, Clock, ChevronRight, Calendar, Coffee, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 
@@ -21,12 +21,36 @@ export function QuickActions({ serviceType = 'Sunday Service' }: QuickActionsPro
 
       <div className="space-y-3">
         <Button
-          onClick={() => navigate('/attendance')}
+          onClick={() => navigate('/attendance', { state: { serviceType: 'sunday_service' } })}
           className="btn-gold w-full justify-between"
         >
           <span className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Mark Attendance
+            <Calendar className="h-5 w-5" />
+            Mark Sunday Service
+          </span>
+          <ChevronRight className="h-5 w-5" />
+        </Button>
+
+        <Button
+          onClick={() => navigate('/attendance', { state: { serviceType: 'midweek_service' } })}
+          variant="outline"
+          className="w-full border-primary/20 hover:bg-primary/5 text-primary justify-between"
+        >
+          <span className="flex items-center gap-2">
+            <Coffee className="h-5 w-5" />
+            Mark Midweek Service
+          </span>
+          <ChevronRight className="h-5 w-5" />
+        </Button>
+
+        <Button
+          onClick={() => navigate('/attendance', { state: { serviceType: 'special_program' } })}
+          variant="outline"
+          className="w-full border-accent/20 hover:bg-accent/5 text-accent-foreground justify-between"
+        >
+          <span className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5" />
+            Mark Special Program
           </span>
           <ChevronRight className="h-5 w-5" />
         </Button>

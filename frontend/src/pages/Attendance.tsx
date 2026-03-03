@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Check, UserPlus, Calendar, QrCode, Camera } from 'lucide-react';
+import { Search, Check, UserPlus, Calendar, QrCode, Camera, Users, Filter } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,11 +14,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useMembers, Member } from '@/hooks/useMembers';
 import { useAttendance, ServiceType } from '@/hooks/useAttendance';
 import { useOfflineAttendance } from '@/hooks/useOfflineAttendance';
 import { NewMemberData } from '@/components/members/NewMemberDialog';
+
+interface LocationState {
+  serviceType?: ServiceType;
+}
 import { useAuth } from '@/hooks/useAuth';
 import { NewMemberDialog } from '@/components/members/NewMemberDialog';
 import { QRScanner } from '@/components/qr/QRScanner';
@@ -46,14 +52,22 @@ export default function Attendance() {
   } = useAttendance();
   const { isOnline, addOfflineRecord, pendingRecords } = useOfflineAttendance();
 
+  const location = useLocation();
+  const state = location.state as LocationState;
   const [searchQuery, setSearchQuery] = useState('');
-  const [serviceType, setServiceType] = useState<ServiceType>('sunday_service');
+  const [serviceType, setServiceType] = useState<ServiceType>(
+    state?.serviceType || 'sunday_service'
+  );
   const [searchResults, setSearchResults] = useState<Member[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isNewMemberOpen, setIsNewMemberOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [offlineMarkedIds, setOfflineMarkedIds] = useState<string[]>([]);
   const [selectedMemberQR, setSelectedMemberQR] = useState<{ name: string; qrCode: string } | null>(null);
+  const [activeTab, setActiveTab] = useState('search');
+  const [deptFilter, setDeptFilter] = useState('all');
+
+  const { members } = useMembers(); // Get all members for browsing
 
   // Track offline marked members
   useEffect(() => {
@@ -178,6 +192,19 @@ export default function Attendance() {
     }
   };
 
+  const filteredBrowseMembers = useMemo(() => {
+    return members.filter(m => {
+      const matchesDept = deptFilter === 'all' || m.department === deptFilter;
+      const isSearchMatch = !searchQuery || m.full_name.toLowerCase().includes(searchQuery.toLowerCase()) || m.phone.includes(searchQuery);
+      return matchesDept && isSearchMatch && m.status !== 'inactive';
+    });
+  }, [members, deptFilter, searchQuery]);
+
+  const departments = useMemo(() => {
+    const depts = new Set(members.map(m => m.department).filter(Boolean));
+    return ['all', ...Array.from(depts)];
+  }, [members]);
+
   const showNoResults = searchQuery.trim() && !isSearching && searchResults.length === 0;
 
   if (attendanceLoading) {
@@ -256,32 +283,81 @@ export default function Attendance() {
           </motion.div>
         )}
 
-        {/* Search Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mb-6"
-        >
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Search by name or phone number..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="search-input text-lg"
-            />
-          </div>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Type a name or phone number to find and mark attendance
-          </p>
-        </motion.div>
+        {/* Attendance Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="search" className="gap-2">
+              <Search className="h-4 w-4" />
+              Search & Mark
+            </TabsTrigger>
+            <TabsTrigger value="browse" className="gap-2">
+              <Users className="h-4 w-4" />
+              Browse All
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Search Results */}
-        <AnimatePresence mode="wait">
-          {searchQuery.trim() && (
+          <TabsContent value="search" className="mt-6">
             <motion.div
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="space-y-6"
+            >
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search by name or phone number..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="search-input text-lg"
+                />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Type a name or phone number to find and mark attendance
+              </p>
+            </motion.div>
+          </TabsContent>
+
+          <TabsContent value="browse" className="mt-6">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="space-y-4"
+            >
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Filter names..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-muted-foreground" />
+                  <Select value={deptFilter} onValueChange={setDeptFilter}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Departments</SelectItem>
+                      {departments.filter(d => d !== 'all').map(d => (
+                        <SelectItem key={d} value={d || 'None'}>{d}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </motion.div>
+          </TabsContent>
+        </Tabs>
+
+        {/* Search Results / Browse List */}
+        <AnimatePresence mode="wait">
+          {activeTab === 'search' && searchQuery.trim() ? (
+            <motion.div
+              key="search-results"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
@@ -295,7 +371,7 @@ export default function Attendance() {
                 </div>
               ) : (
                 <>
-              {searchResults.map((member, index) => {
+                  {searchResults.map((member, index) => {
                     const isMarked = todayAttendance.includes(member.id) || offlineMarkedIds.includes(member.id);
                     return (
                       <motion.div
@@ -388,27 +464,70 @@ export default function Attendance() {
                 </>
               )}
             </motion.div>
-          )}
+          ) : activeTab === 'browse' ? (
+            <motion.div
+              key="browse-list"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+            >
+              {filteredBrowseMembers.map((member, index) => {
+                const isMarked = todayAttendance.includes(member.id) || offlineMarkedIds.includes(member.id);
+                return (
+                  <motion.div
+                    key={member.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.02 }}
+                    className={`flex items-center justify-between p-4 rounded-xl border border-border bg-card transition-all hover:shadow-md ${isMarked ? 'bg-success/5 border-success/20' : ''}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10">
+                        <AvatarFallback className="bg-primary/10 text-primary">
+                          {getInitials(member.full_name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="overflow-hidden">
+                        <p className="font-semibold text-sm truncate">{member.full_name}</p>
+                        <p className="text-[10px] text-muted-foreground truncate">{member.department || 'General'}</p>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => handleMarkAttendance(member)}
+                      disabled={isMarked}
+                      className={`h-8 px-3 ${isMarked ? 'bg-success text-success-foreground' : 'btn-gold'}`}
+                    >
+                      {isMarked ? <Check className="h-4 w-4" /> : 'Mark'}
+                    </Button>
+                  </motion.div>
+                );
+              })}
+              {filteredBrowseMembers.length === 0 && (
+                <div key="no-members" className="col-span-full py-12 text-center text-muted-foreground">
+                  No members found matching filters.
+                </div>
+              )}
+            </motion.div>
+          ) : !searchQuery.trim() ? (
+            <motion.div
+              key="empty-state"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="mt-12 text-center"
+            >
+              <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-muted">
+                <Search className="h-10 w-10 text-muted-foreground" />
+              </div>
+              <h3 className="text-xl font-semibold">Start searching</h3>
+              <p className="mt-2 text-muted-foreground">
+                Enter a member's name or phone number to mark their attendance, or browse the list.
+              </p>
+            </motion.div>
+          ) : null}
         </AnimatePresence>
-
-        {/* Empty State */}
-        {!searchQuery.trim() && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="mt-12 text-center"
-          >
-            <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-muted">
-              <Search className="h-10 w-10 text-muted-foreground" />
-            </div>
-            <h3 className="text-xl font-semibold">Start searching</h3>
-            <p className="mt-2 text-muted-foreground">
-              Enter a member's name or phone number to mark their attendance
-            </p>
-          </motion.div>
-        )}
-      </div>
 
       {/* Dialogs */}
       <NewMemberDialog
@@ -432,6 +551,7 @@ export default function Attendance() {
           qrCode={selectedMemberQR.qrCode}
         />
       )}
+      </div>
     </div>
   );
 }

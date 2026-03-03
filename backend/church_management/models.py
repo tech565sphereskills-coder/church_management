@@ -38,6 +38,7 @@ class Member(models.Model):
     phone = models.CharField(max_length=20, unique=True)
     gender = models.CharField(max_length=10, choices=Gender.choices)
     department = models.CharField(max_length=255, blank=True, null=True)
+    date_of_birth = models.DateField(blank=True, null=True)
     date_joined = models.DateField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=MemberStatus.choices, default=MemberStatus.FIRST_TIMER)
     invited_by = models.CharField(max_length=255, blank=True, null=True)

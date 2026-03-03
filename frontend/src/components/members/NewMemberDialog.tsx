@@ -38,6 +38,7 @@ export interface NewMemberData {
   invited_by?: string;
   email?: string;
   address?: string;
+  date_of_birth?: string;
 }
 
 const departments = [
@@ -61,6 +62,7 @@ const formSchema = z.object({
   department: z.string().optional(),
   invited_by: z.string().optional(),
   email: z.string().email('Invalid email').optional().or(z.literal('')),
+  date_of_birth: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -89,6 +91,7 @@ export function NewMemberDialog({
       department: '',
       invited_by: '',
       email: '',
+      date_of_birth: '',
     },
   });
 
@@ -109,6 +112,7 @@ export function NewMemberDialog({
       department: data.department || undefined,
       invited_by: data.invited_by || undefined,
       email: data.email || undefined,
+      date_of_birth: data.date_of_birth || undefined,
     };
 
     await onMemberCreated(newMember);
@@ -229,6 +233,20 @@ export function NewMemberDialog({
                   <FormLabel>Email (Optional)</FormLabel>
                   <FormControl>
                     <Input type="email" placeholder="email@example.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="date_of_birth"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Date of Birth (Optional)</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
