@@ -15,11 +15,9 @@ import {
 } from '@/components/ui/select';
 import { Pencil, Loader2 } from 'lucide-react';
 import type { Member, MemberStatus } from '@/hooks/useMembers';
+import { useDepartments } from '@/hooks/useDepartments';
 
-const departments = [
-  'Member', 'Choir', 'Ushering', 'Protocol', 'Media', 'Children',
-  'Youth', 'Prayer', 'Welfare', 'Technical', 'Evangelism',
-];
+// Departments constant removed to use dynamic data
 
 const editSchema = z.object({
   full_name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -43,6 +41,7 @@ interface EditMemberDialogProps {
 
 export function EditMemberDialog({ open, onOpenChange, member, onSave }: EditMemberDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const { departments } = useDepartments();
 
   const form = useForm<EditFormData>({
     resolver: zodResolver(editSchema),
@@ -62,7 +61,7 @@ export function EditMemberDialog({ open, onOpenChange, member, onSave }: EditMem
         email: member.email || '',
         address: member.address || '',
         status: member.status,
-        date_of_birth: (member as any).date_of_birth || '',
+        date_of_birth: member.date_of_birth || '',
       });
     }
   }, [member, open, form]);
@@ -70,13 +69,19 @@ export function EditMemberDialog({ open, onOpenChange, member, onSave }: EditMem
   const onSubmit = async (data: EditFormData) => {
     if (!member) return;
     setIsLoading(true);
-    const updates: any = { ...data };
-    if (!updates.department) delete updates.department;
+    
+    // Create a typed updates object
+    const updates: Partial<EditFormData> & { email?: string | null; address?: string | null; date_of_birth?: string | null } = { ...data };
+    
+    if (updates.department === 'none') {
+        updates.department = undefined;
+    }
+    
     if (!updates.email) updates.email = null;
     if (!updates.address) updates.address = null;
     if (!updates.date_of_birth) updates.date_of_birth = null;
 
-    const success = await onSave(member.id, updates);
+    const success = await onSave(member.id, updates as Partial<EditFormData>);
     if (success) onOpenChange(false);
     setIsLoading(false);
   };
@@ -132,8 +137,8 @@ export function EditMemberDialog({ open, onOpenChange, member, onSave }: EditMem
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger></FormControl>
                     <SelectContent>
-                      <SelectItem value=" ">None</SelectItem>
-                      {departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                      <SelectItem value="none">None</SelectItem>
+                      {departments.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
                   <FormMessage />

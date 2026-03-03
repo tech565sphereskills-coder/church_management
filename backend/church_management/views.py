@@ -4,11 +4,12 @@ from django.contrib.auth.models import User
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from .models import Profile, Member, Service, AttendanceRecord, MemberFollowUp, Contribution
+from .models import Profile, Member, Service, AttendanceRecord, MemberFollowUp, Contribution, Department
 from .serializers import (
-    ProfileSerializer, MemberSerializer, ServiceSerializer, 
     AttendanceRecordSerializer, MemberFollowUpSerializer,
-    UserSerializer, RegisterSerializer, ContributionSerializer
+    UserSerializer, RegisterSerializer, ContributionSerializer,
+    DepartmentSerializer, ProfileSerializer, MemberSerializer,
+    ServiceSerializer
 )
 from .permissions import IsAdmin, IsFinanceOfficer, IsAttendanceOfficerOrHigher, IsViewerOrHigher, ReadOnly
 
@@ -135,7 +136,7 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
                 'members': {
                     'id': str(r.member.id),
                     'full_name': r.member.full_name,
-                    'department': r.member.department
+                    'department': r.member.department.name if r.member.department else None
                 }
             })
         return Response(data)
@@ -310,3 +311,12 @@ class ContributionViewSet(viewsets.ModelViewSet):
             
         summary_data = queryset.values('contribution_type').annotate(total=Sum('amount'))
         return Response(list(summary_data))
+
+class DepartmentViewSet(viewsets.ModelViewSet):
+    queryset = Department.objects.all().order_by('name')
+    serializer_class = DepartmentSerializer
+    
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [IsAdmin()]
+        return [permissions.IsAuthenticated()]

@@ -49,12 +49,23 @@ class Profile(models.Model):
     def __str__(self):
         return self.user.email
 
+class Department(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255, unique=True)
+    description = models.TextField(blank=True, null=True)
+    leader = models.ForeignKey('Member', on_delete=models.SET_NULL, null=True, blank=True, related_name='led_departments')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
 class Member(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     full_name = models.CharField(max_length=255)
     phone = models.CharField(max_length=20, unique=True)
     gender = models.CharField(max_length=10, choices=Gender.choices)
-    department = models.CharField(max_length=255, blank=True, null=True)
+    department = models.ForeignKey('Department', on_delete=models.SET_NULL, null=True, blank=True, related_name='members')
     date_of_birth = models.DateField(blank=True, null=True)
     date_joined = models.DateField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=MemberStatus.choices, default=MemberStatus.FIRST_TIMER)

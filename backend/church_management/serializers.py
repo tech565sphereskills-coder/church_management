@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Profile, Member, Service, AttendanceRecord, MemberFollowUp, Contribution
+from .models import Profile, Member, Service, AttendanceRecord, MemberFollowUp, Contribution, Department
 from django.contrib.auth.models import User
 
 class UserSerializer(serializers.ModelSerializer):
@@ -36,8 +36,18 @@ class ProfileSerializer(serializers.ModelSerializer):
         fields = ('id', 'email', 'username', 'full_name', 'role', 'avatar_url', 'created_at', 'updated_at')
 
 class MemberSerializer(serializers.ModelSerializer):
+    department_name = serializers.CharField(source='department.name', read_only=True)
+
     class Meta:
         model = Member
+        fields = '__all__'
+
+class DepartmentSerializer(serializers.ModelSerializer):
+    leader_name = serializers.CharField(source='leader.full_name', read_only=True)
+    member_count = serializers.IntegerField(source='members.count', read_only=True)
+
+    class Meta:
+        model = Department
         fields = '__all__'
 
 class ServiceSerializer(serializers.ModelSerializer):

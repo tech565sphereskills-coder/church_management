@@ -15,6 +15,7 @@ import {
   Sun,
   Moon,
   Banknote,
+  Building2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -38,6 +39,7 @@ const menuItems: MenuItem[] = [
   { icon: MessageSquare, label: 'Messaging', path: '/messaging' },
   { icon: AlertTriangle, label: 'Follow-Up', path: '/follow-up' },
   { icon: Banknote, label: 'Financials', path: '/financials', financeOnly: true },
+  { icon: Building2, label: 'Departments', path: '/departments' },
   { icon: History, label: 'History', path: '/history' },
   { icon: BarChart3, label: 'Reports', path: '/reports' },
   { icon: Settings, label: 'Settings', path: '/settings' },

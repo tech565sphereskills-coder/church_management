@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { UserPlus, Loader2 } from 'lucide-react';
+import { useDepartments } from '@/hooks/useDepartments';
 
 export type Gender = 'male' | 'female';
 
@@ -41,19 +42,7 @@ export interface NewMemberData {
   date_of_birth?: string;
 }
 
-const departments = [
-  'Member',
-  'Choir',
-  'Ushering',
-  'Protocol',
-  'Media',
-  'Children',
-  'Youth',
-  'Prayer',
-  'Welfare',
-  'Technical',
-  'Evangelism',
-];
+// Departments constant removed to use dynamic data
 
 const formSchema = z.object({
   full_name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -81,6 +70,7 @@ export function NewMemberDialog({
   initialName = '',
 }: NewMemberDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const { departments } = useDepartments();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -200,8 +190,8 @@ export function NewMemberDialog({
                     </FormControl>
                     <SelectContent>
                       {departments.map((dept) => (
-                        <SelectItem key={dept} value={dept}>
-                          {dept}
+                        <SelectItem key={dept.id} value={dept.id}>
+                          {dept.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
