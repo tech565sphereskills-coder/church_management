@@ -1,8 +1,8 @@
 from rest_framework import serializers
 from .models import (
     Profile, Member, Service, AttendanceRecord, MemberFollowUp, 
-    Contribution, Department, Child, ChildCheckIn, PrayerRequest, 
-    ChurchSettings, CommunicationLog, Expense, CalendarEvent
+    Contribution, Department, Child, ChildCheckIn, PrayerRequest,
+    ChurchSettings, CommunicationLog, Expense, CalendarEvent, AuditLog
 )
 from django.contrib.auth.models import User
 
@@ -125,4 +125,11 @@ class CalendarEventSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CalendarEvent
+        fields = '__all__'
+
+class AuditLogSerializer(serializers.ModelSerializer):
+    user_name = serializers.CharField(source='user.username', read_only=True)
+
+    class Meta:
+        model = AuditLog
         fields = '__all__'

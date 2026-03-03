@@ -12,7 +12,7 @@ from django.db.models.functions import TruncMonth
 from .models import (
     Profile, Member, Service, AttendanceRecord, MemberFollowUp, 
     Contribution, Department, Child, ChildCheckIn, PrayerRequest, ChurchSettings,
-    CommunicationLog, Expense, CalendarEvent
+    CommunicationLog, Expense, CalendarEvent, AuditLog
 )
 from .serializers import (
     AttendanceRecordSerializer, MemberFollowUpSerializer,
@@ -20,13 +20,27 @@ from .serializers import (
     DepartmentSerializer, ProfileSerializer, MemberSerializer,
     ServiceSerializer, ChildSerializer, ChildCheckInSerializer,
     PrayerRequestSerializer, ChurchSettingsSerializer, CommunicationLogSerializer,
-    ExpenseSerializer, CalendarEventSerializer
+    ExpenseSerializer, CalendarEventSerializer, AuditLogSerializer
 )
 from .permissions import (
     IsAdmin, IsFinanceOfficer, IsAttendanceOfficerOrHigher, 
     IsViewerOrHigher, ReadOnly, IsChildrenOfficerOrHigher,
     IsPrayerOfficerOrHigher
 )
+
+# Helper for auditing
+def log_activity(user, action, model_name, object_id, object_name, details=None):
+    try:
+        AuditLog.objects.create(
+            user=user,
+            action=action,
+            model_name=model_name,
+            object_id=str(object_id),
+            object_name=object_name,
+            details=details or {}
+        )
+    except Exception as e:
+        print(f"Failed to log activity: {e}")
 
 class RegisterView(viewsets.GenericViewSet, viewsets.mixins.CreateModelMixin):
     queryset = User.objects.all()
@@ -81,6 +95,18 @@ class MemberViewSet(viewsets.ModelViewSet):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [IsAttendanceOfficerOrHigher()]
         return [IsViewerOrHigher()]
+
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        log_activity(self.request.user, AuditLog.Action.CREATE, 'Member', instance.id, instance.full_name)
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        log_activity(self.request.user, AuditLog.Action.UPDATE, 'Member', instance.id, instance.full_name)
+
+    def perform_destroy(self, instance):
+        log_activity(self.request.user, AuditLog.Action.DELETE, 'Member', instance.id, instance.full_name)
+        instance.delete()
 
     @action(detail=True, methods=['get'])
     def attendance(self, request, pk=None):
@@ -613,6 +639,15 @@ class CalendarEventViewSet(viewsets.ModelViewSet):
             
         return Response(events + services)
 
+class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = AuditLog.objects.all()
+    serializer_class = AuditLogSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+    filterset_fields = ['user', 'action', 'model_name']
+
+    def get_queryset(self):
+        return AuditLog.objects.all().order_by('-timestamp')
+
 class DepartmentViewSet(viewsets.ModelViewSet):
     queryset = Department.objects.all().order_by('name')
     serializer_class = DepartmentSerializer
@@ -669,11 +704,19 @@ class PrayerRequestViewSet(viewsets.ModelViewSet):
             # If logged in, try to link to member profile if exists
             try:
                 member = Member.objects.get(email=self.request.user.email)
-                serializer.save(member=member)
+                instance = serializer.save(member=member)
             except Member.DoesNotExist:
-                serializer.save()
+                instance = serializer.save()
         else:
-            serializer.save()
+            instance = serializer.save()
+        
+        log_activity(
+            self.request.user if self.request.user.is_authenticated else None, 
+            AuditLog.Action.CREATE, 
+            'PrayerRequest', 
+            instance.id, 
+            f"Prayer: {instance.requester_name}"
+        )
 
     @action(detail=True, methods=['post'])
     def mark_as_prayed(self, request, pk=None):

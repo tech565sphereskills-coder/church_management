@@ -20,6 +20,7 @@ import {
   HandHelping,
   CalendarDays,
   Calendar as CalendarIcon,
+  ShieldCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -51,6 +52,7 @@ const menuItems: MenuItem[] = [
   { icon: HandHelping, label: 'Prayer Requests', path: '/prayer-requests', prayerOnly: true },
   { icon: History, label: 'History', path: '/history' },
   { icon: BarChart3, label: 'Reports', path: '/reports' },
+  { icon: ShieldCheck, label: 'Audit Logs', path: '/audit-logs', adminOnly: true },
   { icon: Settings, label: 'Settings', path: '/settings' },
 ];
 

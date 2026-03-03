@@ -5,7 +5,7 @@ from .views import (
     MemberFollowUpViewSet, RegisterView, StatsViewSet, SMSViewSet, 
     SettingsViewSet, ContributionViewSet, DepartmentViewSet,
     ChildViewSet, ChildCheckInViewSet, PrayerRequestViewSet,
-    CommunicationLogViewSet, ExpenseViewSet, CalendarEventViewSet
+    CommunicationLogViewSet, ExpenseViewSet, CalendarEventViewSet, AuditLogViewSet
 )
 
 router = DefaultRouter()
@@ -21,6 +21,7 @@ router.register(r'communication-logs', CommunicationLogViewSet)
 router.register(r'contributions', ContributionViewSet)
 router.register(r'expenses', ExpenseViewSet)
 router.register(r'calendar', CalendarEventViewSet)
+router.register(r'audit-logs', AuditLogViewSet)
 router.register(r'departments', DepartmentViewSet)
 router.register(r'children', ChildViewSet)
 router.register(r'child-checkins', ChildCheckInViewSet)

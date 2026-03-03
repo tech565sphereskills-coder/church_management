@@ -217,6 +217,29 @@ class CalendarEvent(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.start_time.date()})"
+
+class AuditLog(models.Model):
+    class Action(models.TextChoices):
+        CREATE = 'create', 'Create'
+        UPDATE = 'update', 'Update'
+        DELETE = 'delete', 'Delete'
+        LOGIN = 'login', 'Login'
+        EXPORT = 'export', 'Export'
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='audit_logs')
+    action = models.CharField(max_length=20, choices=Action.choices)
+    model_name = models.CharField(max_length=100)
+    object_id = models.CharField(max_length=100, blank=True, null=True)
+    object_name = models.CharField(max_length=255, blank=True, null=True)
+    details = models.JSONField(default=dict, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"{self.user} - {self.action} - {self.model_name} ({self.timestamp})"
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):

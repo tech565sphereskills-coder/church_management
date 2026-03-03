@@ -25,6 +25,7 @@ import PrayerRequests from "./pages/PrayerRequests";
 import SubmitPrayer from "./pages/SubmitPrayer";
 import ResetPassword from "./pages/ResetPassword";
 import Calendar from "./pages/Calendar";
+import AuditLogs from "./pages/AuditLogs";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -61,6 +62,9 @@ const App = () => (
                   </Route>
                   <Route path="/settings" element={<ProtectedRoute requiredRole="admin" />}>
                     <Route index element={<Settings />} />
+                  </Route>
+                  <Route path="/audit-logs" element={<ProtectedRoute requiredRole="admin" />}>
+                    <Route index element={<AuditLogs />} />
                   </Route>
                   <Route path="/user-management" element={<ProtectedRoute requiredRole="admin" />}>
                     <Route index element={<UserManagement />} />
