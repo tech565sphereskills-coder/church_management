@@ -36,13 +36,29 @@ export interface AttendanceWithMember extends AttendanceRecord {
 export function useAttendance() {
   const [todayService, setTodayService] = useState<Service | null>(null);
   const [todayAttendance, setTodayAttendance] = useState<string[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { user } = useAuth();
 
+  const fetchServices = useCallback(async () => {
+    try {
+      const response = await api.get('/services/');
+      setServices(response.data);
+    } catch (error) {
+      console.error('Error fetching services:', error);
+    }
+  }, []);
+
   const getTodayDateString = () => {
     return new Date().toISOString().split('T')[0];
   };
+
+  useEffect(() => {
+    if (user) {
+      fetchServices();
+    }
+  }, [user, fetchServices]);
 
   const getOrCreateTodayService = useCallback(async (serviceType: ServiceType): Promise<Service | null> => {
     const today = getTodayDateString();
@@ -72,6 +88,7 @@ export function useAttendance() {
       });
 
       setTodayService(createResponse.data);
+      await fetchServices(); // Refresh services list
       return createResponse.data;
     } catch (error) {
       console.error('Error getting/creating service:', error);
@@ -82,14 +99,14 @@ export function useAttendance() {
       });
       return null;
     }
-  }, [toast]);
+  }, [toast, fetchServices]);
 
   const fetchTodayAttendance = useCallback(async (serviceId: string) => {
     try {
       const response = await api.get('/attendance/', {
         params: { service: serviceId }
       });
-      setTodayAttendance(response.data.results.map((r: any) => r.member));
+      setTodayAttendance(response.data.results.map((r: { member: string }) => r.member));
     } catch (error) {
       console.error('Error fetching attendance:', error);
     }
@@ -166,7 +183,9 @@ export function useAttendance() {
   return {
     todayService,
     todayAttendance,
+    services,
     loading,
+    fetchServices,
     getOrCreateTodayService,
     fetchTodayAttendance,
     markAttendance,

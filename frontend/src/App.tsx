@@ -20,6 +20,8 @@ import Messaging from "./pages/Messaging";
 import Financials from "./pages/Financials";
 import Departments from "./pages/Departments";
 import Auth from "./pages/Auth";
+import Children from "./pages/Children";
+import PrayerRequests from "./pages/PrayerRequests";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
@@ -69,6 +71,12 @@ const App = () => (
                     <Route index element={<Financials />} />
                   </Route>
                   <Route path="/departments" element={<Departments />} />
+                  <Route path="/children" element={<ProtectedRoute requiredRole={['admin', 'children_officer']} />}>
+                    <Route index element={<Children />} />
+                  </Route>
+                  <Route path="/prayer-requests" element={<ProtectedRoute requiredRole={['admin', 'prayer_officer']} />}>
+                    <Route index element={<PrayerRequests />} />
+                  </Route>
                 </Route>
               </Route>
               

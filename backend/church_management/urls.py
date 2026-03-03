@@ -1,9 +1,10 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
-    ProfileViewSet, MemberViewSet, ServiceViewSet, AttendanceRecordViewSet, 
+    ProfileViewSet, MemberViewSet, ServiceViewSet, AttendanceRecordViewSet,
     MemberFollowUpViewSet, RegisterView, StatsViewSet, SMSViewSet, 
-    SettingsViewSet, ContributionViewSet, DepartmentViewSet
+    SettingsViewSet, ContributionViewSet, DepartmentViewSet,
+    ChildViewSet, ChildCheckInViewSet, PrayerRequestViewSet
 )
 
 router = DefaultRouter()
@@ -17,6 +18,9 @@ router.register(r'sms', SMSViewSet, basename='sms')
 router.register(r'settings', SettingsViewSet, basename='settings')
 router.register(r'contributions', ContributionViewSet)
 router.register(r'departments', DepartmentViewSet)
+router.register(r'children', ChildViewSet)
+router.register(r'child-checkins', ChildCheckInViewSet)
+router.register(r'prayer-requests', PrayerRequestViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),

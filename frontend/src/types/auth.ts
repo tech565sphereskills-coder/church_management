@@ -1,4 +1,4 @@
-export type AppRole = 'admin' | 'attendance_officer' | 'finance_officer' | 'viewer';
+export type AppRole = 'admin' | 'attendance_officer' | 'finance_officer' | 'children_officer' | 'prayer_officer' | 'viewer';
 
 export interface User {
   id: string;
@@ -17,6 +17,10 @@ export interface AuthContextType {
   isAdmin: boolean;
   isOfficer: boolean;
   isFinanceOfficer: boolean;
+  isChildrenOfficer: boolean;
+  isPrayerOfficer: boolean;
   canManageAttendance: boolean;
   canManageFinances: boolean;
+  canManageChildren: boolean;
+  canManagePrayer: boolean;
 }

@@ -107,8 +107,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAdmin = role === 'admin';
   const isOfficer = role === 'attendance_officer';
   const isFinanceOfficer = role === 'finance_officer';
+  const isChildrenOfficer = role === 'children_officer';
+  const isPrayerOfficer = role === 'prayer_officer';
+  
   const canManageAttendance = isAdmin || isOfficer;
   const canManageFinances = isAdmin || isFinanceOfficer;
+  const canManageChildren = isAdmin || isChildrenOfficer;
+  const canManagePrayer = isAdmin || isPrayerOfficer;
 
   return (
     <AuthContext.Provider
@@ -123,8 +128,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAdmin,
         isOfficer,
         isFinanceOfficer,
+        isChildrenOfficer,
+        isPrayerOfficer,
         canManageAttendance,
         canManageFinances,
+        canManageChildren,
+        canManagePrayer,
       }}
     >
       {children}

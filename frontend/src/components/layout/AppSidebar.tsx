@@ -16,6 +16,8 @@ import {
   Moon,
   Banknote,
   Building2,
+  Baby,
+  HandHelping,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -30,6 +32,8 @@ interface MenuItem {
   path: string;
   adminOnly?: boolean;
   financeOnly?: boolean;
+  childrenOnly?: boolean;
+  prayerOnly?: boolean;
 }
 
 const menuItems: MenuItem[] = [
@@ -40,6 +44,8 @@ const menuItems: MenuItem[] = [
   { icon: AlertTriangle, label: 'Follow-Up', path: '/follow-up' },
   { icon: Banknote, label: 'Financials', path: '/financials', financeOnly: true },
   { icon: Building2, label: 'Departments', path: '/departments' },
+  { icon: Baby, label: 'Children', path: '/children', childrenOnly: true },
+  { icon: HandHelping, label: 'Prayer Requests', path: '/prayer-requests', prayerOnly: true },
   { icon: History, label: 'History', path: '/history' },
   { icon: BarChart3, label: 'Reports', path: '/reports' },
   { icon: Settings, label: 'Settings', path: '/settings' },
@@ -55,7 +61,9 @@ interface AppSidebarProps {
 
 export function AppSidebar({ isCollapsed, onToggle, isMobile, mobileOpen, onMobileClose }: AppSidebarProps) {
   const location = useLocation();
-  const { user, role, signOut, isAdmin, isFinanceOfficer } = useAuth();
+  const { user, role, signOut, isAdmin, isFinanceOfficer, 
+    isChildrenOfficer, isPrayerOfficer 
+  } = useAuth();
   const { theme, setTheme } = useTheme();
 
   const getUserInitials = () => {
@@ -68,6 +76,8 @@ export function AppSidebar({ isCollapsed, onToggle, isMobile, mobileOpen, onMobi
       case 'admin': return 'Administrator';
       case 'attendance_officer': return 'Attendance Officer';
       case 'finance_officer': return 'Finance Officer';
+      case 'children_officer': return 'Children Officer';
+      case 'prayer_officer': return 'Prayer Officer';
       case 'viewer': return 'Viewer';
       default: return 'Pending';
     }
@@ -95,6 +105,8 @@ export function AppSidebar({ isCollapsed, onToggle, isMobile, mobileOpen, onMobi
               location={location}
               isAdmin={isAdmin}
               isFinanceOfficer={isFinanceOfficer}
+              isChildrenOfficer={isChildrenOfficer}
+              isPrayerOfficer={isPrayerOfficer}
               user={user}
               role={role}
               signOut={signOut}
@@ -123,6 +135,8 @@ export function AppSidebar({ isCollapsed, onToggle, isMobile, mobileOpen, onMobi
         location={location}
         isAdmin={isAdmin}
         isFinanceOfficer={isFinanceOfficer}
+        isChildrenOfficer={isChildrenOfficer}
+        isPrayerOfficer={isPrayerOfficer}
         user={user}
         role={role}
         signOut={signOut}
@@ -142,6 +156,8 @@ interface SidebarContentProps {
   location: ReturnType<typeof useLocation>;
   isAdmin: boolean;
   isFinanceOfficer: boolean;
+  isChildrenOfficer: boolean;
+  isPrayerOfficer: boolean;
   user: { email?: string; username?: string } | null;
   role: string | null;
   signOut: () => void;
@@ -153,7 +169,8 @@ interface SidebarContentProps {
 }
 
 function SidebarContent({
-  isCollapsed, onToggle, location, isAdmin, isFinanceOfficer, user, signOut,
+  isCollapsed, onToggle, location, isAdmin, isFinanceOfficer, 
+  isChildrenOfficer, isPrayerOfficer, user, signOut,
   getUserInitials, getRoleLabel, onNavClick, theme, setTheme,
 }: SidebarContentProps) {
   return (
@@ -193,6 +210,8 @@ function SidebarContent({
           {menuItems.map((item) => {
             if (item.adminOnly && !isAdmin) return null;
             if (item.financeOnly && !isAdmin && !isFinanceOfficer) return null;
+            if (item.childrenOnly && !isAdmin && !isChildrenOfficer) return null;
+            if (item.prayerOnly && !isAdmin && !isPrayerOfficer) return null;
             const isActive = location.pathname === item.path;
             return (
               <li key={item.path}>

@@ -6,6 +6,8 @@ class Role(models.TextChoices):
     ADMIN = 'admin', 'Admin'
     ATTENDANCE_OFFICER = 'attendance_officer', 'Attendance Officer'
     FINANCE_OFFICER = 'finance_officer', 'Finance Officer'
+    CHILDREN_OFFICER = 'children_officer', 'Children Officer'
+    PRAYER_OFFICER = 'prayer_officer', 'Prayer Officer'
     VIEWER = 'viewer', 'Viewer'
 
 class Gender(models.TextChoices):
@@ -37,6 +39,11 @@ class PaymentMethod(models.TextChoices):
     POS = 'pos', 'POS'
     CHEQUE = 'cheque', 'Cheque'
     ONLINE = 'online', 'Online'
+
+class PrayerStatus(models.TextChoices):
+    PENDING = 'pending', 'Pending'
+    PRAYING = 'praying', 'Praying'
+    ANSWERED = 'answered', 'Answered'
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
@@ -166,3 +173,49 @@ class Contribution(models.Model):
     def __str__(self):
         member_name = self.member.full_name if self.member else "Anonymous"
         return f"{self.contribution_type} - {member_name} - {self.amount} ({self.date})"
+
+class Child(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    full_name = models.CharField(max_length=255)
+    gender = models.CharField(max_length=10, choices=Gender.choices)
+    date_of_birth = models.DateField()
+    allergies = models.TextField(blank=True, null=True)
+    parent_1 = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='children_as_parent_1')
+    parent_2 = models.ForeignKey(Member, on_delete=models.SET_NULL, null=True, blank=True, related_name='children_as_parent_2')
+    emergency_contact = models.CharField(max_length=255, blank=True, null=True)
+    check_in_code = models.CharField(max_length=10, unique=True, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.full_name
+
+    def save(self, *args, **kwargs):
+        if not self.check_in_code:
+            self.check_in_code = str(uuid.uuid4())[:6].upper()
+        super().save(*args, **kwargs)
+
+class ChildCheckIn(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    child = models.ForeignKey(Child, on_delete=models.CASCADE, related_name='check_ins')
+    service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='child_check_ins')
+    checked_in_at = models.DateTimeField(auto_now_add=True)
+    checked_out_at = models.DateTimeField(blank=True, null=True)
+    checked_in_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='child_check_ins_managed')
+
+    def __str__(self):
+        return f"{self.child.full_name} - {self.service.name}"
+
+class PrayerRequest(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    member = models.ForeignKey(Member, on_delete=models.SET_NULL, null=True, blank=True, related_name='prayer_requests')
+    requester_name = models.CharField(max_length=255, blank=True, null=True) # For non-members or anonymous
+    request_text = models.TextField()
+    is_anonymous = models.BooleanField(default=False)
+    status = models.CharField(max_length=20, choices=PrayerStatus.choices, default=PrayerStatus.PENDING)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        name = "Anonymous" if self.is_anonymous else (self.member.full_name if self.member else self.requester_name)
+        return f"Prayer for {name} - {self.status}"

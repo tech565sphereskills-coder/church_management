@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Profile, Member, Service, AttendanceRecord, MemberFollowUp, Contribution, Department
+from .models import Profile, Member, Service, AttendanceRecord, MemberFollowUp, Contribution, Department, Child, ChildCheckIn, PrayerRequest
 from django.contrib.auth.models import User
 
 class UserSerializer(serializers.ModelSerializer):
@@ -71,4 +71,27 @@ class ContributionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Contribution
+        fields = '__all__'
+
+class ChildSerializer(serializers.ModelSerializer):
+    parent_1_name = serializers.CharField(source='parent_1.full_name', read_only=True)
+    parent_2_name = serializers.CharField(source='parent_2.full_name', read_only=True)
+
+    class Meta:
+        model = Child
+        fields = '__all__'
+
+class ChildCheckInSerializer(serializers.ModelSerializer):
+    child_name = serializers.CharField(source='child.full_name', read_only=True)
+    service_name = serializers.CharField(source='service.name', read_only=True)
+
+    class Meta:
+        model = ChildCheckIn
+        fields = '__all__'
+
+class PrayerRequestSerializer(serializers.ModelSerializer):
+    member_name = serializers.CharField(source='member.full_name', read_only=True)
+
+    class Meta:
+        model = PrayerRequest
         fields = '__all__'

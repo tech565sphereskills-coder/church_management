@@ -34,6 +34,26 @@ class IsAttendanceOfficerOrHigher(permissions.BasePermission):
         
         return request.user.profile.role in ['admin', 'attendance_officer']
 
+class IsChildrenOfficerOrHigher(permissions.BasePermission):
+    """
+    Allows access to users with 'admin' or 'children_officer' roles.
+    """
+    def has_permission(self, request, view):
+        if not (request.user and request.user.is_authenticated and hasattr(request.user, 'profile')):
+            return False
+        
+        return request.user.profile.role in ['admin', 'children_officer']
+
+class IsPrayerOfficerOrHigher(permissions.BasePermission):
+    """
+    Allows access to users with 'admin' or 'prayer_officer' roles.
+    """
+    def has_permission(self, request, view):
+        if not (request.user and request.user.is_authenticated and hasattr(request.user, 'profile')):
+            return False
+        
+        return request.user.profile.role in ['admin', 'prayer_officer']
+
 class IsViewerOrHigher(permissions.BasePermission):
     """
     Allows access to users with 'admin', 'attendance_officer', or 'viewer' roles.
@@ -42,7 +62,7 @@ class IsViewerOrHigher(permissions.BasePermission):
         if not (request.user and request.user.is_authenticated and hasattr(request.user, 'profile')):
             return False
         
-        return request.user.profile.role in ['admin', 'attendance_officer', 'finance_officer', 'viewer']
+        return request.user.profile.role in ['admin', 'attendance_officer', 'finance_officer', 'children_officer', 'prayer_officer', 'viewer']
 
 class ReadOnly(permissions.BasePermission):
     """

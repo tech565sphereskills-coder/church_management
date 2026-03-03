@@ -4,14 +4,22 @@ from django.contrib.auth.models import User
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from .models import Profile, Member, Service, AttendanceRecord, MemberFollowUp, Contribution, Department
+from .models import (
+    Profile, Member, Service, AttendanceRecord, MemberFollowUp, 
+    Contribution, Department, Child, ChildCheckIn, PrayerRequest
+)
 from .serializers import (
     AttendanceRecordSerializer, MemberFollowUpSerializer,
     UserSerializer, RegisterSerializer, ContributionSerializer,
     DepartmentSerializer, ProfileSerializer, MemberSerializer,
-    ServiceSerializer
+    ServiceSerializer, ChildSerializer, ChildCheckInSerializer,
+    PrayerRequestSerializer
 )
-from .permissions import IsAdmin, IsFinanceOfficer, IsAttendanceOfficerOrHigher, IsViewerOrHigher, ReadOnly
+from .permissions import (
+    IsAdmin, IsFinanceOfficer, IsAttendanceOfficerOrHigher, 
+    IsViewerOrHigher, ReadOnly, IsChildrenOfficerOrHigher,
+    IsPrayerOfficerOrHigher
+)
 
 class RegisterView(viewsets.GenericViewSet, viewsets.mixins.CreateModelMixin):
     queryset = User.objects.all()
@@ -320,3 +328,70 @@ class DepartmentViewSet(viewsets.ModelViewSet):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [IsAdmin()]
         return [permissions.IsAuthenticated()]
+
+class ChildViewSet(viewsets.ModelViewSet):
+    queryset = Child.objects.all().order_by('full_name')
+    serializer_class = ChildSerializer
+    
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [IsChildrenOfficerOrHigher()]
+        return [IsViewerOrHigher()]
+
+class ChildCheckInViewSet(viewsets.ModelViewSet):
+    queryset = ChildCheckIn.objects.all().order_by('-checked_in_at')
+    serializer_class = ChildCheckInSerializer
+    
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy', 'checkout']:
+            return [IsChildrenOfficerOrHigher()]
+        return [IsViewerOrHigher()]
+
+    def perform_create(self, serializer):
+        serializer.save(checked_in_by=self.request.user)
+
+    @action(detail=True, methods=['post'])
+    def checkout(self, request, pk=None):
+        checkin = self.get_object()
+        if checkin.checked_out_at:
+            return Response({'error': 'Child already checked out'}, status=400)
+        
+        checkin.checked_out_at = timezone.now()
+        checkin.save()
+        return Response({'status': 'checked out successfully'})
+
+class PrayerRequestViewSet(viewsets.ModelViewSet):
+    queryset = PrayerRequest.objects.all().order_by('-created_at')
+    serializer_class = PrayerRequestSerializer
+    
+    def get_permissions(self):
+        if self.action == 'create':
+            return [permissions.AllowAny()]
+        if self.action in ['update', 'partial_update', 'destroy', 'mark_as_prayed', 'mark_as_answered']:
+            return [IsPrayerOfficerOrHigher()]
+        return [IsPrayerOfficerOrHigher()] # Only prayer team can see the list
+
+    def perform_create(self, serializer):
+        if self.request.user.is_authenticated:
+            # If logged in, try to link to member profile if exists
+            try:
+                member = Member.objects.get(email=self.request.user.email)
+                serializer.save(member=member)
+            except Member.DoesNotExist:
+                serializer.save()
+        else:
+            serializer.save()
+
+    @action(detail=True, methods=['post'])
+    def mark_as_prayed(self, request, pk=None):
+        request_obj = self.get_object()
+        request_obj.status = 'praying'
+        request_obj.save()
+        return Response({'status': 'marked as praying'})
+
+    @action(detail=True, methods=['post'])
+    def mark_as_answered(self, request, pk=None):
+        request_obj = self.get_object()
+        request_obj.status = 'answered'
+        request_obj.save()
+        return Response({'status': 'marked as answered'})
