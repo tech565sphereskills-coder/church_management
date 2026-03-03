@@ -45,12 +45,24 @@ const App = () => (
                   <Route path="/attendance" element={<Attendance />} />
                   <Route path="/members" element={<Members />} />
                   <Route path="/members/:memberId" element={<MemberProfile />} />
-                  <Route path="/history" element={<History />} />
-                  <Route path="/reports" element={<Reports />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="/user-management" element={<UserManagement />} />
-                  <Route path="/follow-up" element={<FollowUp />} />
-                  <Route path="/messaging" element={<Messaging />} />
+                  <Route path="/history" element={<ProtectedRoute requiredRole="attendance_officer" />}>
+                    <Route index element={<History />} />
+                  </Route>
+                  <Route path="/reports" element={<ProtectedRoute requiredRole="attendance_officer" />}>
+                    <Route index element={<Reports />} />
+                  </Route>
+                  <Route path="/settings" element={<ProtectedRoute requiredRole="admin" />}>
+                    <Route index element={<Settings />} />
+                  </Route>
+                  <Route path="/user-management" element={<ProtectedRoute requiredRole="admin" />}>
+                    <Route index element={<UserManagement />} />
+                  </Route>
+                  <Route path="/follow-up" element={<ProtectedRoute requiredRole="attendance_officer" />}>
+                    <Route index element={<FollowUp />} />
+                  </Route>
+                  <Route path="/messaging" element={<ProtectedRoute requiredRole="attendance_officer" />}>
+                    <Route index element={<Messaging />} />
+                  </Route>
                 </Route>
               </Route>
               

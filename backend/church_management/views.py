@@ -10,6 +10,7 @@ from .serializers import (
     AttendanceRecordSerializer, MemberFollowUpSerializer,
     UserSerializer, RegisterSerializer
 )
+from .permissions import IsAdmin, IsAttendanceOfficerOrHigher, IsViewerOrHigher, ReadOnly
 
 class RegisterView(viewsets.GenericViewSet, viewsets.mixins.CreateModelMixin):
     queryset = User.objects.all()
@@ -19,7 +20,7 @@ class RegisterView(viewsets.GenericViewSet, viewsets.mixins.CreateModelMixin):
 class ProfileViewSet(viewsets.ModelViewSet):
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsViewerOrHigher]
 
     @action(detail=False, methods=['get'])
     def me(self, request):
@@ -27,7 +28,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(profile)
         return Response(serializer.data)
 
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post'], permission_classes=[IsAdmin])
     def assign_role(self, request, pk=None):
         if not (hasattr(request.user, 'profile') and request.user.profile.role == 'admin'):
             return Response({'error': 'Permission denied'}, status=403)
@@ -40,7 +41,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
             return Response({'status': f'role {role} assigned'})
         return Response({'error': 'invalid role'}, status=400)
 
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post'], permission_classes=[IsAdmin])
     def remove_role(self, request, pk=None):
         if not (hasattr(request.user, 'profile') and request.user.profile.role == 'admin'):
             return Response({'error': 'Permission denied'}, status=403)
@@ -59,7 +60,11 @@ class ProfileViewSet(viewsets.ModelViewSet):
 class MemberViewSet(viewsets.ModelViewSet):
     queryset = Member.objects.all()
     serializer_class = MemberSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [IsAttendanceOfficerOrHigher()]
+        return [IsViewerOrHigher()]
 
     @action(detail=True, methods=['get'])
     def attendance(self, request, pk=None):
@@ -87,12 +92,18 @@ class MemberViewSet(viewsets.ModelViewSet):
 class ServiceViewSet(viewsets.ModelViewSet):
     queryset = Service.objects.all()
     serializer_class = ServiceSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAttendanceOfficerOrHigher]
 
 class AttendanceRecordViewSet(viewsets.ModelViewSet):
     queryset = AttendanceRecord.objects.all()
     serializer_class = AttendanceRecordSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_permissions(self):
+        if self.action == 'create':
+            return [IsAttendanceOfficerOrHigher()]
+        if self.action in ['update', 'partial_update', 'destroy']:
+            return [IsAdmin()]
+        return [IsViewerOrHigher()]
 
     def perform_create(self, serializer):
         serializer.save(marked_by=self.request.user)
@@ -180,7 +191,7 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
 class MemberFollowUpViewSet(viewsets.ModelViewSet):
     queryset = MemberFollowUp.objects.all()
     serializer_class = MemberFollowUpSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAttendanceOfficerOrHigher]
 
     @action(detail=False, methods=['post'])
     def calculate(self, request):
@@ -263,7 +274,7 @@ class SMSViewSet(viewsets.ViewSet):
         return Response({'status': 'sent'})
 
 class SettingsViewSet(viewsets.ViewSet):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAdmin]
 
     def list(self, request):
         return Response({
