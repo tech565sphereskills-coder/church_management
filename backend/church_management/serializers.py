@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import (
     Profile, Member, Service, AttendanceRecord, MemberFollowUp, 
     Contribution, Department, Child, ChildCheckIn, PrayerRequest, 
-    ChurchSettings, CommunicationLog
+    ChurchSettings, CommunicationLog, Expense
 )
 from django.contrib.auth.models import User
 
@@ -110,4 +110,11 @@ class CommunicationLogSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CommunicationLog
+        fields = '__all__'
+
+class ExpenseSerializer(serializers.ModelSerializer):
+    recorded_by_name = serializers.CharField(source='recorded_by.username', read_only=True)
+
+    class Meta:
+        model = Expense
         fields = '__all__'

@@ -12,14 +12,15 @@ from django.db.models.functions import TruncMonth
 from .models import (
     Profile, Member, Service, AttendanceRecord, MemberFollowUp, 
     Contribution, Department, Child, ChildCheckIn, PrayerRequest, ChurchSettings,
-    CommunicationLog
+    CommunicationLog, Expense
 )
 from .serializers import (
     AttendanceRecordSerializer, MemberFollowUpSerializer,
     UserSerializer, RegisterSerializer, ContributionSerializer,
     DepartmentSerializer, ProfileSerializer, MemberSerializer,
     ServiceSerializer, ChildSerializer, ChildCheckInSerializer,
-    PrayerRequestSerializer, ChurchSettingsSerializer, CommunicationLogSerializer
+    PrayerRequestSerializer, ChurchSettingsSerializer, CommunicationLogSerializer,
+    ExpenseSerializer
 )
 from .permissions import (
     IsAdmin, IsFinanceOfficer, IsAttendanceOfficerOrHigher, 
@@ -519,6 +520,54 @@ class ContributionViewSet(viewsets.ModelViewSet):
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
         response['Content-Disposition'] = 'attachment; filename=financials_export.xlsx'
+        return response
+
+class ExpenseViewSet(viewsets.ModelViewSet):
+    queryset = Expense.objects.all().order_by('-date', '-created_at')
+    serializer_class = ExpenseSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdmin | IsFinanceOfficer]
+
+    def perform_create(self, serializer):
+        serializer.save(recorded_by=self.request.user)
+
+    @action(detail=False, methods=['get'])
+    def summary(self, request):
+        from django.db.models import Sum
+        month = request.query_params.get('month')
+        year = request.query_params.get('year')
+        
+        queryset = self.get_queryset()
+        if month and year:
+            queryset = queryset.filter(date__month=month, date__year=year)
+            
+        summary_data = queryset.values('category').annotate(total=Sum('amount'))
+        return Response(list(summary_data))
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAdmin])
+    def export_excel(self, request):
+        expenses = self.get_queryset().select_related('recorded_by').all()
+        data = []
+        for e in expenses:
+            data.append({
+                'Date': e.date,
+                'Description': e.description,
+                'Category': e.category,
+                'Amount': e.amount,
+                'Note': e.notes,
+                'Recorded By': e.recorded_by.username if e.recorded_by else 'Unknown',
+            })
+            
+        df = pd.DataFrame(data)
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Expenses')
+            
+        output.seek(0)
+        response = HttpResponse(
+            output.read(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename=expenses_export.xlsx'
         return response
 
 class DepartmentViewSet(viewsets.ModelViewSet):

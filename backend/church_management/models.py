@@ -45,6 +45,15 @@ class PrayerStatus(models.TextChoices):
     PRAYING = 'praying', 'Praying'
     ANSWERED = 'answered', 'Answered'
 
+class ExpenseCategory(models.TextChoices):
+    MAINTENANCE = 'maintenance', 'Maintenance'
+    UTILITIES = 'utilities', 'Utilities'
+    SALARY = 'salary', 'Salary / Welfare'
+    PROJECTS = 'projects', 'Church Projects'
+    ADMINISTRATION = 'administration', 'Administration'
+    OUTREACH = 'outreach', 'Outreach / Evangelism'
+    OTHER = 'other', 'Other'
+
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     full_name = models.CharField(max_length=255, blank=True, null=True)
@@ -168,6 +177,22 @@ class Contribution(models.Model):
     recorded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='recorded_contributions')
     notes = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.contribution_type} - {self.amount}"
+
+class Expense(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    description = models.CharField(max_length=255)
+    category = models.CharField(max_length=50, choices=ExpenseCategory.choices)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    date = models.DateField()
+    recorded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='recorded_expenses')
+    notes = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.description} - {self.amount}"
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):

@@ -5,7 +5,7 @@ from .views import (
     MemberFollowUpViewSet, RegisterView, StatsViewSet, SMSViewSet, 
     SettingsViewSet, ContributionViewSet, DepartmentViewSet,
     ChildViewSet, ChildCheckInViewSet, PrayerRequestViewSet,
-    CommunicationLogViewSet
+    CommunicationLogViewSet, ExpenseViewSet
 )
 
 router = DefaultRouter()
@@ -19,6 +19,7 @@ router.register(r'sms', SMSViewSet, basename='sms')
 router.register(r'communication-logs', CommunicationLogViewSet)
 # Settings moved to manual path below for singleton behavior
 router.register(r'contributions', ContributionViewSet)
+router.register(r'expenses', ExpenseViewSet)
 router.register(r'departments', DepartmentViewSet)
 router.register(r'children', ChildViewSet)
 router.register(r'child-checkins', ChildCheckInViewSet)
