@@ -12,6 +12,18 @@ class IsAdmin(permissions.BasePermission):
             request.user.profile.role == 'admin'
         )
 
+class IsFinanceOfficer(permissions.BasePermission):
+    """
+    Allows access only to users with the 'finance_officer' role.
+    """
+    def has_permission(self, request, view):
+        return bool(
+            request.user and 
+            request.user.is_authenticated and 
+            hasattr(request.user, 'profile') and 
+            request.user.profile.role == 'finance_officer'
+        )
+
 class IsAttendanceOfficerOrHigher(permissions.BasePermission):
     """
     Allows access to users with 'admin' or 'attendance_officer' roles.
@@ -30,7 +42,7 @@ class IsViewerOrHigher(permissions.BasePermission):
         if not (request.user and request.user.is_authenticated and hasattr(request.user, 'profile')):
             return False
         
-        return request.user.profile.role in ['admin', 'attendance_officer', 'viewer']
+        return request.user.profile.role in ['admin', 'attendance_officer', 'finance_officer', 'viewer']
 
 class ReadOnly(permissions.BasePermission):
     """

@@ -14,6 +14,7 @@ import { useAttendance } from '@/hooks/useAttendance';
 import { useMembers } from '@/hooks/useMembers';
 import { useFollowUp } from '@/hooks/useFollowUp';
 import { useAuth } from '@/hooks/useAuth';
+import { useFinancials } from '@/hooks/useFinancials';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,6 +25,7 @@ export default function Dashboard() {
   const { members, loading: membersLoading } = useMembers();
   const { getAttendanceStats } = useAttendance();
   const { followUpList } = useFollowUp();
+  const { summary: financialSummary, fetchSummary } = useFinancials();
   
   const [stats, setStats] = useState({
     todayAttendance: 0,
@@ -123,6 +125,24 @@ export default function Dashboard() {
           <StatCard title="Today's Attendance" value={stats.todayAttendance} icon={TrendingUp} delay={0.2} />
           <StatCard title="New This Month" value={stats.newThisMonth} icon={UserPlus} variant="accent" delay={0.3} />
           <StatCard title="Inactive Members" value={stats.inactiveMembers} icon={UserX} delay={0.4} />
+        </div>
+
+        {/* Financial Summary Stats */}
+        <div className="mt-8 grid gap-6 sm:grid-cols-2">
+          <StatCard 
+            title="Total Tithes (Current Month)" 
+            value={`\u20a6${financialSummary.find(s => s.contribution_type === 'tithe')?.total?.toLocaleString() || '0'}`} 
+            icon={TrendingUp} 
+            variant="primary"
+            delay={0.5} 
+          />
+          <StatCard 
+            title="Total Offerings (Current Month)" 
+            value={`\u20a6${financialSummary.find(s => s.contribution_type === 'offering')?.total?.toLocaleString() || '0'}`} 
+            icon={TrendingUp} 
+            variant="accent"
+            delay={0.6} 
+          />
         </div>
 
         {/* Follow-up Alert */}

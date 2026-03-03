@@ -14,6 +14,7 @@ import {
   MessageSquare,
   Sun,
   Moon,
+  Banknote,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,7 @@ interface MenuItem {
   label: string;
   path: string;
   adminOnly?: boolean;
+  financeOnly?: boolean;
 }
 
 const menuItems: MenuItem[] = [
@@ -35,6 +37,7 @@ const menuItems: MenuItem[] = [
   { icon: Users, label: 'Members', path: '/members' },
   { icon: MessageSquare, label: 'Messaging', path: '/messaging' },
   { icon: AlertTriangle, label: 'Follow-Up', path: '/follow-up' },
+  { icon: Banknote, label: 'Financials', path: '/financials', financeOnly: true },
   { icon: History, label: 'History', path: '/history' },
   { icon: BarChart3, label: 'Reports', path: '/reports' },
   { icon: Settings, label: 'Settings', path: '/settings' },
@@ -50,7 +53,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({ isCollapsed, onToggle, isMobile, mobileOpen, onMobileClose }: AppSidebarProps) {
   const location = useLocation();
-  const { user, role, signOut, isAdmin } = useAuth();
+  const { user, role, signOut, isAdmin, isFinanceOfficer } = useAuth();
   const { theme, setTheme } = useTheme();
 
   const getUserInitials = () => {
@@ -62,6 +65,7 @@ export function AppSidebar({ isCollapsed, onToggle, isMobile, mobileOpen, onMobi
     switch (role) {
       case 'admin': return 'Administrator';
       case 'attendance_officer': return 'Attendance Officer';
+      case 'finance_officer': return 'Finance Officer';
       case 'viewer': return 'Viewer';
       default: return 'Pending';
     }
@@ -88,6 +92,7 @@ export function AppSidebar({ isCollapsed, onToggle, isMobile, mobileOpen, onMobi
               onToggle={onToggle}
               location={location}
               isAdmin={isAdmin}
+              isFinanceOfficer={isFinanceOfficer}
               user={user}
               role={role}
               signOut={signOut}
@@ -115,6 +120,7 @@ export function AppSidebar({ isCollapsed, onToggle, isMobile, mobileOpen, onMobi
         onToggle={onToggle}
         location={location}
         isAdmin={isAdmin}
+        isFinanceOfficer={isFinanceOfficer}
         user={user}
         role={role}
         signOut={signOut}
@@ -133,7 +139,8 @@ interface SidebarContentProps {
   onToggle: () => void;
   location: ReturnType<typeof useLocation>;
   isAdmin: boolean;
-  user: any;
+  isFinanceOfficer: boolean;
+  user: { email?: string; username?: string } | null;
   role: string | null;
   signOut: () => void;
   getUserInitials: () => string;
@@ -144,7 +151,7 @@ interface SidebarContentProps {
 }
 
 function SidebarContent({
-  isCollapsed, onToggle, location, isAdmin, user, signOut,
+  isCollapsed, onToggle, location, isAdmin, isFinanceOfficer, user, signOut,
   getUserInitials, getRoleLabel, onNavClick, theme, setTheme,
 }: SidebarContentProps) {
   return (
@@ -183,6 +190,7 @@ function SidebarContent({
         <ul className="space-y-1">
           {menuItems.map((item) => {
             if (item.adminOnly && !isAdmin) return null;
+            if (item.financeOnly && !isAdmin && !isFinanceOfficer) return null;
             const isActive = location.pathname === item.path;
             return (
               <li key={item.path}>

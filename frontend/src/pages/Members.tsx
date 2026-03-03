@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -50,6 +50,8 @@ export default function Members() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
+  const [genderFilter, setGenderFilter] = useState<string>('all');
+  const [dateJoinedFilter, setDateJoinedFilter] = useState<string>('all');
   const [isNewMemberOpen, setIsNewMemberOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Member | null>(null);
   const [selectedMemberQR, setSelectedMemberQR] = useState<{ name: string; qrCode: string } | null>(null);
@@ -63,14 +65,32 @@ export default function Members() {
     return members.filter((member) => {
       const matchesSearch =
         member.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        member.phone.includes(searchQuery);
+        member.phone.includes(searchQuery) ||
+        member.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        member.address?.toLowerCase().includes(searchQuery.toLowerCase());
+      
       const matchesStatus = statusFilter === 'all' || member.status === statusFilter;
       const matchesDepartment = departmentFilter === 'all' || member.department === departmentFilter;
-      return matchesSearch && matchesStatus && matchesDepartment;
-    });
-  }, [members, searchQuery, statusFilter, departmentFilter]);
+      const matchesGender = genderFilter === 'all' || member.gender === genderFilter;
+      
+      let matchesDate = true;
+      if (dateJoinedFilter !== 'all') {
+        const joinedDate = new Date(member.date_joined);
+        const now = new Date();
+        if (dateJoinedFilter === 'last_30_days') {
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(now.getDate() - 30);
+          matchesDate = joinedDate >= thirtyDaysAgo;
+        } else if (dateJoinedFilter === 'this_year') {
+          matchesDate = joinedDate.getFullYear() === now.getFullYear();
+        }
+      }
 
-  useMemo(() => { setCurrentPage(1); }, [searchQuery, statusFilter, departmentFilter]);
+      return matchesSearch && matchesStatus && matchesDepartment && matchesGender && matchesDate;
+    });
+  }, [members, searchQuery, statusFilter, departmentFilter, genderFilter, dateJoinedFilter]);
+
+  useEffect(() => { setCurrentPage(1); }, [searchQuery, statusFilter, departmentFilter, genderFilter, dateJoinedFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredMembers.length / PAGE_SIZE));
   const paginatedMembers = filteredMembers.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
@@ -216,13 +236,29 @@ export default function Members() {
               </SelectContent>
             </Select>
             <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-              <SelectTrigger className="w-40"><SelectValue placeholder="Department" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Departments</SelectItem>
-                {departments.map((dept) => <SelectItem key={dept} value={dept}>{dept}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
+               <SelectTrigger className="w-40"><SelectValue placeholder="Department" /></SelectTrigger>
+               <SelectContent>
+                 <SelectItem value="all">All Departments</SelectItem>
+                 {departments.map((dept) => <SelectItem key={dept} value={dept}>{dept}</SelectItem>)}
+               </SelectContent>
+             </Select>
+             <Select value={genderFilter} onValueChange={setGenderFilter}>
+               <SelectTrigger className="w-32"><SelectValue placeholder="Gender" /></SelectTrigger>
+               <SelectContent>
+                 <SelectItem value="all">All Genders</SelectItem>
+                 <SelectItem value="male">Male</SelectItem>
+                 <SelectItem value="female">Female</SelectItem>
+               </SelectContent>
+             </Select>
+             <Select value={dateJoinedFilter} onValueChange={setDateJoinedFilter}>
+               <SelectTrigger className="w-44"><SelectValue placeholder="Joined" /></SelectTrigger>
+               <SelectContent>
+                 <SelectItem value="all">Any Time</SelectItem>
+                 <SelectItem value="last_30_days">Last 30 Days</SelectItem>
+                 <SelectItem value="this_year">This Year</SelectItem>
+               </SelectContent>
+             </Select>
+           </div>
           <div className="flex gap-2">
             {selectedIds.size > 0 && (
               <Button variant="outline" onClick={handleBulkSMS}>

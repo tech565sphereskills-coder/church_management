@@ -17,6 +17,7 @@ import Settings from "./pages/Settings";
 import UserManagement from "./pages/UserManagement";
 import FollowUp from "./pages/FollowUp";
 import Messaging from "./pages/Messaging";
+import Financials from "./pages/Financials";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
@@ -62,6 +63,9 @@ const App = () => (
                   </Route>
                   <Route path="/messaging" element={<ProtectedRoute requiredRole="attendance_officer" />}>
                     <Route index element={<Messaging />} />
+                  </Route>
+                  <Route path="/financials" element={<ProtectedRoute requiredRole={['admin', 'finance_officer']} />}>
+                    <Route index element={<Financials />} />
                   </Route>
                 </Route>
               </Route>

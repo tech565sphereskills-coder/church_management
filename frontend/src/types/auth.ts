@@ -1,4 +1,4 @@
-export type AppRole = 'admin' | 'attendance_officer' | 'viewer';
+export type AppRole = 'admin' | 'attendance_officer' | 'finance_officer' | 'viewer';
 
 export interface User {
   id: string;
@@ -16,5 +16,7 @@ export interface AuthContextType {
   signOut: () => Promise<void>;
   isAdmin: boolean;
   isOfficer: boolean;
+  isFinanceOfficer: boolean;
   canManageAttendance: boolean;
+  canManageFinances: boolean;
 }

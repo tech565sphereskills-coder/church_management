@@ -4,13 +4,13 @@ from django.contrib.auth.models import User
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from .models import Profile, Member, Service, AttendanceRecord, MemberFollowUp
+from .models import Profile, Member, Service, AttendanceRecord, MemberFollowUp, Contribution
 from .serializers import (
     ProfileSerializer, MemberSerializer, ServiceSerializer, 
     AttendanceRecordSerializer, MemberFollowUpSerializer,
-    UserSerializer, RegisterSerializer
+    UserSerializer, RegisterSerializer, ContributionSerializer
 )
-from .permissions import IsAdmin, IsAttendanceOfficerOrHigher, IsViewerOrHigher, ReadOnly
+from .permissions import IsAdmin, IsFinanceOfficer, IsAttendanceOfficerOrHigher, IsViewerOrHigher, ReadOnly
 
 class RegisterView(viewsets.GenericViewSet, viewsets.mixins.CreateModelMixin):
     queryset = User.objects.all()
@@ -289,3 +289,24 @@ class SettingsViewSet(viewsets.ViewSet):
 
     def partial_update(self, request):
         return Response({'status': 'updated'})
+
+class ContributionViewSet(viewsets.ModelViewSet):
+    queryset = Contribution.objects.all().order_by('-date', '-created_at')
+    serializer_class = ContributionSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdmin | IsFinanceOfficer]
+
+    def perform_create(self, serializer):
+        serializer.save(recorded_by=self.request.user)
+
+    @action(detail=False, methods=['get'])
+    def summary(self, request):
+        from django.db.models import Sum
+        month = request.query_params.get('month')
+        year = request.query_params.get('year')
+        
+        queryset = self.get_queryset()
+        if month and year:
+            queryset = queryset.filter(date__month=month, date__year=year)
+            
+        summary_data = queryset.values('contribution_type').annotate(total=Sum('amount'))
+        return Response(list(summary_data))

@@ -216,35 +216,70 @@ export default function History() {
               </p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Member</TableHead>
-                  <TableHead>Service Date</TableHead>
-                  <TableHead>Service Type</TableHead>
-                  <TableHead>Service Name</TableHead>
-                  <TableHead>Checked In</TableHead>
-                  <TableHead>Checked In</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Member</TableHead>
+                      <TableHead>Service Date</TableHead>
+                      <TableHead>Service Type</TableHead>
+                      <TableHead>Service Name</TableHead>
+                      <TableHead>Checked In</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {records.map((record) => (
+                      <TableRow key={record.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                              <User className="h-4 w-4 text-primary" />
+                            </div>
+                            <span className="font-medium">{record.member_name}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {record.service_date && format(new Date(record.service_date), 'PPP')}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              record.service_type === 'sunday_service' && 'border-primary/30 bg-primary/10 text-primary',
+                              record.service_type === 'midweek_service' && 'border-rccg-green/30 bg-rccg-green/10 text-rccg-green',
+                              record.service_type === 'special_program' && 'border-accent/30 bg-accent/10 text-accent'
+                            )}
+                          >
+                            {SERVICE_TYPE_LABELS[record.service_type] || record.service_type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{record.service_name}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {format(new Date(record.marked_at), 'p')}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile Cards View */}
+              <div className="grid gap-4 p-4 md:hidden">
                 {records.map((record) => (
-                  <TableRow key={record.id}>
-                    <TableCell>
+                  <div key={record.id} className="rounded-lg border bg-card p-4 shadow-sm">
+                    <div className="mb-3 flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
                           <User className="h-4 w-4 text-primary" />
                         </div>
-                        <span className="font-medium">{record.member_name}</span>
+                        <span className="font-semibold">{record.member_name}</span>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      {record.service_date && format(new Date(record.service_date), 'PPP')}
-                    </TableCell>
-                    <TableCell>
                       <Badge
                         variant="outline"
                         className={cn(
+                          "text-[10px]",
                           record.service_type === 'sunday_service' && 'border-primary/30 bg-primary/10 text-primary',
                           record.service_type === 'midweek_service' && 'border-rccg-green/30 bg-rccg-green/10 text-rccg-green',
                           record.service_type === 'special_program' && 'border-accent/30 bg-accent/10 text-accent'
@@ -252,15 +287,19 @@ export default function History() {
                       >
                         {SERVICE_TYPE_LABELS[record.service_type] || record.service_type}
                       </Badge>
-                    </TableCell>
-                    <TableCell>{record.service_name}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {format(new Date(record.marked_at), 'p')}
-                    </TableCell>
-                  </TableRow>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="text-muted-foreground">Date:</div>
+                      <div>{record.service_date && format(new Date(record.service_date), 'PP')}</div>
+                      <div className="text-muted-foreground">Service:</div>
+                      <div>{record.service_name}</div>
+                      <div className="text-muted-foreground">Time:</div>
+                      <div className="text-muted-foreground">{format(new Date(record.marked_at), 'p')}</div>
+                    </div>
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+            </>
           )}
         </motion.div>
       </div>

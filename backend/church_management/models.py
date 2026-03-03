@@ -5,6 +5,7 @@ import uuid
 class Role(models.TextChoices):
     ADMIN = 'admin', 'Admin'
     ATTENDANCE_OFFICER = 'attendance_officer', 'Attendance Officer'
+    FINANCE_OFFICER = 'finance_officer', 'Finance Officer'
     VIEWER = 'viewer', 'Viewer'
 
 class Gender(models.TextChoices):
@@ -20,6 +21,22 @@ class ServiceType(models.TextChoices):
     SUNDAY_SERVICE = 'sunday_service', 'Sunday Service'
     MIDWEEK_SERVICE = 'midweek_service', 'Midweek Service'
     SPECIAL_PROGRAM = 'special_program', 'Special Program'
+
+class ContributionType(models.TextChoices):
+    TITHE = 'tithe', 'Tithe'
+    OFFERING = 'offering', 'Offering'
+    WELFARE = 'welfare', 'Welfare'
+    BUILDING_FUND = 'building_fund', 'Building Fund'
+    THANKSGIVING = 'thanksgiving', 'Thanksgiving'
+    SEEDS = 'seeds', 'Seeds'
+    OTHER = 'other', 'Other'
+
+class PaymentMethod(models.TextChoices):
+    CASH = 'cash', 'Cash'
+    BANK_TRANSFER = 'bank_transfer', 'Bank Transfer'
+    POS = 'pos', 'POS'
+    CHEQUE = 'cheque', 'Cheque'
+    ONLINE = 'online', 'Online'
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
@@ -122,3 +139,19 @@ class MemberFollowUp(models.Model):
 
     def __str__(self):
         return f"Follow up for {self.member.full_name}"
+
+class Contribution(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    member = models.ForeignKey(Member, on_delete=models.SET_NULL, null=True, blank=True, related_name='contributions')
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    contribution_type = models.CharField(max_length=50, choices=ContributionType.choices)
+    date = models.DateField()
+    payment_method = models.CharField(max_length=50, choices=PaymentMethod.choices)
+    recorded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='recorded_contributions')
+    notes = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        member_name = self.member.full_name if self.member else "Anonymous"
+        return f"{self.contribution_type} - {member_name} - {self.amount} ({self.date})"

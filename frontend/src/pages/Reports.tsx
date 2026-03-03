@@ -41,7 +41,7 @@ export default function Reports() {
       document.body.appendChild(link);
       link.click();
       toast({ title: 'Export Complete', description: `Attendance records exported successfully.` });
-    } catch (error: any) {
+    } catch (error) {
       toast({ title: 'Export Failed', description: 'Failed to export attendance records', variant: 'destructive' });
     } finally { setExporting(null); }
   };
@@ -57,7 +57,7 @@ export default function Reports() {
       document.body.appendChild(link);
       link.click();
       toast({ title: 'Export Complete', description: `Members exported successfully.` });
-    } catch (error: any) {
+    } catch (error) {
       toast({ title: 'Export Failed', description: 'Failed to export members', variant: 'destructive' });
     } finally { setExporting(null); }
   };
@@ -90,11 +90,11 @@ export default function Reports() {
           </Button>
         </motion.div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
           {/* Monthly Attendance */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="chart-container">
             <h3 className="mb-4 text-lg font-semibold">Monthly Attendance</h3>
-            <div className="h-72">
+            <div className="h-64 sm:h-72">
               {monthlyLoading ? (
                 <div className="flex h-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
               ) : (
@@ -114,7 +114,7 @@ export default function Reports() {
           {/* Member Growth with New vs Returning */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="chart-container">
             <h3 className="mb-4 text-lg font-semibold">Member Growth (New vs Returning)</h3>
-            <div className="h-72">
+            <div className="h-64 sm:h-72">
               {growthLoading ? (
                 <div className="flex h-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
               ) : (
@@ -136,7 +136,7 @@ export default function Reports() {
           {/* Department Distribution */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="chart-container">
             <h3 className="mb-4 text-lg font-semibold">Members by Department</h3>
-            <div className="h-72">
+            <div className="h-64 sm:h-72">
               {departmentLoading ? (
                 <div className="flex h-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
               ) : departmentData.length === 0 ? (

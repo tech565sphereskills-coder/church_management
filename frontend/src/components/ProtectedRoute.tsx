@@ -2,7 +2,7 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 
 interface ProtectedRouteProps {
-  requiredRole?: 'admin' | 'attendance_officer' | 'viewer';
+  requiredRole?: import('@/types/auth').AppRole | import('@/types/auth').AppRole[];
   requireAnyRole?: boolean;
 }
 
@@ -40,16 +40,26 @@ export function ProtectedRoute({ requiredRole, requireAnyRole = true }: Protecte
 
   // Check for specific role requirement
   if (requiredRole) {
-    const roleHierarchy = {
-      admin: 3,
+    const roleHierarchy: Record<string, number> = {
+      admin: 4,
+      finance_officer: 3,
       attendance_officer: 2,
       viewer: 1,
     };
 
     const userRoleLevel = role ? roleHierarchy[role] : 0;
-    const requiredRoleLevel = roleHierarchy[requiredRole];
+    
+    let isAuthorized = false;
+    if (Array.isArray(requiredRole)) {
+      // If array, authorize if user has any of the literal roles
+      isAuthorized = requiredRole.includes(role as import('@/types/auth').AppRole);
+    } else {
+      // If single string, authorize based on hierarchy (higher or equal)
+      const requiredRoleLevel = roleHierarchy[requiredRole];
+      isAuthorized = userRoleLevel >= requiredRoleLevel;
+    }
 
-    if (userRoleLevel < requiredRoleLevel) {
+    if (!isAuthorized) {
       return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
           <div className="text-center">
