@@ -30,7 +30,7 @@ export function useSMS() {
 
   const fetchTemplates = useCallback(async () => {
     try {
-      const response = await api.get('/sms/templates/');
+      const response = await api.get('/sms-templates/');
       setTemplates(response.data);
     } catch (error) {
       console.error('Error fetching templates:', error);
@@ -78,7 +78,7 @@ export function useSMS() {
 
   const createTemplate = async (name: string, body: string) => {
     try {
-      await api.post('/sms/templates/', { name, body });
+      await api.post('/sms-templates/', { name, body });
       toast({ title: 'Template Created', description: `"${name}" template saved.` });
       await fetchTemplates();
       return true;
@@ -90,12 +90,22 @@ export function useSMS() {
 
   const deleteTemplate = async (id: string) => {
     try {
-      await api.delete(`/sms/templates/${id}/`);
+      await api.delete(`/sms-templates/${id}/`);
       await fetchTemplates();
     } catch (error) {
       console.error('Error deleting template:', error);
     }
   };
 
-  return { templates, messages, loading, sendSMS, createTemplate, deleteTemplate, fetchMessages };
+  const checkStatus = async () => {
+    try {
+      const response = await api.get('/sms/status/');
+      return response.data;
+    } catch (error) {
+      console.error('Error checking SMS status:', error);
+      return { connected: false };
+    }
+  };
+
+  return { templates, messages, loading, sendSMS, createTemplate, deleteTemplate, fetchMessages, checkStatus };
 }

@@ -65,15 +65,18 @@ export function StatCard({
         <p
           className={cn(
             'text-sm font-medium',
-            variant === 'default' && 'text-muted-foreground',
-            variant === 'primary' && 'text-primary-foreground/80',
-            variant === 'accent' && 'text-accent-foreground/80'
+            variant === 'default' && 'text-slate-600 dark:text-white font-semibold',
+            variant === 'primary' && 'text-primary-foreground',
+            variant === 'accent' && 'text-accent-foreground'
           )}
         >
           {title}
         </p>
         
-        <p className="mt-2 text-3xl font-bold tracking-tight">
+        <p className={cn(
+          "mt-2 text-3xl font-bold tracking-tight",
+          "dark:text-white"
+        )}>
           {typeof value === 'number' ? (
             <AnimatedNumber value={value} delay={delay + 0.1} />
           ) : (

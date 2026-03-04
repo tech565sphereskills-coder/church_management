@@ -9,13 +9,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
+  const [permissions, setPermissions] = useState({
+    can_manage_members: false,
+    can_manage_attendance: false,
+    can_manage_financials: false,
+    can_manage_departments: false,
+    can_manage_children: false,
+    can_manage_prayer_requests: false,
+    can_manage_calendar: false,
+    can_view_reports: false,
+    can_manage_settings: false,
+  });
 
   const fetchUserProfile = async () => {
     try {
       const response = await api.get('/profiles/me/');
-      const { id, email, username, role: userRole } = response.data;
+      const { 
+        id, email, username, role: userRole,
+        can_manage_members, can_manage_attendance, can_manage_financials,
+        can_manage_departments, can_manage_children, can_manage_prayer_requests,
+        can_manage_calendar, can_view_reports, can_manage_settings
+      } = response.data;
+      
       setUser({ id, email, username });
       setRole(userRole);
+      setPermissions({
+        can_manage_members, can_manage_attendance, can_manage_financials,
+        can_manage_departments, can_manage_children, can_manage_prayer_requests,
+        can_manage_calendar, can_view_reports, can_manage_settings
+      });
     } catch (error) {
       console.error('Error fetching profile:', error);
       setUser(null);
@@ -39,11 +61,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('Attempting sign-in for:', email);
       const response = await api.post('/auth/login/', { email, password });
       
-      // Handle different possible token structures
       const accessToken = response.data.access || response.data.access_token || response.data.token;
       const refreshToken = response.data.refresh || response.data.refresh_token;
-      
-      console.log('Sign-in response received. Tokens found:', !!accessToken, !!refreshToken);
       
       if (accessToken) {
         localStorage.setItem('access_token', accessToken);
@@ -51,13 +70,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       if (refreshToken) localStorage.setItem('refresh_token', refreshToken);
       
-      // Fetch profile and ensure it succeeds
       await fetchUserProfile();
       
       return { error: null };
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
-        console.error('Sign-in API Error:', error.response?.data);
         const detail = error.response?.data?.detail || 
                       error.response?.data?.non_field_errors?.[0] || 
                       JSON.stringify(error.response?.data) ||
@@ -77,7 +94,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: null };
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
-        console.error('Google Sign-in API Error:', error.response?.data);
         return { error: error.response?.data?.detail || 'Google login failed' };
       }
       return { error: 'Google login failed' };
@@ -90,7 +106,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: null };
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
-        console.error('Signup API Error:', error.response?.data);
         return { error: error.response?.data || 'Sign up failed' };
       }
       return { error: 'Sign up failed' };
@@ -105,15 +120,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const isAdmin = role === 'admin';
-  const isOfficer = role === 'attendance_officer';
-  const isFinanceOfficer = role === 'finance_officer';
-  const isChildrenOfficer = role === 'children_officer';
-  const isPrayerOfficer = role === 'prayer_officer';
+  const isOfficer = role === 'attendance_officer' || permissions.can_manage_attendance;
   
-  const canManageAttendance = isAdmin || isOfficer;
-  const canManageFinances = isAdmin || isFinanceOfficer;
-  const canManageChildren = isAdmin || isChildrenOfficer;
-  const canManagePrayer = isAdmin || isPrayerOfficer;
+  const canManageAttendance = isAdmin || permissions.can_manage_attendance;
+  const canManageFinances = isAdmin || permissions.can_manage_financials;
+  const canManageChildren = isAdmin || permissions.can_manage_children;
+  const canManagePrayer = isAdmin || permissions.can_manage_prayer_requests;
+  const canManageMembers = isAdmin || permissions.can_manage_members;
+  const canManageDepartments = isAdmin || permissions.can_manage_departments;
+  const canManageCalendar = isAdmin || permissions.can_manage_calendar;
+  const canViewReports = isAdmin || permissions.can_view_reports;
+  const canManageSettings = isAdmin || permissions.can_manage_settings;
 
   return (
     <AuthContext.Provider
@@ -127,13 +144,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signOut,
         isAdmin,
         isOfficer,
-        isFinanceOfficer,
-        isChildrenOfficer,
-        isPrayerOfficer,
+        isFinanceOfficer: isAdmin || role === 'finance_officer' || permissions.can_manage_financials,
+        isChildrenOfficer: isAdmin || role === 'children_officer' || permissions.can_manage_children,
+        isPrayerOfficer: isAdmin || role === 'prayer_officer' || permissions.can_manage_prayer_requests,
         canManageAttendance,
         canManageFinances,
         canManageChildren,
         canManagePrayer,
+        canManageMembers,
+        canManageDepartments,
+        canManageCalendar,
+        canViewReports,
+        canManageSettings,
       }}
     >
       {children}

@@ -23,4 +23,11 @@ export interface AuthContextType {
   canManageFinances: boolean;
   canManageChildren: boolean;
   canManagePrayer: boolean;
+  canManageMembers: boolean;
+  canManageDepartments: boolean;
+  canManageCalendar: boolean;
+  canViewReports: boolean;
+  canManageSettings: boolean;
 }
+
+export type PermissionKey = keyof Omit<AuthContextType, 'user' | 'role' | 'loading' | 'signIn' | 'signInWithGoogle' | 'signUp' | 'signOut' | 'isAdmin' | 'isOfficer' | 'isFinanceOfficer' | 'isChildrenOfficer' | 'isPrayerOfficer'>;

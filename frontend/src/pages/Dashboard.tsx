@@ -15,84 +15,85 @@ import { useMembers } from '@/hooks/useMembers';
 import { useFollowUp } from '@/hooks/useFollowUp';
 import { useAuth } from '@/hooks/useAuth';
 import { useFinancials } from '@/hooks/useFinancials';
+import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { DepartmentDistribution } from '@/components/dashboard/DepartmentDistribution';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { user, role } = useAuth();
-  const { members, loading: membersLoading } = useMembers();
   const { getAttendanceStats } = useAttendance();
   const { followUpList } = useFollowUp();
-  const { summary: financialSummary, fetchSummary } = useFinancials();
   
-  const [stats, setStats] = useState({
+  const { data: dashboardStats, isLoading: statsLoading } = useQuery({
+    queryKey: ['stats'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/stats/quick_stats/');
+        const qStats = response.data;
+        return {
+          todayAttendance: qStats.todayAttendance || 0,
+          totalMembers: qStats.totalMembers,
+          activeMembers: qStats.activeMembers,
+          newThisMonth: qStats.firstTimers,
+          inactiveMembers: qStats.inactiveMembers,
+          totalTithes: qStats.totalTithes,
+          totalOfferings: qStats.totalOfferings,
+        };
+      } catch (error) {
+        console.error('Dashboard Stats Error:', error);
+        throw error;
+      }
+    },
+    enabled: !!user,
+  });
+
+  const { data: deptData = [], isLoading: deptLoading } = useQuery({
+    queryKey: ['stats', 'departments'],
+    queryFn: async () => {
+      const response = await api.get('/stats/department_distribution/');
+      return response.data;
+    },
+    enabled: !!user,
+  });
+
+  const { data: weeklyData = [] } = useQuery({
+    queryKey: ['attendance', 'weekly'],
+    queryFn: async () => {
+      const response = await api.get('/attendance/weekly/');
+      return response.data;
+    },
+    enabled: !!user,
+  });
+
+  const { data: recentAttendance = [] } = useQuery({
+    queryKey: ['attendance', 'recent'],
+    queryFn: async () => {
+      const response = await api.get('/attendance/recent/');
+      return response.data;
+    },
+    enabled: !!user,
+  });
+
+  const stats = dashboardStats || {
     todayAttendance: 0,
     totalMembers: 0,
     activeMembers: 0,
     newThisMonth: 0,
     inactiveMembers: 0,
-  });
-  const [weeklyData, setWeeklyData] = useState<{ date: string; attendance: number }[]>([]);
-  const [recentAttendance, setRecentAttendance] = useState<{
-    id: string;
-    marked_at: string;
-    members: {
-      id: string;
-      full_name: string;
-      department: string | null;
-    };
-  }[]>([]);
-  const [loading, setLoading] = useState(true);
+    totalTithes: 0,
+    totalOfferings: 0,
+  };
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      if (!user) return;
-      
-      try {
-        const attendanceStats = await getAttendanceStats();
-        
-        const startOfMonth = new Date();
-        startOfMonth.setDate(1);
-        startOfMonth.setHours(0, 0, 0, 0);
-        
-        const newThisMonth = members.filter(m => 
-          new Date(m.created_at) >= startOfMonth
-        ).length;
-
-        const inactiveMembers = members.filter(m => m.status === 'inactive').length;
-
-        setStats({
-          ...attendanceStats,
-          newThisMonth,
-          inactiveMembers,
-        });
-
-        // Fetch weekly attendance data from backend
-        const weeklyResponse = await api.get('/attendance/weekly/');
-        setWeeklyData(weeklyResponse.data);
-
-        // Fetch recent attendance from backend
-        const recentResponse = await api.get('/attendance/recent/');
-        setRecentAttendance(recentResponse.data);
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (!membersLoading) {
-      fetchDashboardData();
-    }
-  }, [user, members, membersLoading, getAttendanceStats]);
+  const loading = statsLoading || deptLoading;
 
   const getInitials = (name: string) => {
     return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
-  if (loading || membersLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen">
         <Header title="Dashboard" subtitle="Loading..." />
@@ -108,6 +109,34 @@ export default function Dashboard() {
     );
   }
 
+  if (!dashboardStats && statsLoading === false) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
+        <Card className="max-w-md w-full border-red-100 shadow-lg">
+          <CardHeader className="text-center pb-2">
+            <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
+              <AlertTriangle className="h-6 w-6 text-red-600" />
+            </div>
+            <CardTitle className="text-xl text-red-900">Connection Error</CardTitle>
+          </CardHeader>
+          <CardContent className="text-center space-y-4">
+            <p className="text-slate-600">
+              We couldn't load the church statistics. This could be due to a server connection issue or an expired session.
+            </p>
+            <div className="pt-2">
+              <button 
+                onClick={() => window.location.reload()}
+                className="w-full py-2 px-4 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+              >
+                Refresh Dashboard
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen">
       <Header
@@ -115,7 +144,7 @@ export default function Dashboard() {
         subtitle={`Welcome back${role ? `, ${role.replace('_', ' ')}` : ''}. Here's your church overview.`}
       />
 
-      <div className="p-6">
+      <div className="flex-1 p-4 md:p-6 space-y-8 max-w-7xl mx-auto w-full">
         <WelcomeCard />
         
         {/* Stats Grid — 5 cards */}
@@ -128,17 +157,17 @@ export default function Dashboard() {
         </div>
 
         {/* Financial Summary Stats */}
-        <div className="mt-8 grid gap-6 sm:grid-cols-2">
+        <div className="mt-8 grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2">
           <StatCard 
             title="Total Tithes (Current Month)" 
-            value={`\u20a6${financialSummary.find(s => s.contribution_type === 'tithe')?.total?.toLocaleString() || '0'}`} 
+            value={`\u20a6${stats.totalTithes?.toLocaleString() || '0'}`} 
             icon={TrendingUp} 
             variant="primary"
             delay={0.5} 
           />
           <StatCard 
             title="Total Offerings (Current Month)" 
-            value={`\u20a6${financialSummary.find(s => s.contribution_type === 'offering')?.total?.toLocaleString() || '0'}`} 
+            value={`\u20a6${stats.totalOfferings?.toLocaleString() || '0'}`} 
             icon={TrendingUp} 
             variant="accent"
             delay={0.6} 
@@ -173,14 +202,19 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Charts Row 2 — Service Comparison + Most Consistent */}
+        {/* Charts Row 2 — Service Comparison + Distribution */}
+        <div className="mt-8 grid gap-6 lg:grid-cols-2">
+          <ServiceComparisonChart />
+          <DepartmentDistribution data={deptData} />
+        </div>
+
+        {/* Third Row — Consistent Members + Birthdays */}
         <div className="mt-8 grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2">
-            <ServiceComparisonChart />
+             <MostConsistentMembers />
           </div>
           <div className="space-y-6">
             <BirthdayCelebrants />
-            <MostConsistentMembers />
           </div>
         </div>
 

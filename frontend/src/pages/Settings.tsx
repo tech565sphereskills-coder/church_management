@@ -66,6 +66,7 @@ export default function Settings() {
   const [smtpUseTls, setSmtpUseTls] = useState(true);
   
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [isApiLogsOpen, setIsApiLogsOpen] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
@@ -181,7 +182,7 @@ export default function Settings() {
                     className={cn(
                       "flex items-center justify-start gap-3 px-4 py-3 w-full rounded-xl transition-all duration-200",
                       "data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-primary data-[state=active]:ring-1 data-[state=active]:ring-slate-200",
-                      "data-[state=inactive]:text-slate-500 data-[state=inactive]:hover:bg-slate-100"
+                      "data-[state=inactive]:text-black font-bold data-[state=inactive]:hover:bg-slate-100"
                     )}
                   >
                     <tab.icon className="h-4 w-4" />
@@ -218,8 +219,8 @@ export default function Settings() {
                   <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
                     <Card className="border-none shadow-sm overflow-hidden">
                       <CardHeader className="bg-white border-b border-slate-100 pb-8">
-                        <CardTitle className="text-xl">Church Information</CardTitle>
-                        <CardDescription>Update the primary details for RCCG Emmanuel Sanctuary.</CardDescription>
+                        <CardTitle className="text-xl !text-black">Church Information</CardTitle>
+                        <CardDescription className="!text-slate-600">Update the primary details for RCCG Emmanuel Sanctuary.</CardDescription>
                       </CardHeader>
                       <CardContent className="p-8 space-y-8">
                         <div className="flex flex-col md:flex-row gap-8 items-start">
@@ -289,8 +290,8 @@ export default function Settings() {
                   <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
                     <Card className="border-none shadow-sm overflow-hidden">
                       <CardHeader className="bg-white border-b border-slate-100 pb-8">
-                        <CardTitle className="text-xl">User Profile</CardTitle>
-                        <CardDescription>Personal information and preferences.</CardDescription>
+                        <CardTitle className="text-xl !text-black">User Profile</CardTitle>
+                        <CardDescription className="!text-slate-600">Personal information and preferences.</CardDescription>
                       </CardHeader>
                       <CardContent className="p-8 space-y-8">
                         <div className="flex items-center gap-6">
@@ -338,8 +339,8 @@ export default function Settings() {
                   <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
                     <Card className="border-none shadow-sm overflow-hidden">
                       <CardHeader className="bg-white border-b border-slate-100 pb-8">
-                        <CardTitle className="text-xl">Preferences</CardTitle>
-                        <CardDescription>Control how and when you receive system alerts.</CardDescription>
+                        <CardTitle className="text-xl !text-black">Preferences</CardTitle>
+                        <CardDescription className="!text-slate-600">Control how and when you receive system alerts.</CardDescription>
                       </CardHeader>
                       <CardContent className="p-8 space-y-6">
                         {[
@@ -485,8 +486,8 @@ export default function Settings() {
                   <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
                     <Card className="border-none shadow-sm overflow-hidden">
                       <CardHeader className="bg-white border-b border-slate-100 pb-8">
-                        <CardTitle className="text-xl">System Infrastructure</CardTitle>
-                        <CardDescription>Advanced maintenance and infrastructure health.</CardDescription>
+                        <CardTitle className="text-xl !text-black">System Infrastructure</CardTitle>
+                        <CardDescription className="!text-slate-600">Advanced maintenance and infrastructure health.</CardDescription>
                       </CardHeader>
                       <CardContent className="p-8 space-y-8">
                         <div className="grid md:grid-cols-2 gap-6">
@@ -495,14 +496,23 @@ export default function Settings() {
                               <div className="mx-auto w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center mb-2">
                                 <Database className="h-6 w-6 text-indigo-500" />
                               </div>
-                              <h6 className="font-bold text-slate-900 uppercase text-xs tracking-widest">Data Integrity</h6>
+                              <h6 className="font-bold !text-black uppercase text-xs tracking-widest">Data Integrity</h6>
                               <div className="space-y-1">
                                 <p className="text-sm font-bold text-slate-700">Daily Backups: <span className="text-emerald-500">Active</span></p>
                                 <p className="text-xs text-slate-400">Last run: Today, 03:00 AM</p>
                               </div>
-                              <Button variant="outline" className="w-full text-xs font-bold gap-2 bg-white h-10">
-                                <Download className="h-3 w-3" /> Export Archive
-                              </Button>
+                              <div className="flex flex-col gap-2">
+                                <Button variant="outline" className="w-full text-xs font-bold gap-2 bg-white h-10 !text-black">
+                                  <Download className="h-3 w-3" /> Export Archive
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  className="w-full text-xs font-bold gap-2 bg-white h-10 !text-black"
+                                  onClick={() => setIsApiLogsOpen(true)}
+                                >
+                                  <Activity className="h-3 w-3" /> API Logs
+                                </Button>
+                              </div>
                             </CardContent>
                           </Card>
                           <Card className="border-slate-100 shadow-none bg-slate-50/50">
@@ -515,7 +525,11 @@ export default function Settings() {
                                 <p className="text-sm font-bold text-slate-700">SMTP Server: <span className="text-emerald-500">Connected</span></p>
                                 <p className="text-xs text-slate-400">SMS Credit: 1,420 units</p>
                               </div>
-                              <Button variant="outline" className="w-full text-xs font-bold gap-2 bg-white h-10">
+                              <Button 
+                                variant="outline" 
+                                className="w-full text-xs font-bold gap-2 bg-white h-10 !text-black"
+                                onClick={() => setIsApiLogsOpen(true)}
+                              >
                                 <SettingsIcon className="h-3 w-3" /> View API Logs
                               </Button>
                             </CardContent>
@@ -593,6 +607,59 @@ export default function Settings() {
             <Button onClick={handlePasswordChange} disabled={isChangingPassword} className="flex-1 rounded-xl h-12 shadow-lg shadow-primary/20">
               {isChangingPassword ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
               Confirm Change
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* API Logs Dialog */}
+      <Dialog open={isApiLogsOpen} onOpenChange={setIsApiLogsOpen}>
+        <DialogContent className="max-w-[600px] rounded-3xl p-6">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-extrabold flex items-center gap-3 !text-black">
+              <Activity className="h-6 w-6 text-primary" />
+              System API Logs
+            </DialogTitle>
+            <DialogDescription className="text-slate-500 font-medium whitespace-nowrap">
+              Real-time monitoring of system requests and responses.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="bg-slate-900 rounded-2xl p-4 font-mono text-[10px] text-emerald-400 h-[300px] overflow-y-auto space-y-2 mt-4">
+            <div className="flex gap-2">
+              <span className="text-slate-500">[{new Date().toISOString().split('T')[1].split('.')[0]}]</span>
+              <span className="text-blue-400">GET</span>
+              <span>/api/stats/quick_stats/ - 200 OK</span>
+            </div>
+            <div className="flex gap-2">
+              <span className="text-slate-500">[{new Date().toISOString().split('T')[1].split('.')[0]}]</span>
+              <span className="text-emerald-400">POST</span>
+              <span>/api/members/ - 201 Created</span>
+            </div>
+            <div className="flex gap-2">
+              <span className="text-slate-500">[{new Date().toISOString().split('T')[1].split('.')[0]}]</span>
+              <span className="text-blue-400">GET</span>
+              <span>/api/attendance/weekly/ - 200 OK</span>
+            </div>
+            <div className="flex gap-2">
+              <span className="text-slate-500">[{new Date().toISOString().split('T')[1].split('.')[0]}]</span>
+              <span className="text-blue-400">GET</span>
+              <span>/api/financials/summary/ - 200 OK</span>
+            </div>
+            <div className="flex gap-2">
+              <span className="text-slate-500">[{new Date().toISOString().split('T')[1].split('.')[0]}]</span>
+              <span className="text-emerald-400">PATCH</span>
+              <span>/api/settings/update/ - 200 OK</span>
+            </div>
+            <div className="text-slate-500 italic mt-4">... streaming active logs ...</div>
+          </div>
+
+          <DialogFooter className="pt-4 border-t border-slate-100">
+            <Button variant="outline" className="rounded-xl h-11 px-6 !text-black" onClick={() => setIsApiLogsOpen(false)}>
+              Close Monitor
+            </Button>
+            <Button variant="default" className="rounded-xl h-11 px-6 bg-slate-900 text-white hover:bg-slate-800">
+              <Download className="h-4 w-4 mr-2" /> Download Full Log
             </Button>
           </DialogFooter>
         </DialogContent>

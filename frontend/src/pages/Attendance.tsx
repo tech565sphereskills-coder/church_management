@@ -1,6 +1,28 @@
 import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Check, UserPlus, Calendar, QrCode, Camera, Users, Filter, Download } from 'lucide-react';
+import { 
+  Search, 
+  Check, 
+  UserPlus, 
+  Calendar, 
+  QrCode, 
+  Camera, 
+  Users, 
+  Filter, 
+  Download,
+  UserCheck,
+  TrendingUp,
+  Award,
+  Zap,
+  Clock,
+  UserX,
+  ArrowDownCircle,
+  ArrowUpCircle,
+  Scale,
+  Edit2,
+  Trash2,
+  AlertTriangle
+} from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import api from '@/lib/api';
@@ -209,17 +231,35 @@ export default function Attendance() {
   };
 
   const filteredBrowseMembers = useMemo(() => {
-    return members.filter(m => {
-      const matchesDept = deptFilter === 'all' || m.department === deptFilter;
-      const isSearchMatch = !searchQuery || m.full_name.toLowerCase().includes(searchQuery.toLowerCase()) || m.phone.includes(searchQuery);
-      return matchesDept && isSearchMatch && m.status !== 'inactive';
-    });
+    return members
+      .filter(m => {
+        const matchesDept = deptFilter === 'all' || m.department === deptFilter;
+        const isSearchMatch = !searchQuery || m.full_name.toLowerCase().includes(searchQuery.toLowerCase()) || m.phone.includes(searchQuery);
+        return matchesDept && isSearchMatch && m.status !== 'inactive';
+      })
+      .sort((a, b) => a.full_name.localeCompare(b.full_name));
   }, [members, deptFilter, searchQuery]);
 
   const departments = useMemo(() => {
-    const depts = new Set(members.map(m => m.department).filter(Boolean));
-    return ['all', ...Array.from(depts)];
+    const depts = new Map();
+    members.forEach(m => {
+      if (m.department && m.department_name) {
+        depts.set(m.department, m.department_name);
+      }
+    });
+    return [
+      { id: 'all', name: 'All Departments' },
+      ...Array.from(depts.entries())
+        .map(([id, name]) => ({ id, name }))
+        .sort((a, b) => a.name.localeCompare(b.name))
+    ];
   }, [members]);
+
+  const absentMembers = useMemo(() => {
+    return members
+      .filter(m => !todayAttendance.includes(m.id) && !offlineMarkedIds.includes(m.id) && m.status === 'active')
+      .sort((a, b) => a.full_name.localeCompare(b.full_name));
+  }, [members, todayAttendance, offlineMarkedIds]);
 
   const showNoResults = searchQuery.trim() && !isSearching && searchResults.length === 0;
 
@@ -243,46 +283,110 @@ export default function Attendance() {
       <div className="p-6">
         {/* Offline Indicator */}
         <OfflineIndicator className="mb-4" />
-        {/* Service Info */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8 rounded-xl bg-primary p-6 text-primary-foreground"
-        >
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        {/* Stats Grid */}
+        <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex items-center gap-4 rounded-2xl border border-primary/10 bg-primary/5 p-5"
+          >
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-white shadow-lg shadow-primary/20">
+              <Users className="h-6 w-6" />
+            </div>
             <div>
-              <div className="flex items-center gap-2 text-primary-foreground/80">
-                <Calendar className="h-4 w-4" />
-                <span className="text-sm">{today}</span>
-              </div>
-              <h2 className="mt-2 text-2xl font-bold">
+              <p className="text-xs font-bold uppercase tracking-wider text-primary/60">Present Today</p>
+              <p className="text-2xl font-black text-slate-900">{todayAttendance.length + offlineMarkedIds.length}</p>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.1 }}
+            className="flex items-center gap-4 rounded-2xl border border-emerald-100 bg-emerald-50/50 p-5"
+          >
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-lg shadow-emerald-200">
+              <UserCheck className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-emerald-600/60">Attendance Rate</p>
+              <p className="text-2xl font-black text-slate-900">
+                {members.length > 0 
+                  ? `${Math.round(((todayAttendance.length + offlineMarkedIds.length) / members.length) * 100)}%` 
+                  : '0%'}
+              </p>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2 }}
+            className="flex items-center gap-4 rounded-2xl border border-orange-100 bg-orange-50/50 p-5"
+          >
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-500 text-white shadow-lg shadow-orange-200">
+              <Zap className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-orange-600/60">First Timers</p>
+              <p className="text-2xl font-black text-slate-900">
+                {members.filter(m => (todayAttendance.includes(m.id) || offlineMarkedIds.includes(m.id)) && m.status === 'first_timer').length}
+              </p>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.3 }}
+            className="flex items-center gap-4 rounded-2xl border border-indigo-100 bg-indigo-50/50 p-5"
+          >
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-500 text-white shadow-lg shadow-indigo-200">
+              <Award className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-indigo-600/60">Service Type</p>
+              <p className="text-sm font-black text-slate-900 truncate">
                 {serviceTypes.find((s) => s.value === serviceType)?.label}
-              </h2>
+              </p>
             </div>
-            
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-              <p className="text-sm text-primary-foreground/80">Marked Present</p>
-              <p className="text-3xl font-bold">{todayAttendance.length + offlineMarkedIds.length}</p>
-              </div>
-              <Select
-                value={serviceType}
-                onValueChange={(v) => setServiceType(v as ServiceType)}
-              >
-                <SelectTrigger className="w-48 bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {serviceTypes.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          </motion.div>
+        </div>
+
+        {/* Action Bar */}
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-slate-50 p-4 rounded-2xl border border-slate-200">
+          <div className="flex items-center gap-4">
+             <div className="hidden sm:flex h-10 w-10 items-center justify-center rounded-full bg-white border border-slate-200">
+                <Calendar className="h-5 w-5 text-slate-400" />
+             </div>
+             <div>
+                <p className="text-[10px] font-bold uppercase text-slate-400">Recording for Today</p>
+                <p className="text-sm font-bold text-slate-700">{today}</p>
+             </div>
           </div>
-        </motion.div>
+          
+          <div className="flex items-center gap-2">
+            <Select
+              value={serviceType}
+              onValueChange={(v) => setServiceType(v as ServiceType)}
+            >
+              <SelectTrigger className="w-48 h-10 bg-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {serviceTypes.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button onClick={handleExport} variant="outline" className="h-10 bg-white">
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+          </div>
+        </div>
 
         {/* Quick Actions */}
         {canManageAttendance && (
@@ -305,7 +409,7 @@ export default function Attendance() {
 
         {/* Attendance Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="search" className="gap-2">
               <Search className="h-4 w-4" />
               Search & Mark
@@ -313,6 +417,14 @@ export default function Attendance() {
             <TabsTrigger value="browse" className="gap-2">
               <Users className="h-4 w-4" />
               Browse All
+            </TabsTrigger>
+            <TabsTrigger value="marked" className="gap-2">
+              <Check className="h-4 w-4" />
+              Marked Today
+            </TabsTrigger>
+            <TabsTrigger value="absent" className="gap-2 text-rose-600 data-[state=active]:text-rose-700">
+              <UserX className="h-4 w-4" />
+              Not Present (Absent)
             </TabsTrigger>
           </TabsList>
 
@@ -361,9 +473,8 @@ export default function Attendance() {
                       <SelectValue placeholder="Department" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Departments</SelectItem>
-                      {departments.filter(d => d !== 'all').map(d => (
-                        <SelectItem key={d} value={d || 'None'}>{d}</SelectItem>
+                      {departments.map((d) => (
+                        <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -399,7 +510,7 @@ export default function Attendance() {
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.05 }}
-                        className="attendance-item"
+                        className="attendance-item group flex-col sm:flex-row gap-4 items-start sm:items-center shadow-sm hover:shadow-md transition-all duration-300"
                       >
                         <div className="flex items-center gap-4">
                           <Avatar className="h-12 w-12">
@@ -410,7 +521,7 @@ export default function Attendance() {
                           <div className="flex-1">
                             <p className="text-lg font-medium">{member.full_name}</p>
                             <p className="text-sm text-muted-foreground">
-                              {member.phone} {member.department && `• ${member.department}`}
+                              {member.phone} {member.department_name && `• ${member.department_name}`}
                             </p>
                           </div>
                           <Badge
@@ -510,7 +621,7 @@ export default function Attendance() {
                       </Avatar>
                       <div className="overflow-hidden">
                         <p className="font-semibold text-sm truncate">{member.full_name}</p>
-                        <p className="text-[10px] text-muted-foreground truncate">{member.department || 'General'}</p>
+                        <p className="text-[10px] text-muted-foreground truncate">{member.department_name || 'General'}</p>
                       </div>
                     </div>
                     <Button
@@ -529,6 +640,88 @@ export default function Attendance() {
                   No members found matching filters.
                 </div>
               )}
+            </motion.div>
+          ) : activeTab === 'marked' ? (
+            <motion.div
+              key="marked-list"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="grid gap-4 md:grid-cols-2"
+            >
+              {members.filter(m => todayAttendance.includes(m.id) || offlineMarkedIds.includes(m.id)).length === 0 ? (
+                <div className="col-span-full py-12 text-center text-muted-foreground border-2 border-dashed rounded-xl">
+                  No one marked present yet for this service.
+                </div>
+              ) : (
+                members
+                  .filter(m => todayAttendance.includes(m.id) || offlineMarkedIds.includes(m.id))
+                  .sort((a, b) => a.full_name.localeCompare(b.full_name))
+                  .map((member, index) => (
+                  <motion.div
+                    key={member.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="flex items-center justify-between p-4 rounded-xl border border-success/20 bg-success/5 shadow-sm"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-12 w-12 border-2 border-white shadow-sm">
+                        <AvatarFallback className="bg-success/10 text-success">
+                          {getInitials(member.full_name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-bold text-slate-800">{member.full_name}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                           <Badge variant="secondary" className="text-[10px] h-4 px-1.5 uppercase font-black bg-success/20 text-success-foreground border-none">Present</Badge>
+                           <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              Just now
+                           </span>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))
+              )}
+            </motion.div>
+          ) : activeTab === 'absent' ? (
+            <motion.div
+              key="absent-list"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
+            >
+              {absentMembers.map((member, index) => (
+                  <motion.div
+                    key={member.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.02 }}
+                    className="flex items-center justify-between p-4 rounded-xl border border-rose-100 bg-white hover:bg-rose-50/30 transition-colors shadow-sm"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10 grayscale-[0.5] opacity-70">
+                        <AvatarFallback className="bg-slate-100 text-slate-500">
+                          {getInitials(member.full_name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="overflow-hidden">
+                        <p className="font-semibold text-sm text-slate-600 truncate">{member.full_name}</p>
+                        <p className="text-[10px] text-rose-400 font-bold truncate">Absent Today</p>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => handleMarkAttendance(member)}
+                      className="h-8 px-3 btn-gold"
+                    >
+                      <Check className="h-4 w-4 mr-1" /> Mark
+                    </Button>
+                  </motion.div>
+                ))}
             </motion.div>
           ) : !searchQuery.trim() ? (
             <motion.div

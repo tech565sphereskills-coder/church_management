@@ -88,7 +88,7 @@ export function EditMemberDialog({ open, onOpenChange, member, onSave }: EditMem
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Pencil className="h-5 w-5 text-primary" />
@@ -98,16 +98,16 @@ export function EditMemberDialog({ open, onOpenChange, member, onSave }: EditMem
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField control={form.control} name="full_name" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Full Name *</FormLabel>
-                <FormControl><Input {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField control={form.control} name="full_name" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Full Name *</FormLabel>
+                  <FormControl><Input {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
 
-            <div className="grid grid-cols-2 gap-4">
               <FormField control={form.control} name="phone" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Phone *</FormLabel>
@@ -115,6 +115,7 @@ export function EditMemberDialog({ open, onOpenChange, member, onSave }: EditMem
                   <FormMessage />
                 </FormItem>
               )} />
+
               <FormField control={form.control} name="gender" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Gender *</FormLabel>
@@ -128,22 +129,7 @@ export function EditMemberDialog({ open, onOpenChange, member, onSave }: EditMem
                   <FormMessage />
                 </FormItem>
               )} />
-            </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField control={form.control} name="department" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Department</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger></FormControl>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      {departments.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )} />
               <FormField control={form.control} name="status" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Status</FormLabel>
@@ -158,31 +144,45 @@ export function EditMemberDialog({ open, onOpenChange, member, onSave }: EditMem
                   <FormMessage />
                 </FormItem>
               )} />
+
+              <FormField control={form.control} name="department" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Department</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {departments.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              <FormField control={form.control} name="date_of_birth" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Date of Birth</FormLabel>
+                  <FormControl><Input type="date" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              <FormField control={form.control} name="email" render={({ field }) => (
+                <FormItem className="md:col-span-2">
+                  <FormLabel>Email</FormLabel>
+                  <FormControl><Input type="email" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              <FormField control={form.control} name="address" render={({ field }) => (
+                <FormItem className="md:col-span-2">
+                  <FormLabel>Address</FormLabel>
+                  <FormControl><Input {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
             </div>
-
-            <FormField control={form.control} name="email" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl><Input type="email" {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-
-            <FormField control={form.control} name="address" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Address</FormLabel>
-                <FormControl><Input {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-
-            <FormField control={form.control} name="date_of_birth" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Date of Birth</FormLabel>
-                <FormControl><Input type="date" {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
 
             <div className="flex gap-3 pt-4">
               <Button type="button" variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>Cancel</Button>

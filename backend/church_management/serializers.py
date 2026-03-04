@@ -2,7 +2,8 @@ from rest_framework import serializers
 from .models import (
     Profile, Member, Service, AttendanceRecord, MemberFollowUp, 
     Contribution, Department, Child, ChildCheckIn, PrayerRequest,
-    ChurchSettings, CommunicationLog, Expense, CalendarEvent, AuditLog
+    ChurchSettings, CommunicationLog, Expense, CalendarEvent, AuditLog,
+    SMSTemplate
 )
 from django.contrib.auth.models import User
 
@@ -37,7 +38,13 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Profile
-        fields = ('id', 'email', 'username', 'full_name', 'role', 'avatar_url', 'created_at', 'updated_at')
+        fields = (
+            'id', 'email', 'username', 'full_name', 'role', 'avatar_url', 
+            'can_manage_members', 'can_manage_attendance', 'can_manage_financials',
+            'can_manage_departments', 'can_manage_children', 'can_manage_prayer_requests',
+            'can_manage_calendar', 'can_view_reports', 'can_manage_settings',
+            'created_at', 'updated_at'
+        )
 
 class MemberSerializer(serializers.ModelSerializer):
     department_name = serializers.CharField(source='department.name', read_only=True)
@@ -47,7 +54,7 @@ class MemberSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class DepartmentSerializer(serializers.ModelSerializer):
-    leader_name = serializers.CharField(source='leader.full_name', read_only=True)
+    hod_name = serializers.CharField(source='head_of_department.full_name', read_only=True)
     member_count = serializers.IntegerField(source='members.count', read_only=True)
 
     class Meta:
@@ -132,4 +139,9 @@ class AuditLogSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AuditLog
+        fields = '__all__'
+
+class SMSTemplateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SMSTemplate
         fields = '__all__'

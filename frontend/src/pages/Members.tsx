@@ -34,17 +34,15 @@ import { useAuth } from '@/hooks/useAuth';
 import { NewMemberData } from '@/components/members/NewMemberDialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { useDepartments } from '@/hooks/useDepartments';
 
 const PAGE_SIZE = 20;
 
-const departments = [
-  'Member', 'Choir', 'Ushering', 'Protocol', 'Media', 'Children',
-  'Youth', 'Prayer', 'Welfare', 'Technical', 'Evangelism',
-];
 
 export default function Members() {
   const navigate = useNavigate();
   const { members, loading, createMember, updateMember, deleteMember, fetchMembers } = useMembers();
+  const { departments, loading: deptsLoading } = useDepartments();
   const { canManageAttendance, isAdmin } = useAuth();
   const { toast } = useToast();
 
@@ -177,7 +175,7 @@ export default function Members() {
     }
   };
 
-  if (loading) {
+  if (loading || deptsLoading) {
     return (
       <div className="min-h-screen">
         <Header title="Members" subtitle="Manage your church members" />
@@ -255,9 +253,9 @@ export default function Members() {
             <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
                <SelectTrigger className="w-40"><SelectValue placeholder="Department" /></SelectTrigger>
                <SelectContent>
-                 <SelectItem value="all">All Departments</SelectItem>
-                 {departments.map((dept) => <SelectItem key={dept} value={dept}>{dept}</SelectItem>)}
-               </SelectContent>
+                  <SelectItem value="all">All Departments</SelectItem>
+                  {departments.map((dept) => <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>)}
+                </SelectContent>
              </Select>
              <Select value={genderFilter} onValueChange={setGenderFilter}>
                <SelectTrigger className="w-32"><SelectValue placeholder="Gender" /></SelectTrigger>
@@ -300,7 +298,8 @@ export default function Members() {
 
         {/* Members Table */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="rounded-xl border border-border bg-card overflow-hidden">
-          <Table>
+          <div className="overflow-x-auto">
+            <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-12">
@@ -337,7 +336,16 @@ export default function Members() {
                     </div>
                   </TableCell>
                   <TableCell><div className="flex items-center gap-2"><Phone className="h-3 w-3 text-muted-foreground" />{member.phone}</div></TableCell>
-                  <TableCell>{member.department || '-'}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {member.department_name || '-'}
+                      {departments.some(d => d.head_of_department === member.id) && (
+                        <Badge variant="outline" className="text-[9px] font-black uppercase tracking-tighter h-5 bg-indigo-50 text-indigo-700 border-indigo-100">
+                          HOD
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Calendar className="h-3 w-3 text-muted-foreground" />
@@ -383,6 +391,7 @@ export default function Members() {
             </TableBody>
           </Table>
 
+          </div>
           {filteredMembers.length === 0 && (
             <div className="py-12 text-center"><p className="text-muted-foreground">No members found</p></div>
           )}

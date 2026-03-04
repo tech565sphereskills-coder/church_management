@@ -1,50 +1,49 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 export interface Department {
   id: string;
   name: string;
   description: string | null;
-  leader: string | null;
-  leader_name?: string;
+  head_of_department: string | null;
+  hod_name?: string;
   member_count?: number;
   created_at: string;
   updated_at: string;
 }
 
 export function useDepartments() {
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  const { data: departments = [], isLoading, refetch } = useQuery({
+    queryKey: ['departments'],
+    queryFn: async () => {
+      const response = await api.get('/departments/');
+      return response.data;
+    },
+    enabled: !!user,
+  });
 
   const fetchDepartments = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await api.get('/departments/');
-      setDepartments(response.data);
-    } catch (error) {
-      console.error('Error fetching departments:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load departments',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
+    await refetch();
+  }, [refetch]);
+
+  const loading = isLoading;
 
   const createDepartment = async (data: Partial<Department>) => {
     try {
       const response = await api.post('/departments/', data);
       toast({
         title: 'Department Created',
-        description: 'New department has been added successfully.',
+        description: `${data.name} has been added successfully.`,
       });
-      await fetchDepartments();
+
+      queryClient.invalidateQueries({ queryKey: ['departments'] });
       return response.data;
     } catch (error) {
       console.error('Error creating department:', error);
@@ -62,10 +61,11 @@ export function useDepartments() {
       const response = await api.patch(`/departments/${id}/`, data);
       toast({
         title: 'Department Updated',
-        description: 'Department details have been updated.',
+        description: 'Department information has been updated.',
       });
-      await fetchDepartments();
-      return response.data;
+
+      queryClient.invalidateQueries({ queryKey: ['departments'] });
+      return true;
     } catch (error) {
       console.error('Error updating department:', error);
       toast({
@@ -82,9 +82,10 @@ export function useDepartments() {
       await api.delete(`/departments/${id}/`);
       toast({
         title: 'Department Deleted',
-        description: 'Department has been removed successfully.',
+        description: 'Department has been removed from the system.',
       });
-      await fetchDepartments();
+
+      queryClient.invalidateQueries({ queryKey: ['departments'] });
       return true;
     } catch (error) {
       console.error('Error deleting department:', error);
@@ -97,11 +98,6 @@ export function useDepartments() {
     }
   };
 
-  useEffect(() => {
-    if (user) {
-      fetchDepartments();
-    }
-  }, [user, fetchDepartments]);
 
   return {
     departments,

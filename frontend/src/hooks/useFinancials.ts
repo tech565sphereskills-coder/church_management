@@ -1,7 +1,8 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import api from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 export type ContributionType = 'tithe' | 'offering' | 'welfare' | 'building_fund' | 'thanksgiving' | 'seeds' | 'other';
 export type PaymentMethod = 'cash' | 'bank_transfer' | 'pos' | 'cheque' | 'online';
@@ -45,62 +46,58 @@ export interface ExpenseSummary {
 }
 
 export function useFinancials() {
-  const [contributions, setContributions] = useState<Contribution[]>([]);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [summary, setSummary] = useState<ContributionSummary[]>([]);
-  const [expenseSummary, setExpenseSummary] = useState<ExpenseSummary[]>([]);
   const { toast } = useToast();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-  const fetchContributions = useCallback(async () => {
-    try {
-      setLoading(true);
+  // Queries
+  const { data: contributions = [], isLoading: contributionsLoading } = useQuery({
+    queryKey: ['contributions'],
+    queryFn: async () => {
       const response = await api.get('/contributions/');
-      setContributions(response.data);
-    } catch (error) {
-      console.error('Error fetching contributions:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load financial records',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
+      return response.data;
+    },
+    enabled: !!user,
+  });
 
-  const fetchExpenses = useCallback(async () => {
-    try {
+  const { data: expenses = [], isLoading: expensesLoading } = useQuery({
+    queryKey: ['expenses'],
+    queryFn: async () => {
       const response = await api.get('/expenses/');
-      setExpenses(response.data);
-    } catch (error) {
-      console.error('Error fetching expenses:', error);
-    }
-  }, []);
+      return response.data;
+    },
+    enabled: !!user,
+  });
 
-  const fetchSummary = useCallback(async (month?: number, year?: number) => {
-    try {
-      const params: Record<string, number> = {};
-      if (month) params.month = month;
-      if (year) params.year = year;
-      
+  const { data: summaryData, isLoading: summaryLoading } = useQuery({
+    queryKey: ['financial-summary'],
+    queryFn: async () => {
       const [contResp, expResp] = await Promise.all([
-        api.get('/contributions/summary/', { params }),
-        api.get('/expenses/summary/', { params })
+        api.get('/contributions/summary/'),
+        api.get('/expenses/summary/')
       ]);
-      setSummary(contResp.data);
-      setExpenseSummary(expResp.data);
-    } catch (error) {
-      console.error('Error fetching financial summaries:', error);
-    }
-  }, []);
+      return {
+        contributions: contResp.data as ContributionSummary[],
+        expenses: expResp.data as ExpenseSummary[]
+      };
+    },
+    enabled: !!user,
+  });
+
+  const loading = contributionsLoading || expensesLoading || summaryLoading;
+  const summary = summaryData?.contributions || [];
+  const expenseSummary = summaryData?.expenses || [];
 
   const createContribution = async (data: Partial<Contribution>) => {
     try {
       const response = await api.post('/contributions/', data);
       toast({ title: 'Record Saved', description: 'Contribution has been recorded successfully.' });
-      await Promise.all([fetchContributions(), fetchSummary()]);
+      
+      // Invalidate relevant queries
+      queryClient.invalidateQueries({ queryKey: ['contributions'] });
+      queryClient.invalidateQueries({ queryKey: ['financial-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      
       return response.data;
     } catch (error) {
       console.error('Error creating contribution:', error);
@@ -113,7 +110,12 @@ export function useFinancials() {
     try {
       const response = await api.post('/expenses/', data);
       toast({ title: 'Expense Recorded', description: 'Outgoing has been recorded successfully.' });
-      await Promise.all([fetchExpenses(), fetchSummary()]);
+      
+      // Invalidate relevant queries
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['financial-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      
       return response.data;
     } catch (error) {
       console.error('Error creating expense:', error);
@@ -122,15 +124,82 @@ export function useFinancials() {
     }
   };
 
-  useEffect(() => {
-    if (user) {
-      Promise.all([
-        fetchContributions(),
-        fetchExpenses(),
-        fetchSummary()
-      ]).finally(() => setLoading(false));
+  const fetchSummary = useCallback(async (month?: number, year?: number) => {
+    // This function can now be used for custom filtering if needed, 
+    // though the default useQuery handles the basic case.
+    const params: Record<string, number> = {};
+    if (month) params.month = month;
+    if (year) params.year = year;
+    
+    const [contResp, expResp] = await Promise.all([
+      api.get('/contributions/summary/', { params }),
+      api.get('/expenses/summary/', { params })
+    ]);
+    return {
+      contributions: contResp.data as ContributionSummary[],
+      expenses: expResp.data as ExpenseSummary[]
+    };
+  }, []);
+
+  const updateContribution = async (id: string, data: Partial<Contribution>) => {
+    try {
+      const response = await api.patch(`/contributions/${id}/`, data);
+      toast({ title: 'Record Updated', description: 'Contribution has been updated successfully.' });
+      queryClient.invalidateQueries({ queryKey: ['contributions'] });
+      queryClient.invalidateQueries({ queryKey: ['financial-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating contribution:', error);
+      toast({ title: 'Error', description: 'Failed to update record', variant: 'destructive' });
+      return null;
     }
-  }, [user, fetchContributions, fetchExpenses, fetchSummary]);
+  };
+
+  const deleteContribution = async (id: string) => {
+    try {
+      await api.delete(`/contributions/${id}/`);
+      toast({ title: 'Record Deleted', description: 'Contribution has been deleted.' });
+      queryClient.invalidateQueries({ queryKey: ['contributions'] });
+      queryClient.invalidateQueries({ queryKey: ['financial-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      return true;
+    } catch (error) {
+      console.error('Error deleting contribution:', error);
+      toast({ title: 'Error', description: 'Failed to delete record', variant: 'destructive' });
+      return false;
+    }
+  };
+
+  const updateExpense = async (id: string, data: Partial<Expense>) => {
+    try {
+      const response = await api.patch(`/expenses/${id}/`, data);
+      toast({ title: 'Expense Updated', description: 'Record has been updated successfully.' });
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['financial-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating expense:', error);
+      toast({ title: 'Error', description: 'Failed to update expense', variant: 'destructive' });
+      return null;
+    }
+  };
+
+  const deleteExpense = async (id: string) => {
+    try {
+      await api.delete(`/expenses/${id}/`);
+      toast({ title: 'Expense Deleted', description: 'Record has been deleted.' });
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['financial-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      return true;
+    } catch (error) {
+      console.error('Error deleting expense:', error);
+      toast({ title: 'Error', description: 'Failed to delete expense', variant: 'destructive' });
+      return false;
+    }
+  };
 
   return {
     contributions,
@@ -138,11 +207,12 @@ export function useFinancials() {
     loading,
     summary,
     expenseSummary,
-    fetchContributions,
-    fetchExpenses,
     fetchSummary,
     createContribution,
-    createStatus: createExpense, // Shortcut naming
+    updateContribution,
+    deleteContribution,
     createExpense,
+    updateExpense,
+    deleteExpense,
   };
 }

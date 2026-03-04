@@ -33,7 +33,7 @@ import { Department } from '@/hooks/useDepartments';
 const formSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   description: z.string().optional(),
-  leader: z.string().uuid().optional().nullable(),
+  head_of_department: z.string().uuid().optional().nullable(),
 });
 
 interface DepartmentDialogProps {
@@ -56,7 +56,7 @@ export function DepartmentDialog({
     defaultValues: {
       name: '',
       description: '',
-      leader: null,
+      head_of_department: null,
     },
   });
 
@@ -65,13 +65,13 @@ export function DepartmentDialog({
       form.reset({
         name: department.name,
         description: department.description || '',
-        leader: department.leader,
+        head_of_department: department.head_of_department,
       });
     } else {
       form.reset({
         name: '',
         description: '',
-        leader: null,
+        head_of_department: null,
       });
     }
   }, [department, form, open]);
@@ -128,17 +128,17 @@ export function DepartmentDialog({
 
             <FormField
               control={form.control}
-              name="leader"
+              name="head_of_department"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Head of Department (Optional)</FormLabel>
+                  <FormLabel>Head of Department (HOD)</FormLabel>
                   <Select 
                     onValueChange={field.onChange} 
                     value={field.value || "none"}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a leader" />
+                        <SelectValue placeholder="Select Head of Department" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>

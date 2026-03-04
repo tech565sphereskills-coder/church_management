@@ -150,7 +150,7 @@ export default function AuditLogs() {
                 <div className="relative flex-1 max-w-sm">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <Input 
-                    placeholder="Search logs ..." 
+                    placeholder="Search logs..." 
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-10 h-11 rounded-xl border-slate-200 focus:ring-primary shadow-none"
@@ -180,7 +180,8 @@ export default function AuditLogs() {
               </div>
 
               <div className="px-6 py-2">
-                <Table>
+                <div className="overflow-x-auto">
+                  <Table>
                     <TableHeader>
                         <TableRow className="hover:bg-transparent border-slate-50">
                             <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-400">Time</TableHead>
@@ -248,7 +249,8 @@ export default function AuditLogs() {
                             </TableRow>
                         )}
                     </TableBody>
-                </Table>
+                  </Table>
+                </div>
               </div>
             </CardContent>
           </Card>

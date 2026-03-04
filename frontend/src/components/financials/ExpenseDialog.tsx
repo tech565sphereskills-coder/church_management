@@ -25,9 +25,10 @@ interface ExpenseDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (data: Partial<Expense>) => Promise<unknown>;
+  initialData?: Expense;
 }
 
-export function ExpenseDialog({ open, onOpenChange, onSave }: ExpenseDialogProps) {
+export function ExpenseDialog({ open, onOpenChange, onSave, initialData }: ExpenseDialogProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     description: '',
@@ -39,15 +40,25 @@ export function ExpenseDialog({ open, onOpenChange, onSave }: ExpenseDialogProps
 
   useEffect(() => {
     if (open) {
-      setFormData({
-        description: '',
-        category: 'other',
-        amount: '',
-        date: new Date().toISOString().split('T')[0],
-        notes: ''
-      });
+      if (initialData) {
+        setFormData({
+          description: initialData.description,
+          category: initialData.category,
+          amount: initialData.amount,
+          date: initialData.date,
+          notes: initialData.notes || ''
+        });
+      } else {
+        setFormData({
+          description: '',
+          category: 'other',
+          amount: '',
+          date: new Date().toISOString().split('T')[0],
+          notes: ''
+        });
+      }
     }
-  }, [open]);
+  }, [open, initialData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,7 +83,9 @@ export function ExpenseDialog({ open, onOpenChange, onSave }: ExpenseDialogProps
                 <Receipt className="h-6 w-6 text-primary" />
               </div>
               <DialogHeader className="p-0">
-                <DialogTitle className="text-2xl font-bold text-slate-900">Record Expenditure</DialogTitle>
+                <DialogTitle className="text-2xl font-bold text-slate-900">
+                  {initialData ? 'Edit Expenditure' : 'Record Expenditure'}
+                </DialogTitle>
                 <DialogDescription className="text-slate-500 font-medium">Log church projects, maintenance, or daily expenses.</DialogDescription>
               </DialogHeader>
             </div>
@@ -166,7 +179,7 @@ export function ExpenseDialog({ open, onOpenChange, onSave }: ExpenseDialogProps
                 className="h-12 rounded-xl px-8 flex-[2] bg-slate-900 hover:bg-slate-800 text-white shadow-lg font-bold"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Receipt className="h-4 w-4 mr-2" />}
-              Record Expense
+              {initialData ? 'Update Expense' : 'Record Expense'}
             </Button>
           </DialogFooter>
         </form>

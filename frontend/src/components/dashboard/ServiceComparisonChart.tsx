@@ -54,13 +54,14 @@ export function ServiceComparisonChart() {
                   contentStyle={{
                     backgroundColor: 'hsl(var(--card))',
                     border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px',
+                    borderRadius: '12px',
+                    boxShadow: 'hsl(var(--shadow-lg))',
                   }}
                 />
                 <Legend />
-                <Bar dataKey="sunday" name="Sunday" fill="hsl(210, 80%, 35%)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="midweek" name="Midweek" fill="hsl(145, 70%, 35%)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="special" name="Special" fill="hsl(38, 92%, 50%)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="sunday" name="Sunday" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="midweek" name="Midweek" fill="hsl(var(--rccg-green))" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="special" name="Special" fill="hsl(var(--warning))" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}

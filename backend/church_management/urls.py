@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     ProfileViewSet, MemberViewSet, ServiceViewSet, AttendanceRecordViewSet,
     MemberFollowUpViewSet, RegisterView, StatsViewSet, SMSViewSet, 
-    SettingsViewSet, ContributionViewSet, DepartmentViewSet,
+    SMSTemplateViewSet, SettingsViewSet, ContributionViewSet, DepartmentViewSet,
     ChildViewSet, ChildCheckInViewSet, PrayerRequestViewSet,
     CommunicationLogViewSet, ExpenseViewSet, CalendarEventViewSet, AuditLogViewSet
 )
@@ -15,7 +15,9 @@ router.register(r'members', MemberViewSet)
 router.register(r'services', ServiceViewSet)
 router.register(r'attendance', AttendanceRecordViewSet)
 router.register(r'follow-ups', MemberFollowUpViewSet)
+router.register(r'stats', StatsViewSet, basename='stats')
 router.register(r'sms', SMSViewSet, basename='sms')
+router.register(r'sms-templates', SMSTemplateViewSet)
 router.register(r'communication-logs', CommunicationLogViewSet)
 # Settings moved to manual path below for singleton behavior
 router.register(r'contributions', ContributionViewSet)

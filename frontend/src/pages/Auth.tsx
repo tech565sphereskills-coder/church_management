@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -184,23 +184,24 @@ export default function Auth() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-auth p-4 relative overflow-hidden">
-      {/* Decorative elements for premium feel */}
-      <div className="absolute top-[-10%] left-[-10%] w-[30%] h-[30%] bg-primary/20 rounded-full blur-[120px]" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] bg-primary/10 rounded-full blur-[100px]" />
+    <div className="flex min-h-screen items-center justify-center bg-auth p-4 relative overflow-hidden transition-colors duration-500">
+      {/* Dynamic Background Effects */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 dark:bg-primary/30 rounded-full blur-[120px] animate-pulse" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-accent/10 dark:bg-primary/10 rounded-full blur-[100px] animate-pulse delay-700" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-grid-slate-100/[0.03] dark:bg-grid-white/[0.02] [mask-image:radial-gradient(ellipse_at_center,white,transparent)]" />
       
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-        className="w-full max-w-md z-10"
+        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        className="w-full max-w-lg z-10"
       >
-        <div className="mb-8 text-center">
+        <div className="mb-10 text-center">
           <motion.div 
-            initial={{ scale: 0.8 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-white/90 p-3 shadow-2xl backdrop-blur-sm"
+            initial={{ scale: 0.8, rotate: -10 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 150 }}
+            className="mx-auto mb-8 flex h-28 w-28 items-center justify-center rounded-3xl bg-white dark:bg-white/90 p-5 shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-md border border-white/20"
           >
             <img 
               src={RCCG_LOGO_URL} 
@@ -208,94 +209,114 @@ export default function Auth() {
               className="h-full w-full object-contain"
             />
           </motion.div>
-          <h1 className="text-3xl font-bold text-white tracking-tight drop-shadow-lg">RCCG Emmanuel Sanctuary</h1>
-          <p className="mt-2 text-white/80 font-medium">Sanctuary of Excellence & Grace</p>
+          <h1 className="text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight drop-shadow-sm transition-colors decoration-primary underline-offset-8">
+            RCCG <span className="text-primary italic">Emmanuel Sanctuary</span>
+          </h1>
+          <p className="mt-3 text-slate-500 dark:text-white/70 font-medium text-lg tracking-wide uppercase text-[10px]">Sanctuary of Excellence & Grace</p>
         </div>
 
-        <Card className="glass border-white/20 text-white shadow-2xl overflow-hidden">
-          <CardHeader className="pb-4 border-b border-white/10 bg-white/5">
-            <CardTitle className="text-center text-2xl font-bold tracking-tight text-white">Welcome</CardTitle>
-            <CardDescription className="text-center text-white/70">
-              Sign in to manage church records & attendance
+        <Card className="border-border/40 dark:border-white/10 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] dark:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.4)] overflow-hidden relative backdrop-blur-2xl bg-white/70 dark:bg-black/30 ring-1 ring-black/5 dark:ring-white/10 rounded-[2rem]">
+          {isLoading && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/60 dark:bg-black/60 backdrop-blur-md transition-all duration-300">
+              <div className="flex flex-col items-center gap-4">
+                <div className="relative">
+                   <Loader2 className="h-14 w-14 animate-spin text-primary" />
+                   <div className="absolute inset-0 blur-xl bg-primary/20 animate-pulse" />
+                </div>
+                <p className="text-sm font-bold tracking-widest uppercase text-foreground/80 animate-pulse">Authenticating...</p>
+              </div>
+            </div>
+          )}
+          
+          <CardHeader className="pb-6 border-b border-border/50 dark:border-white/5 bg-muted/20 dark:bg-white/5">
+            <CardTitle className="text-center text-3xl font-black tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-white/70 bg-clip-text text-transparent">Welcome</CardTitle>
+            <CardDescription className="text-center text-muted-foreground dark:text-white/60 font-medium">
+              Access the church management sanctuary
             </CardDescription>
           </CardHeader>
-          <CardContent className="pt-6">
+          
+          <CardContent className="pt-8 px-8">
             <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 bg-white/10 border border-white/20">
-                <TabsTrigger value="login" className="text-white data-[state=active]:bg-white/20 data-[state=active]:text-white">Login</TabsTrigger>
-                <TabsTrigger value="signup" className="text-white data-[state=active]:bg-white/20 data-[state=active]:text-white">Sign Up</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 bg-slate-100/50 dark:bg-black/40 border border-border/50 dark:border-white/10 h-14 p-1 rounded-2xl">
+                <TabsTrigger value="login" className="rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-white/10 data-[state=active]:shadow-lg dark:data-[state=active]:shadow-none data-[state=active]:text-primary dark:data-[state=active]:text-white font-bold transition-all duration-300">Login</TabsTrigger>
+                <TabsTrigger value="signup" className="rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-white/10 data-[state=active]:shadow-lg dark:data-[state=active]:shadow-none data-[state=active]:text-primary dark:data-[state=active]:text-white font-bold transition-all duration-300">Join Us</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="login" className="mt-6">
-                <form onSubmit={handleLogin} className="space-y-4">
+              <TabsContent value="login" className="mt-8">
+                <form onSubmit={handleLogin} className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="login-email" className="text-white/90">Email Address</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Label htmlFor="login-email" className="text-sm font-bold text-slate-700 dark:text-white/80 ml-1">Email Address</Label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none transition-colors group-focus-within:text-primary">
+                        <Mail className="h-5 w-5 text-slate-400 dark:text-white/30" />
+                      </div>
                       <Input
                         id="login-email"
                         type="email"
-                        placeholder="Enter your email"
+                        placeholder="pastor@emmanuel.com"
                         value={loginEmail}
                         onChange={(e) => setLoginEmail(e.target.value)}
-                        className="pl-10 bg-white/5 border-white/20 text-white placeholder:text-white/40 focus:bg-white/10"
+                        className="pl-12 bg-slate-50 dark:bg-black/20 border-border/80 dark:border-white/20 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-white/20 focus:ring-primary/20 dark:focus:ring-white/10 h-14 rounded-2xl transition-all font-medium"
                         required
                       />
                     </div>
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="login-password" className="text-white/90">Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <div className="flex justify-between items-center ml-1">
+                      <Label htmlFor="login-password" className="text-sm font-bold text-slate-700 dark:text-white/80">Password</Label>
+                      <button
+                        type="button"
+                        onClick={() => setForgotOpen(true)}
+                        className="text-[11px] font-bold text-primary dark:text-white/60 hover:text-primary dark:hover:text-white hover:underline transition-colors uppercase tracking-wider"
+                      >
+                        Forgot?
+                      </button>
+                    </div>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none transition-colors group-focus-within:text-primary">
+                        <Lock className="h-5 w-5 text-slate-400 dark:text-white/30" />
+                      </div>
                       <Input
                         id="login-password"
                         type={showPassword ? 'text' : 'password'}
-                        placeholder="Enter your password"
+                        placeholder="••••••••"
                         value={loginPassword}
                         onChange={(e) => setLoginPassword(e.target.value)}
-                        className="pl-10 pr-10 bg-white/5 border-white/20 text-white placeholder:text-white/40 focus:bg-white/10"
+                        className="pl-12 pr-12 bg-slate-50 dark:bg-black/20 border-border/80 dark:border-white/20 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-white/20 focus:ring-primary/20 dark:focus:ring-white/10 h-14 rounded-2xl transition-all font-medium"
                         required
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/30 hover:text-primary dark:hover:text-white transition-colors p-1"
                       >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                       </button>
                     </div>
                   </div>
 
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? 'Signing in...' : 'Sign In'}
+                  <Button type="submit" className="w-full h-14 rounded-2xl text-base font-black tracking-wide shadow-xl shadow-primary/20 hover:shadow-primary/40 active:scale-[0.98] transition-all" disabled={isLoading}>
+                    {isLoading ? 'SECURELY LOGGING IN...' : 'SIGN IN TO SANCTUARY'}
                   </Button>
 
-                  <button
-                    type="button"
-                    onClick={() => setForgotOpen(true)}
-                    className="w-full text-center text-sm text-white/60 hover:text-white hover:underline transition-colors"
-                  >
-                    Forgot Password?
-                  </button>
-
-                  <div className="relative my-4">
+                  <div className="relative my-8">
                     <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t border-border" />
+                      <span className="w-full border-t border-border/50 dark:border-white/10" />
                     </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-white px-2 text-muted-foreground font-medium">Or continue with</span>
+                    <div className="relative flex justify-center text-[10px] uppercase font-black tracking-[0.2em] text-slate-400 dark:text-white/20">
+                      <span className="bg-card dark:bg-transparent px-4">OR EMPOWER WITH</span>
                     </div>
                   </div>
 
                   <Button 
                     type="button" 
                     variant="outline" 
-                    className="w-full" 
+                    className="w-full h-14 rounded-2xl border-border/80 dark:border-white/20 bg-transparent hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-white font-bold transition-all" 
                     onClick={() => googleLogin()}
                     disabled={isLoading}
                   >
-                    <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+                    <svg className="mr-3 h-5 w-5" viewBox="0 0 24 24">
                       <path
                         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                         fill="#4285F4"
@@ -313,113 +334,115 @@ export default function Auth() {
                         fill="#EA4335"
                       />
                     </svg>
-                    Google
+                    Google Account
                   </Button>
                 </form>
               </TabsContent>
 
-              <TabsContent value="signup" className="mt-6">
-                <form onSubmit={handleSignup} className="space-y-4">
-                  {/* ... existing fields ... */}
+              <TabsContent value="signup" className="mt-8">
+                <form onSubmit={handleSignup} className="space-y-5">
                   <div className="space-y-2">
-                    <Label htmlFor="signup-name" className="text-white/90">Full Name</Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
+                    <Label htmlFor="signup-name" className="text-sm font-bold text-slate-700 dark:text-white/80 ml-1">Full Name</Label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none transition-colors group-focus-within:text-primary">
+                        <User className="h-5 w-5 text-slate-400 dark:text-white/30" />
+                      </div>
                       <Input
                         id="signup-name"
                         type="text"
-                        placeholder="Enter your full name"
+                        placeholder="Michael Smith"
                         value={signupFullName}
                         onChange={(e) => setSignupFullName(e.target.value)}
-                        className="pl-10 bg-white/5 border-white/20 text-white placeholder:text-white/40 focus:bg-white/10"
+                        className="pl-12 bg-slate-50 dark:bg-black/20 border-border/80 dark:border-white/20 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-white/20 h-13 rounded-xl transition-all"
                         required
                       />
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email" className="text-white/90">Email Address</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
+                    <Label htmlFor="signup-email" className="text-sm font-bold text-slate-700 dark:text-white/80 ml-1">Email Address</Label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none transition-colors group-focus-within:text-primary">
+                        <Mail className="h-5 w-5 text-slate-400 dark:text-white/30" />
+                      </div>
                       <Input
                         id="signup-email"
                         type="email"
-                        placeholder="Enter your email"
+                        placeholder="pastor@emmanuel.com"
                         value={signupEmail}
                         onChange={(e) => setSignupEmail(e.target.value)}
-                        className="pl-10 bg-white/5 border-white/20 text-white placeholder:text-white/40 focus:bg-white/10"
+                        className="pl-12 bg-slate-50 dark:bg-black/20 border-border/80 dark:border-white/20 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-white/20 h-13 rounded-xl transition-all"
                         required
                       />
                     </div>
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password" className="text-white/90">Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
-                      <Input
-                        id="signup-password"
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder="Create a password"
-                        value={signupPassword}
-                        onChange={(e) => setSignupPassword(e.target.value)}
-                        className="pl-10 pr-10 bg-white/5 border-white/20 text-white placeholder:text-white/40 focus:bg-white/10"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-password" className="text-sm font-bold text-slate-700 dark:text-white/80 ml-1">Password</Label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none transition-colors group-focus-within:text-primary">
+                          <Lock className="h-4 w-4 text-slate-400 dark:text-white/30" />
+                        </div>
+                        <Input
+                          id="signup-password"
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder="••••••••"
+                          value={signupPassword}
+                          onChange={(e) => setSignupPassword(e.target.value)}
+                          className="pl-10 pr-10 bg-slate-50 dark:bg-black/20 border-border/80 dark:border-white/20 text-slate-900 dark:text-white h-13 rounded-xl transition-all"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/30 p-1"
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-confirm" className="text-sm font-bold text-slate-700 dark:text-white/80 ml-1">Confirm</Label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none transition-colors group-focus-within:text-primary">
+                          <Lock className="h-4 w-4 text-slate-400 dark:text-white/30" />
+                        </div>
+                        <Input
+                          id="signup-confirm"
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          placeholder="••••••••"
+                          value={signupConfirmPassword}
+                          onChange={(e) => setSignupConfirmPassword(e.target.value)}
+                          className="pl-10 pr-10 bg-slate-50 dark:bg-black/20 border-border/80 dark:border-white/20 text-slate-900 dark:text-white h-13 rounded-xl transition-all"
+                          required
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-confirm" className="text-white/90">Confirm Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
-                      <Input
-                        id="signup-confirm"
-                        type={showConfirmPassword ? 'text' : 'password'}
-                        placeholder="Confirm your password"
-                        value={signupConfirmPassword}
-                        onChange={(e) => setSignupConfirmPassword(e.target.value)}
-                        className="pl-10 pr-10 bg-white/5 border-white/20 text-white placeholder:text-white/40 focus:bg-white/10"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
-                      >
-                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white font-bold h-11" disabled={isLoading}>
-                    {isLoading ? 'Creating account...' : 'Create Account'}
+                  <Button type="submit" className="w-full h-14 rounded-2xl text-base font-black tracking-wide shadow-xl shadow-primary/20 hover:shadow-primary/40 active:scale-[0.98] transition-all bg-primary hover:bg-primary/90 text-white" disabled={isLoading}>
+                    {isLoading ? 'CREATING SANCTUARY ACCOUNT...' : 'CREATE NEW ACCOUNT'}
                   </Button>
 
-                  <div className="relative my-6">
+                  <div className="relative my-4">
                     <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t border-white/10" />
+                      <span className="w-full border-t border-border/50 dark:border-white/10" />
                     </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-transparent px-2 text-white/50 font-medium">Or continue with</span>
+                    <div className="relative flex justify-center text-[10px] uppercase font-black tracking-widest text-slate-400 dark:text-white/20">
+                      <span className="bg-card dark:bg-transparent px-4">OR JOIN WITH</span>
                     </div>
                   </div>
 
                   <Button 
                     type="button" 
                     variant="outline" 
-                    className="w-full bg-white/5 border-white/20 text-white hover:bg-white/10 hover:text-white h-11" 
+                    className="w-full h-13 rounded-xl border-border/80 dark:border-white/20 bg-transparent hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-white font-bold transition-all" 
                     onClick={() => googleLogin()}
                     disabled={isLoading}
                   >
-                    <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+                    <svg className="mr-3 h-5 w-5" viewBox="0 0 24 24">
                       <path
                         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                         fill="#4285F4"
@@ -445,8 +468,8 @@ export default function Auth() {
           </CardContent>
         </Card>
 
-        <p className="mt-6 text-center text-sm text-muted-foreground">
-          Powered by RCCG Emmanuel Sanctuary • Lagos, Nigeria
+        <p className="mt-8 text-center text-[10px] uppercase font-bold tracking-[0.3em] text-slate-400 dark:text-white/30 animate-pulse">
+          Powered by RCCG Emmanuel Sanctuary • Sanctuary of Grace
         </p>
 
         <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>

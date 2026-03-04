@@ -31,16 +31,16 @@ export function WelcomeCard() {
       className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-[hsl(var(--rccg-blue-dark))] p-6 text-primary-foreground mb-6"
     >
       <div className="relative z-10">
-        <div className="flex items-center gap-2 text-primary-foreground/70 text-sm mb-1">
+        <div className="flex items-center gap-2 text-primary-foreground text-xs md:text-sm font-medium mb-1 opacity-90">
           <CalendarDays className="h-4 w-4" />
           {today.toLocaleDateString('en-NG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
         </div>
         <h2 className="text-2xl font-bold mb-3">
           {getGreeting()}, {name} 👋
         </h2>
-        <blockquote className="border-l-2 border-primary-foreground/30 pl-4 italic text-primary-foreground/80 text-sm">
+        <blockquote className="border-l-2 border-primary-foreground/40 pl-4 italic text-primary-foreground text-sm md:text-base">
           "{verse.text}"
-          <footer className="mt-1 not-italic font-medium text-primary-foreground/60">— {verse.ref}</footer>
+          <footer className="mt-1 not-italic font-semibold text-primary-foreground/80">— {verse.ref}</footer>
         </blockquote>
       </div>
       {/* Decorative circles */}

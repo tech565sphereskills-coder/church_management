@@ -33,36 +33,37 @@ export function AttendanceChart({ data, title }: AttendanceChartProps) {
           <AreaChart data={data}>
             <defs>
               <linearGradient id="attendanceGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(350, 65%, 35%)" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="hsl(350, 65%, 35%)" stopOpacity={0} />
+                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(30, 20%, 88%)" />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
             <XAxis
               dataKey="date"
-              stroke="hsl(350, 10%, 45%)"
+              stroke="hsl(var(--muted-foreground))"
               fontSize={12}
               tickLine={false}
               axisLine={false}
             />
             <YAxis
-              stroke="hsl(350, 10%, 45%)"
+              stroke="hsl(var(--muted-foreground))"
               fontSize={12}
               tickLine={false}
               axisLine={false}
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: 'hsl(0, 0%, 100%)',
-                border: '1px solid hsl(30, 20%, 88%)',
-                borderRadius: '8px',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                backgroundColor: 'hsl(var(--card))',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: '12px',
+                boxShadow: 'hsl(var(--shadow-lg))',
+                color: 'hsl(var(--foreground))'
               }}
             />
             <Area
               type="monotone"
               dataKey="attendance"
-              stroke="hsl(350, 65%, 35%)"
+              stroke="hsl(var(--primary))"
               strokeWidth={2}
               fill="url(#attendanceGradient)"
             />

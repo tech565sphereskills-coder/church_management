@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   MessageSquare, Send, Search, Plus, Trash2, Users, Filter,
@@ -32,7 +32,7 @@ const departments = [
 ];
 
 export default function Messaging() {
-  const { templates, messages, loading, sendSMS, createTemplate, deleteTemplate } = useSMS();
+  const { templates, messages, loading, sendSMS, createTemplate, deleteTemplate, checkStatus } = useSMS();
   const { members } = useMembers();
   const { followUpList } = useFollowUp();
   const { isAdmin } = useAuth();
@@ -45,11 +45,16 @@ export default function Messaging() {
   const [showNewTemplate, setShowNewTemplate] = useState(false);
   const [newTmplName, setNewTmplName] = useState('');
   const [newTmplBody, setNewTmplBody] = useState('');
+  const [smsStatus, setSmsStatus] = useState<{ connected: boolean; provider?: string; balance?: string } | null>(null);
+
+  useEffect(() => {
+    checkStatus().then(setSmsStatus);
+  }, [checkStatus]);
 
   const recipients = useMemo(() => {
     let list = members;
     if (recipientFilter === 'follow_up') {
-      const followUpIds = new Set(followUpList.map(f => f.member_id));
+      const followUpIds = new Set(followUpList.map(f => f.member?.id || f.id));
       list = members.filter(m => followUpIds.has(m.id));
     } else if (recipientFilter === 'active') {
       list = members.filter(m => m.status === 'active');
@@ -108,6 +113,18 @@ export default function Messaging() {
   return (
     <div className="min-h-screen">
       <Header title="Messaging" subtitle="Send SMS to members" />
+
+      <div className="px-6 flex items-center justify-between pointer-events-none -mt-4 mb-2">
+        <div />
+        {smsStatus && (
+          <div className="pointer-events-auto flex items-center gap-2 px-3 py-1 rounded-full bg-background border border-border shadow-sm">
+            <div className={`h-2 w-2 rounded-full ${smsStatus.connected ? 'bg-emerald-500 animate-pulse' : 'bg-destructive'}`} />
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              {smsStatus.connected ? `${smsStatus.provider} Active` : 'Provider Offline'}
+            </span>
+          </div>
+        )}
+      </div>
 
       <div className="p-6">
         <Tabs defaultValue="compose">

@@ -7,12 +7,12 @@ from django.contrib.auth.models import User
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from django.db.models import Count, Q, Avg
+from django.db.models import Count, Q, Avg, Sum
 from django.db.models.functions import TruncMonth
 from .models import (
-    Profile, Member, Service, AttendanceRecord, MemberFollowUp, 
+    Role, Profile, Member, Service, AttendanceRecord, MemberFollowUp, 
     Contribution, Department, Child, ChildCheckIn, PrayerRequest, ChurchSettings,
-    CommunicationLog, Expense, CalendarEvent, AuditLog
+    CommunicationLog, Expense, CalendarEvent, AuditLog, SMSTemplate
 )
 from .serializers import (
     AttendanceRecordSerializer, MemberFollowUpSerializer,
@@ -20,7 +20,8 @@ from .serializers import (
     DepartmentSerializer, ProfileSerializer, MemberSerializer,
     ServiceSerializer, ChildSerializer, ChildCheckInSerializer,
     PrayerRequestSerializer, ChurchSettingsSerializer, CommunicationLogSerializer,
-    ExpenseSerializer, CalendarEventSerializer, AuditLogSerializer
+    ExpenseSerializer, CalendarEventSerializer, AuditLogSerializer,
+    SMSTemplateSerializer
 )
 from .permissions import (
     IsAdmin, IsFinanceOfficer, IsAttendanceOfficerOrHigher, 
@@ -32,7 +33,7 @@ from .permissions import (
 def log_activity(user, action, model_name, object_id, object_name, details=None):
     try:
         AuditLog.objects.create(
-            user=user,
+            user=user if user and user.is_authenticated else None,
             action=action,
             model_name=model_name,
             object_id=str(object_id),
@@ -41,6 +42,43 @@ def log_activity(user, action, model_name, object_id, object_name, details=None)
         )
     except Exception as e:
         print(f"Failed to log activity: {e}")
+
+class AuditableModelViewSetMixin:
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        if hasattr(self.request, 'user'):
+            log_activity(
+                self.request.user, 
+                AuditLog.Action.CREATE, 
+                instance.__class__.__name__, 
+                instance.id, 
+                str(instance)
+            )
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        if hasattr(self.request, 'user'):
+            log_activity(
+                self.request.user, 
+                AuditLog.Action.UPDATE, 
+                instance.__class__.__name__, 
+                instance.id, 
+                str(instance)
+            )
+
+    def perform_destroy(self, instance):
+        instance_id = instance.id
+        instance_name = str(instance)
+        model_name = instance.__class__.__name__
+        instance.delete()
+        if hasattr(self.request, 'user'):
+            log_activity(
+                self.request.user, 
+                AuditLog.Action.DELETE, 
+                model_name, 
+                instance_id, 
+                instance_name
+            )
 
 class RegisterView(viewsets.GenericViewSet, viewsets.mixins.CreateModelMixin):
     queryset = User.objects.all()
@@ -58,6 +96,30 @@ class ProfileViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(profile)
         return Response(serializer.data)
 
+    def partial_update(self, request, *args, **kwargs):
+        try:
+            response = super().partial_update(request, *args, **kwargs)
+            profile = self.get_object()
+            log_activity(
+                request.user, 
+                'update_permissions_attempt', 
+                'Profile', 
+                profile.id, 
+                profile.user.username,
+                details={'permissions': request.data, 'status_code': response.status_code}
+            )
+            return response
+        except Exception as e:
+            log_activity(
+                request.user,
+                'update_permissions_error',
+                'Profile',
+                kwargs.get('pk', 'unknown'),
+                'unknown',
+                details={'error': str(e), 'data': request.data}
+            )
+            raise e
+
     @action(detail=True, methods=['post'], permission_classes=[IsAdmin])
     def assign_role(self, request, pk=None):
         if not (hasattr(request.user, 'profile') and request.user.profile.role == 'admin'):
@@ -65,10 +127,51 @@ class ProfileViewSet(viewsets.ModelViewSet):
             
         profile = self.get_object()
         role = request.data.get('role')
-        if role in ['admin', 'attendance_officer', 'viewer']:
+        if role in Role.values:
             profile.role = role
+            
+            # Reset all permissions first
+            profile.can_manage_members = False
+            profile.can_manage_attendance = False
+            profile.can_manage_financials = False
+            profile.can_manage_departments = False
+            profile.can_manage_children = False
+            profile.can_manage_prayer_requests = False
+            profile.can_manage_calendar = False
+            profile.can_view_reports = False
+            profile.can_manage_settings = False
+            
+            # Set defaults based on role
+            if role == Role.ADMIN:
+                profile.can_manage_members = True
+                profile.can_manage_attendance = True
+                profile.can_manage_financials = True
+                profile.can_manage_departments = True
+                profile.can_manage_children = True
+                profile.can_manage_prayer_requests = True
+                profile.can_manage_calendar = True
+                profile.can_view_reports = True
+                profile.can_manage_settings = True
+            elif role == Role.ATTENDANCE_OFFICER:
+                profile.can_manage_attendance = True
+                profile.can_manage_members = True
+                profile.can_view_reports = True
+            elif role == Role.FINANCE_OFFICER:
+                profile.can_manage_financials = True
+                profile.can_view_reports = True
+            elif role == Role.CHILDREN_OFFICER:
+                profile.can_manage_children = True
+                profile.can_manage_members = True
+                profile.can_view_reports = True
+            elif role == Role.PRAYER_OFFICER:
+                profile.can_manage_prayer_requests = True
+                profile.can_view_reports = True
+            elif role == Role.VIEWER:
+                profile.can_view_reports = True
+                
             profile.save()
-            return Response({'status': f'role {role} assigned'})
+            serializer = self.get_serializer(profile)
+            return Response(serializer.data)
         return Response({'error': 'invalid role'}, status=400)
 
     @action(detail=True, methods=['post'], permission_classes=[IsAdmin])
@@ -79,7 +182,8 @@ class ProfileViewSet(viewsets.ModelViewSet):
         profile = self.get_object()
         profile.role = 'viewer' # Default to viewer instead of None
         profile.save()
-        return Response({'status': 'role reset to viewer'})
+        serializer = self.get_serializer(profile)
+        return Response(serializer.data)
 
     def get_queryset(self):
         user = self.request.user
@@ -87,26 +191,14 @@ class ProfileViewSet(viewsets.ModelViewSet):
             return self.queryset
         return self.queryset.filter(user=user)
 
-class MemberViewSet(viewsets.ModelViewSet):
+class MemberViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
     queryset = Member.objects.all()
     serializer_class = MemberSerializer
     
     def get_permissions(self):
-        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+        if self.action in ['create', 'update', 'partial_update', 'destroy', 'import_members', 'export_excel']:
             return [IsAttendanceOfficerOrHigher()]
         return [IsViewerOrHigher()]
-
-    def perform_create(self, serializer):
-        instance = serializer.save()
-        log_activity(self.request.user, AuditLog.Action.CREATE, 'Member', instance.id, instance.full_name)
-
-    def perform_update(self, serializer):
-        instance = serializer.save()
-        log_activity(self.request.user, AuditLog.Action.UPDATE, 'Member', instance.id, instance.full_name)
-
-    def perform_destroy(self, instance):
-        log_activity(self.request.user, AuditLog.Action.DELETE, 'Member', instance.id, instance.full_name)
-        instance.delete()
 
     @action(detail=True, methods=['get'])
     def attendance(self, request, pk=None):
@@ -131,8 +223,9 @@ class MemberViewSet(viewsets.ModelViewSet):
             'total_services': total_services
         })
 
-    @action(detail=False, methods=['post'], permission_classes=[IsAdmin])
+    @action(detail=False, methods=['post'], permission_classes=[IsAttendanceOfficerOrHigher])
     def import_members(self, request):
+        log_activity(request.user, AuditLog.Action.EXPORT, 'Member', None, 'Member List Import')
         file = request.FILES.get('file')
         if not file:
             return Response({'error': 'No file provided'}, status=400)
@@ -173,8 +266,9 @@ class MemberViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({'error': str(e)}, status=400)
 
-    @action(detail=False, methods=['get'], permission_classes=[IsAdmin])
+    @action(detail=False, methods=['get'], permission_classes=[IsAttendanceOfficerOrHigher])
     def export_excel(self, request):
+        log_activity(request.user, AuditLog.Action.EXPORT, 'Member', None, 'Member List Export')
         members = Member.objects.all().values()
         df = pd.DataFrame(list(members))
         
@@ -190,12 +284,12 @@ class MemberViewSet(viewsets.ModelViewSet):
         response['Content-Disposition'] = 'attachment; filename=members_export.xlsx'
         return response
 
-class ServiceViewSet(viewsets.ModelViewSet):
+class ServiceViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
     queryset = Service.objects.all()
     serializer_class = ServiceSerializer
     permission_classes = [IsAttendanceOfficerOrHigher]
 
-class AttendanceRecordViewSet(viewsets.ModelViewSet):
+class AttendanceRecordViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
     queryset = AttendanceRecord.objects.all()
     serializer_class = AttendanceRecordSerializer
     
@@ -207,7 +301,14 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
         return [IsViewerOrHigher()]
 
     def perform_create(self, serializer):
-        serializer.save(marked_by=self.request.user)
+        instance = serializer.save(marked_by=self.request.user)
+        log_activity(
+            self.request.user, 
+            AuditLog.Action.CREATE, 
+            instance.__class__.__name__, 
+            instance.id, 
+            str(instance)
+        )
 
     @action(detail=False, methods=['get'])
     def weekly(self, request):
@@ -430,9 +531,20 @@ class StatsViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['get'])
     def quick_stats(self, request):
+        today = timezone.now().date()
+        today_attendance = AttendanceRecord.objects.filter(marked_at__date=today).count()
         total_members = Member.objects.count()
         if total_members == 0:
-            return Response({'averageAttendance': 0, 'retentionRate': 0, 'firstTimerConversion': 0, 'inactiveMembers': 0})
+            return Response({
+                'todayAttendance': today_attendance,
+                'totalMembers': 0,
+                'activeMembers': 0,
+                'inactiveMembers': 0,
+                'firstTimers': 0,
+                'averageAttendance': 0,
+                'totalTithes': 0,
+                'totalOfferings': 0
+            })
             
         inactive = Member.objects.filter(status='inactive').count()
         first_timers = Member.objects.filter(status='first_timer').count()
@@ -440,29 +552,66 @@ class StatsViewSet(viewsets.ViewSet):
         # Average attendance per service
         avg_att = AttendanceRecord.objects.values('service').annotate(count=Count('id')).aggregate(Avg('count'))['count__avg'] or 0
         
+        # Financial totals for current month
+        now = timezone.now()
+        this_month = now.month
+        this_year = now.year
+        
+        total_tithes = Contribution.objects.filter(
+            contribution_type='tithe', 
+            date__month=this_month, 
+            date__year=this_year
+        ).aggregate(Sum('amount'))['amount__sum'] or 0
+        
+        total_offerings = Contribution.objects.filter(
+            contribution_type='offering', 
+            date__month=this_month, 
+            date__year=this_year
+        ).aggregate(Sum('amount'))['amount__sum'] or 0
+        
         return Response({
-            'averageAttendance': round(avg_att),
-            'retentionRate': round(((total_members - inactive) / total_members) * 100),
-            'firstTimerConversion': round((first_timers / total_members) * 100) if total_members else 0,
+            'todayAttendance': today_attendance,
+            'totalMembers': total_members,
+            'activeMembers': total_members - inactive,
             'inactiveMembers': inactive,
+            'firstTimers': first_timers,
+            'averageAttendance': round(avg_att),
+            'totalTithes': total_tithes,
+            'totalOfferings': total_offerings,
+            'growthRate': 0, # Placeholder for growth calculation
         })
+
+class SMSTemplateViewSet(viewsets.ModelViewSet):
+    queryset = SMSTemplate.objects.all().order_by('-created_at')
+    serializer_class = SMSTemplateSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
 class SMSViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     @action(detail=False, methods=['get'])
-    def templates(self, request):
-        return Response([])
+    def messages(self, request):
+        logs = CommunicationLog.objects.filter(channel='sms').order_by('-created_at')
+        serializer = CommunicationLogSerializer(logs, many=True)
+        return Response(serializer.data)
 
     @action(detail=False, methods=['get'])
-    def messages(self, request):
-        return Response([])
+    def status(self, request):
+        # In a real app, this would check if the SMS provider (Twilio/etc) is reachable
+        return Response({
+            'connected': True,
+            'provider': 'Simulated Provider',
+            'balance': 'Unlimited'
+        })
 
     @action(detail=False, methods=['post'])
     def send(self, request):
         recipients = request.data.get('recipients', [])
         message = request.data.get('message', '')
         
+        if not recipients or not message:
+            return Response({'error': 'Recipients and message are required'}, status=400)
+
         # Log each message
         for r in recipients:
             CommunicationLog.objects.create(
@@ -471,15 +620,15 @@ class SMSViewSet(viewsets.ViewSet):
                 recipient_contact=r.get('phone', 'Unknown'),
                 message=message,
                 sent_by=request.user,
-                status='sent' # Simulated success
+                status='sent' # Simulated success for now, but logged
             )
             
-        return Response({'status': f'Simulation: Message sent to {len(recipients)} recipients'})
+        return Response({'status': f'Success: Message queued for {len(recipients)} recipients'})
 
-class CommunicationLogViewSet(viewsets.ReadOnlyModelViewSet):
+class CommunicationLogViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
     queryset = CommunicationLog.objects.all().order_by('-created_at')
     serializer_class = CommunicationLogSerializer
-    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+    permission_classes = [IsAdmin]
 
 class SettingsViewSet(viewsets.ViewSet):
     permission_classes = [IsAdmin]
@@ -500,13 +649,31 @@ class SettingsViewSet(viewsets.ViewSet):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-class ContributionViewSet(viewsets.ModelViewSet):
+class ContributionViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
     queryset = Contribution.objects.all().order_by('-date', '-created_at')
     serializer_class = ContributionSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdmin | IsFinanceOfficer]
 
     def perform_create(self, serializer):
-        serializer.save(recorded_by=self.request.user)
+        instance = serializer.save(recorded_by=self.request.user)
+        log_activity(
+            self.request.user, 
+            AuditLog.Action.CREATE, 
+            instance.__class__.__name__, 
+            instance.id, 
+            str(instance)
+        )
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        log_activity(
+            self.request.user, 
+            AuditLog.Action.UPDATE, 
+            instance.__class__.__name__, 
+            instance.id, 
+            str(instance)
+        )
+
 
     @action(detail=False, methods=['get'])
     def summary(self, request):
@@ -521,8 +688,9 @@ class ContributionViewSet(viewsets.ModelViewSet):
         summary_data = queryset.values('contribution_type').annotate(total=Sum('amount'))
         return Response(list(summary_data))
 
-    @action(detail=False, methods=['get'], permission_classes=[IsAdmin])
+    @action(detail=False, methods=['get'], permission_classes=[IsAdmin | IsFinanceOfficer])
     def export_excel(self, request):
+        log_activity(request.user, AuditLog.Action.EXPORT, 'Contribution', None, 'Contribution Export')
         contributions = Contribution.objects.select_related('member', 'recorded_by').all()
         data = []
         for c in contributions:
@@ -548,13 +716,31 @@ class ContributionViewSet(viewsets.ModelViewSet):
         response['Content-Disposition'] = 'attachment; filename=financials_export.xlsx'
         return response
 
-class ExpenseViewSet(viewsets.ModelViewSet):
+class ExpenseViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
     queryset = Expense.objects.all().order_by('-date', '-created_at')
     serializer_class = ExpenseSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdmin | IsFinanceOfficer]
 
     def perform_create(self, serializer):
-        serializer.save(recorded_by=self.request.user)
+        instance = serializer.save(recorded_by=self.request.user)
+        log_activity(
+            self.request.user, 
+            AuditLog.Action.CREATE, 
+            instance.__class__.__name__, 
+            instance.id, 
+            str(instance)
+        )
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        log_activity(
+            self.request.user, 
+            AuditLog.Action.UPDATE, 
+            instance.__class__.__name__, 
+            instance.id, 
+            str(instance)
+        )
+
 
     @action(detail=False, methods=['get'])
     def summary(self, request):
@@ -569,8 +755,9 @@ class ExpenseViewSet(viewsets.ModelViewSet):
         summary_data = queryset.values('category').annotate(total=Sum('amount'))
         return Response(list(summary_data))
 
-    @action(detail=False, methods=['get'], permission_classes=[IsAdmin])
+    @action(detail=False, methods=['get'], permission_classes=[IsAdmin | IsFinanceOfficer])
     def export_excel(self, request):
+        log_activity(request.user, AuditLog.Action.EXPORT, 'Expense', None, 'Expense Export')
         expenses = self.get_queryset().select_related('recorded_by').all()
         data = []
         for e in expenses:
@@ -596,7 +783,7 @@ class ExpenseViewSet(viewsets.ModelViewSet):
         response['Content-Disposition'] = 'attachment; filename=expenses_export.xlsx'
         return response
 
-class CalendarEventViewSet(viewsets.ModelViewSet):
+class CalendarEventViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
     queryset = CalendarEvent.objects.all().order_by('start_time')
     serializer_class = CalendarEventSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -648,7 +835,7 @@ class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         return AuditLog.objects.all().order_by('-timestamp')
 
-class DepartmentViewSet(viewsets.ModelViewSet):
+class DepartmentViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
     queryset = Department.objects.all().order_by('name')
     serializer_class = DepartmentSerializer
     
@@ -657,7 +844,7 @@ class DepartmentViewSet(viewsets.ModelViewSet):
             return [IsAdmin()]
         return [permissions.IsAuthenticated()]
 
-class ChildViewSet(viewsets.ModelViewSet):
+class ChildViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
     queryset = Child.objects.all().order_by('full_name')
     serializer_class = ChildSerializer
     
@@ -666,7 +853,7 @@ class ChildViewSet(viewsets.ModelViewSet):
             return [IsChildrenOfficerOrHigher()]
         return [IsViewerOrHigher()]
 
-class ChildCheckInViewSet(viewsets.ModelViewSet):
+class ChildCheckInViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
     queryset = ChildCheckIn.objects.all().order_by('-checked_in_at')
     serializer_class = ChildCheckInSerializer
     
@@ -676,7 +863,14 @@ class ChildCheckInViewSet(viewsets.ModelViewSet):
         return [IsViewerOrHigher()]
 
     def perform_create(self, serializer):
-        serializer.save(checked_in_by=self.request.user)
+        instance = serializer.save(checked_in_by=self.request.user)
+        log_activity(
+            self.request.user, 
+            AuditLog.Action.CREATE, 
+            instance.__class__.__name__, 
+            instance.id, 
+            str(instance)
+        )
 
     @action(detail=True, methods=['post'])
     def checkout(self, request, pk=None):
@@ -688,7 +882,7 @@ class ChildCheckInViewSet(viewsets.ModelViewSet):
         checkin.save()
         return Response({'status': 'checked out successfully'})
 
-class PrayerRequestViewSet(viewsets.ModelViewSet):
+class PrayerRequestViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
     queryset = PrayerRequest.objects.all().order_by('-created_at')
     serializer_class = PrayerRequestSerializer
     

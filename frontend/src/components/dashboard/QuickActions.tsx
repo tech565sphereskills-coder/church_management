@@ -34,7 +34,7 @@ export function QuickActions({ serviceType = 'Sunday Service' }: QuickActionsPro
         <Button
           onClick={() => navigate('/attendance', { state: { serviceType: 'midweek_service' } })}
           variant="outline"
-          className="w-full border-primary/20 hover:bg-primary/5 text-primary justify-between"
+          className="w-full border-primary/20 text-primary justify-between"
         >
           <span className="flex items-center gap-2">
             <Coffee className="h-5 w-5" />
@@ -46,7 +46,7 @@ export function QuickActions({ serviceType = 'Sunday Service' }: QuickActionsPro
         <Button
           onClick={() => navigate('/attendance', { state: { serviceType: 'special_program' } })}
           variant="outline"
-          className="w-full border-accent/20 hover:bg-accent/5 text-accent-foreground justify-between"
+          className="w-full border-accent/20  text-primary justify-between"
         >
           <span className="flex items-center gap-2">
             <Sparkles className="h-5 w-5" />

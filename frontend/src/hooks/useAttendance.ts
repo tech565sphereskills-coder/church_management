@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
 import api from '@/lib/api';
 import axios from 'axios';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 export type ServiceType = 'sunday_service' | 'midweek_service' | 'special_program';
 
@@ -17,8 +18,8 @@ export interface Service {
 
 export interface AttendanceRecord {
   id: string;
-  member_id: string;
-  service_id: string;
+  member: string; // member id
+  service: string; // service id
   marked_by: string | null;
   marked_at: string;
 }
@@ -34,47 +35,68 @@ export interface AttendanceWithMember extends AttendanceRecord {
 }
 
 export function useAttendance() {
-  const [todayService, setTodayService] = useState<Service | null>(null);
-  const [todayAttendance, setTodayAttendance] = useState<string[]>([]);
-  const [services, setServices] = useState<Service[]>([]);
-  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { user } = useAuth();
-
-  const fetchServices = useCallback(async () => {
-    try {
-      const response = await api.get('/services/');
-      setServices(response.data);
-    } catch (error) {
-      console.error('Error fetching services:', error);
-    }
-  }, []);
+  const queryClient = useQueryClient();
 
   const getTodayDateString = () => {
     return new Date().toISOString().split('T')[0];
   };
 
-  useEffect(() => {
-    if (user) {
-      fetchServices();
-    }
-  }, [user, fetchServices]);
+  // Queries
+  const { data: services = [], isLoading: servicesLoading } = useQuery({
+    queryKey: ['services'],
+    queryFn: async () => {
+      const response = await api.get('/services/');
+      return response.data;
+    },
+    enabled: !!user,
+  });
 
-  const getOrCreateTodayService = useCallback(async (serviceType: ServiceType): Promise<Service | null> => {
+  // Query for today's services (usually only one active at a time)
+  const { data: todayServices = [] } = useQuery({
+    queryKey: ['services', 'today', getTodayDateString()],
+    queryFn: async () => {
+      const response = await api.get('/services/', {
+        params: { service_date: getTodayDateString() }
+      });
+      return response.data as Service[];
+    },
+    enabled: !!user,
+  });
+
+  // Today's attendance for the first active service found today
+  const activeServiceId = todayServices[0]?.id;
+  const { data: todayAttendance = [] } = useQuery({
+    queryKey: ['attendance', 'today', activeServiceId],
+    queryFn: async () => {
+      if (!activeServiceId) return [];
+      const response = await api.get('/attendance/', {
+        params: { service: activeServiceId }
+      });
+      // Handle potential pagination or raw array
+      const results = (response.data.results || response.data) as AttendanceRecord[];
+      return results.map((r) => r.member);
+    },
+    enabled: !!user && !!activeServiceId,
+  });
+
+  const fetchServices = useCallback(async () => {
+    queryClient.invalidateQueries({ queryKey: ['services'] });
+  }, [queryClient]);
+
+  const getOrCreateTodayService = async (serviceType: ServiceType): Promise<Service | null> => {
     const today = getTodayDateString();
     
     try {
-      // First, try to find existing service for today
       const response = await api.get('/services/', {
         params: { service_date: today, service_type: serviceType }
       });
 
       if (response.data.length > 0) {
-        setTodayService(response.data[0]);
         return response.data[0];
       }
 
-      // Create new service for today
       const serviceNames: Record<ServiceType, string> = {
         sunday_service: 'Sunday Service',
         midweek_service: 'Midweek Service',
@@ -87,8 +109,7 @@ export function useAttendance() {
         service_date: today,
       });
 
-      setTodayService(createResponse.data);
-      await fetchServices(); // Refresh services list
+      queryClient.invalidateQueries({ queryKey: ['services'] });
       return createResponse.data;
     } catch (error) {
       console.error('Error getting/creating service:', error);
@@ -99,44 +120,35 @@ export function useAttendance() {
       });
       return null;
     }
-  }, [toast, fetchServices]);
-
-  const fetchTodayAttendance = useCallback(async (serviceId: string) => {
-    try {
-      const response = await api.get('/attendance/', {
-        params: { service: serviceId }
-      });
-      setTodayAttendance(response.data.results.map((r: { member: string }) => r.member));
-    } catch (error) {
-      console.error('Error fetching attendance:', error);
-    }
-  }, []);
+  };
 
   const markAttendance = async (memberId: string, serviceId: string): Promise<boolean> => {
     try {
-      const response = await api.post('/attendance/', {
+      await api.post('/attendance/', {
         member: memberId,
         service: serviceId,
       });
 
-      setTodayAttendance(response.data.records.map((r: { member: string }) => r.member));
+      // Invalidate all related queries
+      queryClient.invalidateQueries({ queryKey: ['attendance'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      
       return true;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        console.error('Error marking attendance:', error);
         if (error.response?.status === 400 && error.response?.data?.non_field_errors) {
           toast({
             title: 'Already Marked',
             description: 'This member has already been marked present for this service.',
             variant: 'destructive',
           });
+        } else {
+          toast({
+            title: 'Error',
+            description: error.response?.data?.detail || 'Failed to mark attendance',
+            variant: 'destructive',
+          });
         }
-      } else {
-        toast({
-          title: 'Error',
-          description: 'Failed to mark attendance',
-          variant: 'destructive',
-        });
       }
       return false;
     }
@@ -157,7 +169,6 @@ export function useAttendance() {
           service_type: filters?.serviceType,
         }
       });
-
       return response.data;
     } catch (error) {
       console.error('Error fetching attendance history:', error);
@@ -181,16 +192,16 @@ export function useAttendance() {
   };
 
   return {
-    todayService,
+    todayService: todayServices[0] || null,
     todayAttendance,
     services,
-    loading,
+    loading: servicesLoading,
     fetchServices,
     getOrCreateTodayService,
-    fetchTodayAttendance,
+    fetchTodayAttendance: (id: string) => queryClient.invalidateQueries({ queryKey: ['attendance', 'today', id] }),
     markAttendance,
     getAttendanceHistory,
     getAttendanceStats,
-    setLoading,
+    setLoading: (_loading: boolean) => {}, // No-op for compatibility
   };
 }

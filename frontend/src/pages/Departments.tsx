@@ -45,7 +45,7 @@ export default function Departments() {
     return departments.filter((d) =>
       d.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       d.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      d.leader_name?.toLowerCase().includes(searchQuery.toLowerCase())
+      d.hod_name?.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [departments, searchQuery]);
 
@@ -146,7 +146,7 @@ export default function Departments() {
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <UserCircle2 className="h-4 w-4 text-primary" />
-                  <span className="font-medium">{dept.leader_name || 'No Leader'}</span>
+                  <span className="font-medium">{dept.hod_name || 'No HOD'}</span>
                 </div>
               </div>
             </motion.div>

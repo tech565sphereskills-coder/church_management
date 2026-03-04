@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 export type MemberStatus = 'active' | 'inactive' | 'first_timer';
 export type Gender = 'male' | 'female';
@@ -12,6 +13,7 @@ export interface Member {
   phone: string;
   gender: Gender;
   department: string | null;
+  department_name?: string | null;
   date_joined: string;
   status: MemberStatus;
   invited_by: string | null;
@@ -37,33 +39,25 @@ export interface NewMemberData {
 }
 
 export function useMembers() {
-  const [members, setMembers] = useState<Member[]>([]);
-  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  const { data: members = [], isLoading, refetch } = useQuery({
+    queryKey: ['members'],
+    queryFn: async () => {
+      const response = await api.get('/members/');
+      return response.data;
+    },
+    enabled: !!user,
+  });
 
   const fetchMembers = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await api.get('/members/');
-      setMembers(response.data);
-    } catch (error) {
-      console.error('Error fetching members:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load members',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
+    await refetch();
+  }, [refetch]);
 
-  useEffect(() => {
-    if (user) {
-      fetchMembers();
-    }
-  }, [user, fetchMembers]);
+  const loading = isLoading;
+
 
   const searchMembers = async (query: string): Promise<Member[]> => {
     if (!query.trim()) return [];
@@ -100,7 +94,8 @@ export function useMembers() {
         description: `${memberData.full_name} has been registered successfully.`,
       });
 
-      await fetchMembers();
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
       return response.data;
     } catch (error: any) {
       console.error('Error creating member:', error);
@@ -130,7 +125,8 @@ export function useMembers() {
         description: 'Member information has been updated.',
       });
 
-      await fetchMembers();
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
       return true;
     } catch (error) {
       console.error('Error updating member:', error);
@@ -152,7 +148,8 @@ export function useMembers() {
         description: 'Member has been removed from the system.',
       });
 
-      await fetchMembers();
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
       return true;
     } catch (error) {
       console.error('Error deleting member:', error);

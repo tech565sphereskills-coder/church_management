@@ -67,6 +67,18 @@ class Profile(models.Model):
     full_name = models.CharField(max_length=255, blank=True, null=True)
     avatar_url = models.URLField(max_length=500, blank=True, null=True)
     role = models.CharField(max_length=50, choices=Role.choices, default=Role.VIEWER)
+    
+    # Granular Permissions
+    can_manage_members = models.BooleanField(default=False)
+    can_manage_attendance = models.BooleanField(default=False)
+    can_manage_financials = models.BooleanField(default=False)
+    can_manage_departments = models.BooleanField(default=False)
+    can_manage_children = models.BooleanField(default=False)
+    can_manage_prayer_requests = models.BooleanField(default=False)
+    can_manage_calendar = models.BooleanField(default=False)
+    can_view_reports = models.BooleanField(default=False)
+    can_manage_settings = models.BooleanField(default=False)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -77,7 +89,7 @@ class Department(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255, unique=True)
     description = models.TextField(blank=True, null=True)
-    leader = models.ForeignKey('Member', on_delete=models.SET_NULL, null=True, blank=True, related_name='led_departments')
+    head_of_department = models.ForeignKey('Member', on_delete=models.SET_NULL, null=True, blank=True, related_name='headed_departments')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -240,11 +252,6 @@ class AuditLog(models.Model):
 
     def __str__(self):
         return f"{self.user} - {self.action} - {self.model_name} ({self.timestamp})"
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        member_name = self.member.full_name if self.member else "Anonymous"
-        return f"{self.contribution_type} - {member_name} - {self.amount} ({self.date})"
 
 class Child(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -311,6 +318,16 @@ class ChurchSettings(models.Model):
 
     def __str__(self):
         return self.church_name
+
+class SMSTemplate(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=100)
+    body = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
 
 class CommunicationLog(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

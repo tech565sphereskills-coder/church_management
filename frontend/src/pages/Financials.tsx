@@ -12,7 +12,10 @@ import {
   Filter,
   ArrowDownCircle,
   ArrowUpCircle,
-  Scale
+  Scale,
+  Edit2,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 import api from '@/lib/api';
@@ -40,10 +43,24 @@ import { ContributionDialog } from '@/components/financials/ContributionDialog';
 import { ExpenseDialog } from '@/components/financials/ExpenseDialog';
 import { Skeleton } from '@/components/ui/skeleton';
 
+
+
 export default function Financials() {
-  const { contributions, expenses, loading, summary, createContribution, createExpense } = useFinancials();
+  const { 
+    contributions, 
+    expenses, 
+    loading, 
+    createContribution, 
+    updateContribution, 
+    deleteContribution,
+    createExpense,
+    updateExpense,
+    deleteExpense
+  } = useFinancials();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isExpenseDialogOpen, setIsExpenseDialogOpen] = useState(false);
+  const [editingContribution, setEditingContribution] = useState<Contribution | null>(null);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('income');
@@ -73,17 +90,42 @@ export default function Financials() {
   }, [expenses, searchQuery, typeFilter]);
 
   const stats = useMemo(() => {
-    const totalIncome = contributions.reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
-    const totalExpenses = expenses.reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    const monthlyContributions = contributions.filter(c => {
+      const d = new Date(c.date);
+      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    });
+
+    const monthlyExpenses = expenses.filter(e => {
+      const d = new Date(e.date);
+      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    });
+
+    const totalIncome = monthlyContributions.reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
+    const totalExpenses = monthlyExpenses.reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
+    
+    const totalTithes = monthlyContributions
+      .filter(c => c.contribution_type === 'tithe')
+      .reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
+    
+    const totalOfferings = monthlyContributions
+      .filter(c => c.contribution_type === 'offering')
+      .reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
+      
     const netPosition = totalIncome - totalExpenses;
     
-    return { totalIncome, totalExpenses, netPosition };
+    return { totalIncome, totalExpenses, totalTithes, totalOfferings, netPosition };
   }, [contributions, expenses]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-NG', {
       style: 'currency',
       currency: 'NGN',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(amount);
   };
 
@@ -101,6 +143,28 @@ export default function Financials() {
       link.remove();
     } catch (error) {
       console.error('Export failed', error);
+    }
+  };
+
+  const handleEditContribution = (c: Contribution) => {
+    setEditingContribution(c);
+    setIsDialogOpen(true);
+  };
+
+  const handleDeleteContribution = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this contribution? This action cannot be undone.')) {
+      await deleteContribution(id);
+    }
+  };
+
+  const handleEditExpense = (e: Expense) => {
+    setEditingExpense(e);
+    setIsExpenseDialogOpen(true);
+  };
+
+  const handleDeleteExpense = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this expense record? This action cannot be undone.')) {
+      await deleteExpense(id);
     }
   };
 
@@ -131,11 +195,12 @@ export default function Financials() {
             className="flex items-center gap-4 rounded-2xl border border-emerald-100 bg-emerald-50/30 p-5 shadow-sm"
           >
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500 shadow-lg shadow-emerald-200">
-              <ArrowUpCircle className="h-7 w-7 text-white" />
+              <TrendingUp className="h-7 w-7 text-white" />
             </div>
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-emerald-600/80">Total Income</p>
-              <p className="text-2xl font-black text-emerald-900">{formatCurrency(stats.totalIncome)}</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-emerald-600/80">Total Tithes</p>
+              <p className="text-2xl font-black text-emerald-900">{formatCurrency(stats.totalTithes)}</p>
+              <p className="text-[10px] text-emerald-600/60 font-medium">This Month</p>
             </div>
           </motion.div>
 
@@ -143,6 +208,22 @@ export default function Financials() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.1 }}
+            className="flex items-center gap-4 rounded-2xl border border-blue-100 bg-blue-50/30 p-5 shadow-sm"
+          >
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-500 shadow-lg shadow-blue-200">
+              <Banknote className="h-7 w-7 text-white" />
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-blue-600/80">Total Offerings</p>
+              <p className="text-2xl font-black text-blue-900">{formatCurrency(stats.totalOfferings)}</p>
+              <p className="text-[10px] text-blue-600/60 font-medium">This Month</p>
+            </div>
+          </motion.div>
+
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2 }}
             className="flex items-center gap-4 rounded-2xl border border-rose-100 bg-rose-50/30 p-5 shadow-sm"
           >
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-500 shadow-lg shadow-rose-200">
@@ -151,21 +232,7 @@ export default function Financials() {
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-rose-600/80">Expenditure</p>
               <p className="text-2xl font-black text-rose-900">{formatCurrency(stats.totalExpenses)}</p>
-            </div>
-          </motion.div>
-
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
-            className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-          >
-            <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${stats.netPosition >= 0 ? 'bg-slate-900' : 'bg-orange-500'} shadow-lg`}>
-              <Scale className="h-7 w-7 text-white" />
-            </div>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Net Position</p>
-              <p className={`text-2xl font-black ${stats.netPosition >= 0 ? 'text-slate-900' : 'text-orange-600'}`}>{formatCurrency(stats.netPosition)}</p>
+              <p className="text-[10px] text-rose-600/60 font-medium">This Month</p>
             </div>
           </motion.div>
         </div>
@@ -212,11 +279,11 @@ export default function Financials() {
               <Download className="mr-2 h-4 w-4" /> Export
             </Button>
             {activeTab === 'income' ? (
-              <Button onClick={() => setIsDialogOpen(true)} className="btn-gold h-11">
+              <Button onClick={() => { setEditingContribution(null); setIsDialogOpen(true); }} className="btn-gold h-11">
                 <Plus className="mr-2 h-4 w-4" /> Record Payment
               </Button>
             ) : (
-              <Button onClick={() => setIsExpenseDialogOpen(true)} className="bg-slate-900 hover:bg-slate-800 text-white shadow-lg h-11">
+              <Button onClick={() => { setEditingExpense(null); setIsExpenseDialogOpen(true); }} className="bg-slate-900 hover:bg-slate-800 text-white shadow-lg h-11">
                 <Plus className="mr-2 h-4 w-4" /> Record Expense
               </Button>
             )}
@@ -235,40 +302,63 @@ export default function Financials() {
               animate={{ opacity: 1, x: 0 }}
               className="rounded-xl border border-border bg-card overflow-hidden"
             >
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-slate-50/50">
-                    <TableHead>Date</TableHead>
-                    <TableHead>Member / Source</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Method</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredContributions.map((c) => (
-                    <TableRow key={c.id} className="hover:bg-slate-50/50 transition-colors">
-                      <TableCell className="font-medium text-slate-500">
-                        {new Date(c.date).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="font-bold text-slate-900">
-                        {c.member_name || <Badge variant="outline" className="text-[10px] uppercase">Anonymous</Badge>}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="capitalize bg-primary/5 text-primary border-none">
-                          {c.contribution_type.replace('_', ' ')}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="capitalize text-slate-500 font-medium">
-                        {c.payment_method.replace('_', ' ')}
-                      </TableCell>
-                      <TableCell className="text-right font-black text-emerald-600">
-                        {formatCurrency(parseFloat(c.amount))}
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-slate-50/50">
+                      <TableHead>Date</TableHead>
+                      <TableHead>Member / Source</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Method</TableHead>
+                      <TableHead className="text-center">Actions</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredContributions.map((c) => (
+                      <TableRow key={c.id} className="hover:bg-slate-50/50 transition-colors">
+                        <TableCell className="font-medium text-slate-500">
+                          {new Date(c.date).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="font-bold text-slate-900">
+                          {c.member_name || <Badge variant="outline" className="text-[10px] uppercase">Anonymous</Badge>}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="capitalize bg-primary/5 text-primary border-none">
+                            {c.contribution_type.replace('_', ' ')}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="capitalize text-slate-500 font-medium">
+                          {c.payment_method.replace('_', ' ')}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex justify-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditContribution(c)}
+                              className="h-8 px-2 text-blue-600 border-blue-100 hover:bg-blue-50"
+                            >
+                              <Edit2 className="h-4 w-4 mr-1" /> Edit
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteContribution(c.id)}
+                              className="h-8 px-2 text-rose-600 border-rose-100 hover:bg-rose-50"
+                            >
+                              <Trash2 className="h-4 w-4 mr-1" /> Delete
+                            </Button>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right font-black text-emerald-600">
+                          {formatCurrency(parseFloat(c.amount))}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </motion.div>
           </TabsContent>
 
@@ -278,43 +368,66 @@ export default function Financials() {
               animate={{ opacity: 1, x: 0 }}
               className="rounded-xl border border-border bg-card overflow-hidden"
             >
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-slate-50/50">
-                    <TableHead>Date</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredExpenses.map((e) => (
-                    <TableRow key={e.id} className="hover:bg-rose-50/30 transition-colors border-rose-100">
-                      <TableCell className="font-medium text-slate-500">
-                        {new Date(e.date).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="font-bold text-slate-900">
-                        {e.description}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="capitalize border-slate-200">
-                          {e.category.replace('_', ' ')}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right font-black text-rose-600">
-                        {formatCurrency(parseFloat(e.amount))}
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-slate-50/50">
+                      <TableHead>Date</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead className="text-center">Actions</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
                     </TableRow>
-                  ))}
-                  {filteredExpenses.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={4} className="h-32 text-center text-slate-400 font-medium">
-                        No expenditure records found.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredExpenses.map((e) => (
+                      <TableRow key={e.id} className="hover:bg-rose-50/30 transition-colors border-rose-100">
+                        <TableCell className="font-medium text-slate-500">
+                          {new Date(e.date).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="font-bold text-slate-900">
+                          {e.description}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="capitalize border-slate-200">
+                            {e.category.replace('_', ' ')}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex justify-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditExpense(e)}
+                              className="h-8 px-2 text-blue-600 border-blue-100 hover:bg-blue-50"
+                            >
+                              <Edit2 className="h-4 w-4 mr-1" /> Edit
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteExpense(e.id)}
+                              className="h-8 px-2 text-rose-600 border-rose-100 hover:bg-rose-50"
+                            >
+                              <Trash2 className="h-4 w-4 mr-1" /> Delete
+                            </Button>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right font-black text-rose-600">
+                          {formatCurrency(parseFloat(e.amount))}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {filteredExpenses.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={4} className="h-32 text-center text-slate-400 font-medium">
+                          No expenditure records found.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             </motion.div>
           </TabsContent>
         </Tabs>
@@ -323,13 +436,27 @@ export default function Financials() {
       <ContributionDialog
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
-        onSave={createContribution}
+        onSave={async (data) => {
+          if (editingContribution) {
+            return await updateContribution(editingContribution.id, data);
+          } else {
+            return await createContribution(data);
+          }
+        }}
+        initialData={editingContribution || undefined}
       />
 
       <ExpenseDialog
         open={isExpenseDialogOpen}
         onOpenChange={setIsExpenseDialogOpen}
-        onSave={createExpense}
+        onSave={async (data) => {
+          if (editingExpense) {
+            return await updateExpense(editingExpense.id, data);
+          } else {
+            return await createExpense(data);
+          }
+        }}
+        initialData={editingExpense || undefined}
       />
     </div>
   );

@@ -34,24 +34,23 @@ interface MenuItem {
   label: string;
   path: string;
   adminOnly?: boolean;
-  financeOnly?: boolean;
-  childrenOnly?: boolean;
-  prayerOnly?: boolean;
+  permission?: import('@/types/auth').PermissionKey | import('@/types/auth').PermissionKey[];
+  matchAll?: boolean;
 }
 
 const menuItems: MenuItem[] = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
-  { icon: CalendarIcon, label: 'Calendar', path: '/calendar' },
-  { icon: UserCheck, label: 'Attendance', path: '/attendance' },
-  { icon: Users, label: 'Members', path: '/members' },
+  { icon: CalendarIcon, label: 'Calendar', path: '/calendar', permission: 'canManageCalendar' },
+  { icon: UserCheck, label: 'Attendance', path: '/attendance', permission: 'canManageAttendance' },
+  { icon: Users, label: 'Members', path: '/members', permission: 'canManageMembers' },
   { icon: MessageSquare, label: 'Messaging', path: '/messaging' },
-  { icon: AlertTriangle, label: 'Follow-Up', path: '/follow-up' },
-  { icon: Banknote, label: 'Financials', path: '/financials', financeOnly: true },
-  { icon: Building2, label: 'Departments', path: '/departments' },
-  { icon: Baby, label: 'Children', path: '/children', childrenOnly: true },
-  { icon: HandHelping, label: 'Prayer Requests', path: '/prayer-requests', prayerOnly: true },
+  { icon: AlertTriangle, label: 'Follow-Up', path: '/follow-up', permission: 'canManageMembers' },
+  { icon: Banknote, label: 'Financials', path: '/financials', permission: 'canManageFinances' },
+  { icon: Building2, label: 'Departments', path: '/departments', permission: 'canManageDepartments' },
+  { icon: Baby, label: 'Children', path: '/children', permission: 'canManageChildren' },
+  { icon: HandHelping, label: 'Prayer Requests', path: '/prayer-requests', permission: 'canManagePrayer' },
   { icon: History, label: 'History', path: '/history' },
-  { icon: BarChart3, label: 'Reports', path: '/reports' },
+  { icon: BarChart3, label: 'Reports', path: '/reports', permission: 'canViewReports' },
   { icon: ShieldCheck, label: 'Audit Logs', path: '/audit-logs', adminOnly: true },
   { icon: Settings, label: 'Settings', path: '/settings' },
 ];
@@ -66,9 +65,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({ isCollapsed, onToggle, isMobile, mobileOpen, onMobileClose }: AppSidebarProps) {
   const location = useLocation();
-  const { user, role, signOut, isAdmin, isFinanceOfficer, 
-    isChildrenOfficer, isPrayerOfficer 
-  } = useAuth();
+  const { user, role, signOut, isAdmin, ...authProps } = useAuth();
   const { theme, setTheme } = useTheme();
 
   const getUserInitials = () => {
@@ -109,9 +106,7 @@ export function AppSidebar({ isCollapsed, onToggle, isMobile, mobileOpen, onMobi
               onToggle={onToggle}
               location={location}
               isAdmin={isAdmin}
-              isFinanceOfficer={isFinanceOfficer}
-              isChildrenOfficer={isChildrenOfficer}
-              isPrayerOfficer={isPrayerOfficer}
+              authProps={authProps}
               user={user}
               role={role}
               signOut={signOut}
@@ -139,9 +134,7 @@ export function AppSidebar({ isCollapsed, onToggle, isMobile, mobileOpen, onMobi
         onToggle={onToggle}
         location={location}
         isAdmin={isAdmin}
-        isFinanceOfficer={isFinanceOfficer}
-        isChildrenOfficer={isChildrenOfficer}
-        isPrayerOfficer={isPrayerOfficer}
+        authProps={authProps}
         user={user}
         role={role}
         signOut={signOut}
@@ -160,9 +153,7 @@ interface SidebarContentProps {
   onToggle: () => void;
   location: ReturnType<typeof useLocation>;
   isAdmin: boolean;
-  isFinanceOfficer: boolean;
-  isChildrenOfficer: boolean;
-  isPrayerOfficer: boolean;
+  authProps: Omit<import('@/types/auth').AuthContextType, 'user' | 'role' | 'loading' | 'signIn' | 'signInWithGoogle' | 'signUp' | 'signOut' | 'isAdmin' | 'isOfficer' | 'isFinanceOfficer' | 'isChildrenOfficer' | 'isPrayerOfficer'>;
   user: { email?: string; username?: string } | null;
   role: string | null;
   signOut: () => void;
@@ -174,8 +165,7 @@ interface SidebarContentProps {
 }
 
 function SidebarContent({
-  isCollapsed, onToggle, location, isAdmin, isFinanceOfficer, 
-  isChildrenOfficer, isPrayerOfficer, user, signOut,
+  isCollapsed, onToggle, location, isAdmin, authProps, user, signOut,
   getUserInitials, getRoleLabel, onNavClick, theme, setTheme,
 }: SidebarContentProps) {
   return (
@@ -191,7 +181,7 @@ function SidebarContent({
               transition={{ duration: 0.2 }}
               className="flex items-center gap-3"
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white p-1">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white dark:bg-white/10 p-1 ring-1 ring-white/10">
                 <img src={RCCG_LOGO_URL} alt="RCCG Logo" className="h-full w-full object-contain" />
               </div>
               <div className="flex flex-col">
@@ -203,7 +193,7 @@ function SidebarContent({
         </AnimatePresence>
 
         {isCollapsed && (
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-white p-1">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-white dark:bg-white/10 p-1 ring-1 ring-white/10">
             <img src={RCCG_LOGO_URL} alt="RCCG Logo" className="h-full w-full object-contain" />
           </div>
         )}
@@ -214,9 +204,13 @@ function SidebarContent({
         <ul className="space-y-1">
           {menuItems.map((item) => {
             if (item.adminOnly && !isAdmin) return null;
-            if (item.financeOnly && !isAdmin && !isFinanceOfficer) return null;
-            if (item.childrenOnly && !isAdmin && !isChildrenOfficer) return null;
-            if (item.prayerOnly && !isAdmin && !isPrayerOfficer) return null;
+            if (item.permission) {
+              const permsArray = Array.isArray(item.permission) ? item.permission : [item.permission];
+              const isAuthorized = item.matchAll 
+                ? permsArray.every(p => !!authProps[p as keyof typeof authProps])
+                : permsArray.some(p => !!authProps[p as keyof typeof authProps]);
+              if (!isAuthorized) return null;
+            }
             const isActive = location.pathname === item.path;
             return (
               <li key={item.path}>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -64,9 +64,10 @@ interface ContributionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (data: Partial<import('@/hooks/useFinancials').Contribution>) => Promise<import('@/hooks/useFinancials').Contribution | null>;
+  initialData?: import('@/hooks/useFinancials').Contribution;
 }
 
-export function ContributionDialog({ open, onOpenChange, onSave }: ContributionDialogProps) {
+export function ContributionDialog({ open, onOpenChange, onSave, initialData }: ContributionDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const { members } = useMembers();
   const [memberSearch, setMemberSearch] = useState('');
@@ -87,6 +88,31 @@ export function ContributionDialog({ open, onOpenChange, onSave }: ContributionD
       notes: '',
     },
   });
+
+  // Update form when initialData changes or dialog opens
+  useEffect(() => {
+    if (open) {
+      if (initialData) {
+        form.reset({
+          member: initialData.member,
+          amount: initialData.amount,
+          contribution_type: initialData.contribution_type,
+          date: initialData.date,
+          payment_method: initialData.payment_method,
+          notes: initialData.notes || '',
+        });
+      } else {
+        form.reset({
+          member: null,
+          amount: '',
+          contribution_type: 'tithe',
+          date: new Date().toISOString().split('T')[0],
+          payment_method: 'bank_transfer',
+          notes: '',
+        });
+      }
+    }
+  }, [open, initialData, form]);
 
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
@@ -111,7 +137,7 @@ export function ContributionDialog({ open, onOpenChange, onSave }: ContributionD
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Banknote className="h-5 w-5 text-primary" />
-            Record Contribution
+            {initialData ? 'Edit Contribution' : 'Record Contribution'}
           </DialogTitle>
           <DialogDescription>
             Enter details for tithes, offerings, or other church funds.
@@ -265,7 +291,7 @@ export function ContributionDialog({ open, onOpenChange, onSave }: ContributionD
                 ) : (
                   <>
                     <Banknote className="mr-2 h-4 w-4" />
-                    Record Payment
+                    {initialData ? 'Update Record' : 'Record Payment'}
                   </>
                 )}
               </Button>

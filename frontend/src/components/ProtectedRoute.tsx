@@ -3,11 +3,19 @@ import { useAuth } from '@/hooks/useAuth';
 
 interface ProtectedRouteProps {
   requiredRole?: import('@/types/auth').AppRole | import('@/types/auth').AppRole[];
+  requiredPermission?: import('@/types/auth').PermissionKey | import('@/types/auth').PermissionKey[];
+  matchAllPermissions?: boolean;
   requireAnyRole?: boolean;
 }
 
-export function ProtectedRoute({ requiredRole, requireAnyRole = true }: ProtectedRouteProps) {
-  const { user, role, loading } = useAuth();
+export function ProtectedRoute({ 
+  requiredRole, 
+  requiredPermission, 
+  matchAllPermissions = false,
+  requireAnyRole = true 
+}: ProtectedRouteProps) {
+  const auth = useAuth();
+  const { user, role, loading } = auth;
 
   if (loading) {
     return (
@@ -38,8 +46,21 @@ export function ProtectedRoute({ requiredRole, requireAnyRole = true }: Protecte
     );
   }
 
-  // Check for specific role requirement
-  if (requiredRole) {
+  let isAuthorized = true;
+
+  // Check for specific permission requirement
+  if (requiredPermission) {
+    const permsArray = Array.isArray(requiredPermission) ? requiredPermission : [requiredPermission];
+    
+    if (matchAllPermissions) {
+      isAuthorized = permsArray.every(p => !!auth[p]);
+    } else {
+      isAuthorized = permsArray.some(p => !!auth[p]);
+    }
+  }
+
+  // Check for specific role requirement (if permission check hasn't already failed or wasn't present)
+  if (isAuthorized && requiredRole) {
     const roleHierarchy: Record<string, number> = {
       admin: 4,
       finance_officer: 3,
@@ -49,7 +70,6 @@ export function ProtectedRoute({ requiredRole, requireAnyRole = true }: Protecte
 
     const userRoleLevel = role ? roleHierarchy[role] : 0;
     
-    let isAuthorized = false;
     if (Array.isArray(requiredRole)) {
       // If array, authorize if user has any of the literal roles
       isAuthorized = requiredRole.includes(role as import('@/types/auth').AppRole);
@@ -58,19 +78,19 @@ export function ProtectedRoute({ requiredRole, requireAnyRole = true }: Protecte
       const requiredRoleLevel = roleHierarchy[requiredRole];
       isAuthorized = userRoleLevel >= requiredRoleLevel;
     }
+  }
 
-    if (!isAuthorized) {
-      return (
-        <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-          <div className="text-center">
-            <h2 className="text-xl font-semibold text-foreground">Access Denied</h2>
-            <p className="mt-2 text-muted-foreground">
-              You don't have permission to access this page.
-            </p>
-          </div>
+  if (!isAuthorized) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-foreground">Access Denied</h2>
+          <p className="mt-2 text-muted-foreground">
+            You don't have permission to access this page.
+          </p>
         </div>
-      );
-    }
+      </div>
+    );
   }
 
   return <Outlet />;

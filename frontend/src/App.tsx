@@ -26,6 +26,7 @@ import SubmitPrayer from "./pages/SubmitPrayer";
 import ResetPassword from "./pages/ResetPassword";
 import Calendar from "./pages/Calendar";
 import AuditLogs from "./pages/AuditLogs";
+import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,17 +51,25 @@ const App = () => (
               <Route element={<ProtectedRoute />}>
                 <Route element={<MainLayout />}>
                   <Route path="/" element={<Dashboard />} />
-                  <Route path="/calendar" element={<Calendar />} />
-                  <Route path="/attendance" element={<Attendance />} />
-                  <Route path="/members" element={<Members />} />
-                  <Route path="/members/:memberId" element={<MemberProfile />} />
-                  <Route path="/history" element={<ProtectedRoute requiredRole="attendance_officer" />}>
+                  <Route path="/calendar" element={<ProtectedRoute requiredPermission="canManageCalendar" />}>
+                    <Route index element={<Calendar />} />
+                  </Route>
+                  <Route path="/attendance" element={<ProtectedRoute requiredPermission="canManageAttendance" />}>
+                    <Route index element={<Attendance />} />
+                  </Route>
+                  <Route path="/members" element={<ProtectedRoute requiredPermission="canManageMembers" />}>
+                    <Route index element={<Members />} />
+                  </Route>
+                  <Route path="/members/:memberId" element={<ProtectedRoute requiredPermission="canManageMembers" />}>
+                    <Route index element={<MemberProfile />} />
+                  </Route>
+                  <Route path="/history" element={<ProtectedRoute requiredPermission="canManageAttendance" />}>
                     <Route index element={<History />} />
                   </Route>
-                  <Route path="/reports" element={<ProtectedRoute requiredRole="attendance_officer" />}>
+                  <Route path="/reports" element={<ProtectedRoute requiredPermission="canViewReports" />}>
                     <Route index element={<Reports />} />
                   </Route>
-                  <Route path="/settings" element={<ProtectedRoute requiredRole="admin" />}>
+                  <Route path="/settings" element={<ProtectedRoute requiredPermission="canManageSettings" />}>
                     <Route index element={<Settings />} />
                   </Route>
                   <Route path="/audit-logs" element={<ProtectedRoute requiredRole="admin" />}>
@@ -69,22 +78,23 @@ const App = () => (
                   <Route path="/user-management" element={<ProtectedRoute requiredRole="admin" />}>
                     <Route index element={<UserManagement />} />
                   </Route>
-                  <Route path="/follow-up" element={<ProtectedRoute requiredRole="attendance_officer" />}>
+                  <Route path="/follow-up" element={<ProtectedRoute requiredPermission="canManageMembers" />}>
                     <Route index element={<FollowUp />} />
                   </Route>
-                  <Route path="/messaging" element={<ProtectedRoute requiredRole="attendance_officer" />}>
+                  <Route path="/messaging" element={<ProtectedRoute requiredPermission="canManageMembers" />}>
                     <Route index element={<Messaging />} />
                   </Route>
-                  <Route path="/financials" element={<ProtectedRoute requiredRole={['admin', 'finance_officer']} />}>
+                  <Route path="/financials" element={<ProtectedRoute requiredPermission="canManageFinances" />}>
                     <Route index element={<Financials />} />
                   </Route>
                   <Route path="/departments" element={<Departments />} />
-                  <Route path="/children" element={<ProtectedRoute requiredRole={['admin', 'children_officer']} />}>
+                  <Route path="/children" element={<ProtectedRoute requiredPermission="canManageChildren" />}>
                     <Route index element={<Children />} />
                   </Route>
-                  <Route path="/prayer-requests" element={<ProtectedRoute requiredRole={['admin', 'prayer_officer']} />}>
+                  <Route path="/prayer-requests" element={<ProtectedRoute requiredPermission="canManagePrayer" />}>
                     <Route index element={<PrayerRequests />} />
                   </Route>
+                  <Route path="/notifications" element={<Notifications />} />
                 </Route>
               </Route>
               
