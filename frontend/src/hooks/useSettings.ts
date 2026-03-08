@@ -95,6 +95,69 @@ export function useSettings() {
     }
   };
 
+  const get2FAStatus = async (): Promise<boolean> => {
+    try {
+      const response = await api.get('/two-factor/status/');
+      return response.data.is_enabled;
+    } catch (error) {
+      console.error('Error fetching 2FA status:', error);
+      return false;
+    }
+  };
+
+  const enable2FA = async (): Promise<{ qr_code: string; secret: string } | null> => {
+    try {
+      const response = await api.post('/two-factor/enable/');
+      return response.data;
+    } catch (error) {
+      console.error('Error enabling 2FA:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to initialize 2FA setup',
+        variant: 'destructive',
+      });
+      return null;
+    }
+  };
+
+  const verify2FA = async (token: string): Promise<boolean> => {
+    try {
+      await api.post('/two-factor/verify/', { token });
+      toast({
+        title: '2FA Enabled',
+        description: 'Two-Factor Authentication is now active on your account.',
+      });
+      return true;
+    } catch (error) {
+      console.error('Error verifying 2FA:', error);
+      toast({
+        title: 'Verification Failed',
+        description: 'Invalid token. Please try again.',
+        variant: 'destructive',
+      });
+      return false;
+    }
+  };
+
+  const disable2FA = async (token: string): Promise<boolean> => {
+    try {
+      await api.post('/two-factor/disable/', { token });
+      toast({
+        title: '2FA Disabled',
+        description: 'Two-Factor Authentication has been removed.',
+      });
+      return true;
+    } catch (error) {
+      console.error('Error disabling 2FA:', error);
+      toast({
+        title: 'Error',
+        description: 'Invalid token. Failed to disable 2FA.',
+        variant: 'destructive',
+      });
+      return false;
+    }
+  };
+
   useEffect(() => {
     fetchSettings();
   }, [fetchSettings]);
@@ -105,6 +168,10 @@ export function useSettings() {
     saving,
     updateSettings,
     changePassword,
+    get2FAStatus,
+    enable2FA,
+    verify2FA,
+    disable2FA,
     fetchSettings,
   };
 }

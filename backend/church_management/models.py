@@ -8,6 +8,7 @@ class Role(models.TextChoices):
     FINANCE_OFFICER = 'finance_officer', 'Finance Officer'
     CHILDREN_OFFICER = 'children_officer', 'Children Officer'
     PRAYER_OFFICER = 'prayer_officer', 'Prayer Officer'
+    HOD = 'hod', 'HOD'
     VIEWER = 'viewer', 'Viewer'
 
 class Gender(models.TextChoices):
@@ -31,6 +32,7 @@ class ContributionType(models.TextChoices):
     BUILDING_FUND = 'building_fund', 'Building Fund'
     THANKSGIVING = 'thanksgiving', 'Thanksgiving'
     SEEDS = 'seeds', 'Seeds'
+    DONATION = 'donation', 'Donation'
     OTHER = 'other', 'Other'
 
 class PaymentMethod(models.TextChoices):
@@ -52,6 +54,7 @@ class ExpenseCategory(models.TextChoices):
     PROJECTS = 'projects', 'Church Projects'
     ADMINISTRATION = 'administration', 'Administration'
     OUTREACH = 'outreach', 'Outreach / Evangelism'
+    PURCHASE = 'purchase', 'Purchases / Equipment'
     OTHER = 'other', 'Other'
 
 class EventType(models.TextChoices):
@@ -66,7 +69,8 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     full_name = models.CharField(max_length=255, blank=True, null=True)
     avatar_url = models.URLField(max_length=500, blank=True, null=True)
-    role = models.CharField(max_length=50, choices=Role.choices, default=Role.VIEWER)
+    role = models.CharField(max_length=50, choices=Role.choices, null=True, blank=True, default=None)
+    member = models.OneToOneField('Member', on_delete=models.SET_NULL, null=True, blank=True, related_name='user_profile')
     
     # Granular Permissions
     can_manage_members = models.BooleanField(default=False)
@@ -78,6 +82,10 @@ class Profile(models.Model):
     can_manage_calendar = models.BooleanField(default=False)
     can_view_reports = models.BooleanField(default=False)
     can_manage_settings = models.BooleanField(default=False)
+
+    # 2FA Settings
+    two_factor_secret = models.CharField(max_length=32, blank=True, null=True)
+    is_two_factor_enabled = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -96,12 +104,23 @@ class Department(models.Model):
     def __str__(self):
         return self.name
 
+class Family(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255, unique=True)
+    head = models.ForeignKey('Member', on_delete=models.SET_NULL, null=True, blank=True, related_name='headed_family')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
 class Member(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     full_name = models.CharField(max_length=255)
-    phone = models.CharField(max_length=20, unique=True)
+    phone = models.CharField(max_length=20)
     gender = models.CharField(max_length=10, choices=Gender.choices)
-    department = models.ForeignKey('Department', on_delete=models.SET_NULL, null=True, blank=True, related_name='members')
+    departments = models.ManyToManyField('Department', blank=True, related_name='members')
+    family = models.ForeignKey(Family, on_delete=models.SET_NULL, null=True, blank=True, related_name='members')
     date_of_birth = models.DateField(blank=True, null=True)
     date_joined = models.DateField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=MemberStatus.choices, default=MemberStatus.FIRST_TIMER)
@@ -113,6 +132,11 @@ class Member(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_members')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['full_name', 'phone'], name='unique_member_name_phone')
+        ]
 
     def __str__(self):
         return self.full_name
@@ -213,6 +237,19 @@ class Expense(models.Model):
 
     def __str__(self):
         return f"{self.description} - {self.amount}"
+
+class InventoryItem(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    price = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    quantity = models.IntegerField(default=1)
+    category = models.CharField(max_length=100, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
 
 class CalendarEvent(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -343,3 +380,53 @@ class CommunicationLog(models.Model):
 
     def __str__(self):
         return f"{self.channel} to {self.recipient_name} - {self.status}"
+
+class Budget(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    category = models.CharField(max_length=255) # Can match ContributionType or ExpenseCategory
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    month = models.IntegerField()
+    year = models.IntegerField()
+    budget_type = models.CharField(max_length=20, choices=[('income_target', 'Income Target'), ('expense_limit', 'Expense Limit')])
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('category', 'month', 'year', 'budget_type')
+
+    def __str__(self):
+        return f"{self.category} ({self.month}/{self.year}) - {self.budget_type}"
+
+class Pledge(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='pledges')
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    target_date = models.DateField()
+    purpose = models.CharField(max_length=255, blank=True, null=True)
+    is_fulfilled = models.BooleanField(default=False)
+    notes = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.member.full_name} - {self.amount} ({'Fulfilled' if self.is_fulfilled else 'Pending'})"
+
+class CheckInQueue(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('confirmed', 'Confirmed'),
+        ('rejected', 'Rejected'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    member = models.ForeignKey(Member, on_delete=models.CASCADE, null=True, blank=True, related_name='check_in_requests')
+    phone_number = models.CharField(max_length=20)
+    service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='check_in_requests')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.phone_number} - {self.status}"

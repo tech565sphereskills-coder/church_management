@@ -21,7 +21,9 @@ import {
   Scale,
   Edit2,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  Smartphone,
+  CheckCircle2
 } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
@@ -53,6 +55,8 @@ import { QRScanner } from '@/components/qr/QRScanner';
 import { QRCodeDisplay } from '@/components/qr/QRCodeDisplay';
 import { OfflineIndicator } from '@/components/attendance/OfflineIndicator';
 import { Skeleton } from '@/components/ui/skeleton';
+import { SuccessAnimation } from '@/components/ui/SuccessAnimation';
+import { useCheckInQueue } from '@/hooks/useCheckInQueue';
 
 const serviceTypes = [
   { value: 'sunday_service', label: 'Sunday Service' },
@@ -62,6 +66,7 @@ const serviceTypes = [
 
 export default function Attendance() {
   const { toast } = useToast();
+  const [showSuccess, setShowSuccess] = useState(false);
   const { canManageAttendance } = useAuth();
   const { searchMembers, searchByQRCode, createMember } = useMembers();
   const { 
@@ -74,6 +79,7 @@ export default function Attendance() {
     setLoading 
   } = useAttendance();
   const { isOnline, addOfflineRecord, pendingRecords } = useOfflineAttendance();
+  const { queue, confirm: confirmCheckIn, reject: rejectCheckIn } = useCheckInQueue();
 
   const location = useLocation();
   const state = location.state as LocationState;
@@ -85,10 +91,13 @@ export default function Attendance() {
   const [isSearching, setIsSearching] = useState(false);
   const [isNewMemberOpen, setIsNewMemberOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [isServiceQROpen, setIsServiceQROpen] = useState(false);
   const [offlineMarkedIds, setOfflineMarkedIds] = useState<string[]>([]);
   const [selectedMemberQR, setSelectedMemberQR] = useState<{ name: string; qrCode: string } | null>(null);
   const [activeTab, setActiveTab] = useState('search');
   const [deptFilter, setDeptFilter] = useState('all');
+
+  const pendingQueueCount = queue.filter(q => q.status === 'pending').length;
 
   const { members } = useMembers(); // Get all members for browsing
 
@@ -179,6 +188,7 @@ export default function Attendance() {
     // If online, save to database
     const success = await markAttendance(member.id, todayService.id);
     if (success) {
+      setShowSuccess(true);
       toast({
         title: 'Attendance marked!',
         description: `${member.full_name} has been marked present.`,
@@ -221,6 +231,7 @@ export default function Attendance() {
     
     if (member && todayService) {
       await markAttendance(member.id, todayService.id);
+      setShowSuccess(true);
       setIsNewMemberOpen(false);
       setSearchQuery('');
       toast({
@@ -233,7 +244,7 @@ export default function Attendance() {
   const filteredBrowseMembers = useMemo(() => {
     return members
       .filter(m => {
-        const matchesDept = deptFilter === 'all' || m.department === deptFilter;
+        const matchesDept = deptFilter === 'all' || (m.departments && m.departments.includes(deptFilter));
         const isSearchMatch = !searchQuery || m.full_name.toLowerCase().includes(searchQuery.toLowerCase()) || m.phone.includes(searchQuery);
         return matchesDept && isSearchMatch && m.status !== 'inactive';
       })
@@ -241,15 +252,17 @@ export default function Attendance() {
   }, [members, deptFilter, searchQuery]);
 
   const departments = useMemo(() => {
-    const depts = new Map();
+    const deptsMap = new Map();
     members.forEach(m => {
-      if (m.department && m.department_name) {
-        depts.set(m.department, m.department_name);
+      if (m.departments && m.department_names) {
+        m.departments.forEach((id, index) => {
+          deptsMap.set(id, m.department_names![index]);
+        });
       }
     });
     return [
       { id: 'all', name: 'All Departments' },
-      ...Array.from(depts.entries())
+      ...Array.from(deptsMap.entries())
         .map(([id, name]) => ({ id, name }))
         .sort((a, b) => a.name.localeCompare(b.name))
     ];
@@ -400,6 +413,10 @@ export default function Attendance() {
               <Camera className="h-4 w-4" />
               Scan QR Code
             </Button>
+            <Button onClick={() => setIsServiceQROpen(true)} variant="outline" className="gap-2 border-primary/20 bg-primary/5 text-primary">
+              <QrCode className="h-4 w-4" />
+              Service QR
+            </Button>
             <Button onClick={handleExport} variant="outline" className="gap-2">
               <Download className="h-4 w-4" />
               Export Today
@@ -409,44 +426,72 @@ export default function Attendance() {
 
         {/* Attendance Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5">
             <TabsTrigger value="search" className="gap-2">
               <Search className="h-4 w-4" />
-              Search & Mark
+              Search
             </TabsTrigger>
             <TabsTrigger value="browse" className="gap-2">
               <Users className="h-4 w-4" />
-              Browse All
+              Browse
             </TabsTrigger>
             <TabsTrigger value="marked" className="gap-2">
               <Check className="h-4 w-4" />
-              Marked Today
+              Marked
             </TabsTrigger>
             <TabsTrigger value="absent" className="gap-2 text-rose-600 data-[state=active]:text-rose-700">
               <UserX className="h-4 w-4" />
-              Not Present (Absent)
+              Absent
+            </TabsTrigger>
+            <TabsTrigger value="queue" className="gap-2 relative">
+              <Smartphone className="h-4 w-4" />
+              Queue
+              {pendingQueueCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white animate-pulse">
+                  {pendingQueueCount}
+                </span>
+              )}
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="search" className="mt-6">
             <motion.div
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
               className="space-y-6"
             >
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+              <div className="relative group">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 text-muted-foreground group-focus-within:text-primary transition-colors">
+                  <Search className="h-5 w-5" />
+                  <div className="h-4 w-[1px] bg-border" />
+                  <Smartphone className="h-4 w-4 opacity-50" />
+                </div>
                 <Input
                   type="text"
                   placeholder="Search by name or phone number..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="search-input text-lg"
+                  className="pl-20 h-14 text-lg rounded-2xl border-slate-200 focus:border-primary focus:ring-primary/20 transition-all shadow-sm group-hover:shadow-md"
                 />
               </div>
-              <p className="text-sm text-muted-foreground">
-                Type a name or phone number to find and mark attendance
-              </p>
+              <div className="flex flex-wrap items-center gap-4 text-xs font-bold uppercase tracking-wider text-slate-400">
+                <span className="flex items-center gap-1.5 bg-slate-100 px-3 py-1 rounded-full">
+                  <Users className="h-3 w-3" /> Search by Name
+                </span>
+                <span className="flex items-center gap-1.5 bg-slate-100 px-3 py-1 rounded-full">
+                  <Smartphone className="h-3 w-3" /> Search by Phone
+                </span>
+                {searchQuery.length > 0 && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setSearchQuery('')}
+                    className="h-6 text-[10px] text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-full px-2"
+                  >
+                    Clear Search
+                  </Button>
+                )}
+              </div>
             </motion.div>
           </TabsContent>
 
@@ -484,22 +529,20 @@ export default function Attendance() {
           </TabsContent>
         </Tabs>
 
-        {/* Search Results / Browse List */}
+        {/* Results Area */}
         <AnimatePresence mode="wait">
           {activeTab === 'search' && searchQuery.trim() ? (
             <motion.div
               key="search-results"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="space-y-3"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
             >
               {isSearching ? (
-                <div className="space-y-3">
-                  {[1, 2, 3].map(i => (
-                    <Skeleton key={i} className="h-20 w-full rounded-xl" />
-                  ))}
-                </div>
+                Array.from({ length: 6 }).map((_, i) => (
+                  <Skeleton key={i} className="h-44 w-full rounded-3xl" />
+                ))
               ) : (
                 <>
                   {searchResults.map((member, index) => {
@@ -507,61 +550,80 @@ export default function Attendance() {
                     return (
                       <motion.div
                         key={member.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.05 }}
-                        className="attendance-item group flex-col sm:flex-row gap-4 items-start sm:items-center shadow-sm hover:shadow-md transition-all duration-300"
+                        className="bg-white rounded-3xl border border-slate-100 p-5 shadow-sm hover:shadow-xl hover:border-primary/20 transition-all duration-300 group"
                       >
-                        <div className="flex items-center gap-4">
-                          <Avatar className="h-12 w-12">
-                            <AvatarFallback className="bg-primary/10 text-primary text-lg">
+                        <div className="flex items-start justify-between mb-4">
+                          <Avatar className="h-14 w-14 ring-4 ring-slate-50 group-hover:ring-primary/10 transition-all">
+                            <AvatarFallback className="bg-primary/10 text-primary text-xl font-bold">
                               {getInitials(member.full_name)}
                             </AvatarFallback>
                           </Avatar>
-                          <div className="flex-1">
-                            <p className="text-lg font-medium">{member.full_name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {member.phone} {member.department_name && `• ${member.department_name}`}
+                          <div className="flex flex-col gap-1.5 items-end">
+                            <Badge
+                              variant="outline"
+                              className={
+                                member.status === 'active'
+                                  ? 'badge-active border-none font-bold'
+                                  : member.status === 'first_timer'
+                                  ? 'badge-first-timer border-none font-bold'
+                                  : 'badge-inactive border-none font-bold'
+                              }
+                            >
+                              {member.status === 'first_timer' ? 'First Timer' : member.status}
+                            </Badge>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 text-xs font-bold text-slate-400 hover:text-primary"
+                              onClick={() => setSelectedMemberQR({ 
+                                name: member.full_name, 
+                                qrCode: member.qr_code || '' 
+                              })}
+                            >
+                              <QrCode className="mr-1.5 h-3.5 w-3.5" />
+                              View QR
+                            </Button>
+                          </div>
+                        </div>
+
+                        <div className="mb-6">
+                          <h3 className="text-lg font-bold text-slate-900 group-hover:text-primary transition-colors">
+                            {member.full_name}
+                          </h3>
+                          <div className="flex flex-col gap-1 mt-1">
+                            <p className="text-sm font-medium text-slate-500 flex items-center gap-1.5">
+                              <Smartphone className="h-3.5 w-3.5 text-slate-300" />
+                              {member.phone || 'No phone'}
+                            </p>
+                            <p className="text-xs font-bold uppercase tracking-tighter text-slate-400">
+                              {member.department_names?.join(', ') || 'General Member'}
                             </p>
                           </div>
-                          <Badge
-                            variant="outline"
-                            className={
-                              member.status === 'active'
-                                ? 'badge-active'
-                                : member.status === 'first_timer'
-                                ? 'badge-first-timer'
-                                : 'badge-inactive'
-                            }
-                          >
-                            {member.status === 'first_timer' ? 'First Timer' : member.status}
-                          </Badge>
-                          
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setSelectedMemberQR({ 
-                              name: member.full_name, 
-                              qrCode: member.qr_code || '' 
-                            })}
-                          >
-                            <QrCode className="h-4 w-4" />
-                          </Button>
                         </div>
                         
                         {canManageAttendance && (
                           <Button
                             onClick={() => handleMarkAttendance(member)}
                             disabled={isMarked}
-                            className={isMarked ? 'bg-success hover:bg-success' : 'btn-gold'}
+                            className={`w-full h-11 rounded-xl font-bold transition-all ${
+                              isMarked 
+                                ? 'bg-success/10 text-success hover:bg-success/10 cursor-default' 
+                                : 'btn-gold shadow-lg shadow-primary/20'
+                            }`}
                           >
                             {isMarked ? (
                               <>
-                                <Check className="mr-2 h-4 w-4" />
-                                Present
+                                <CheckCircle2 className="mr-2 h-4 w-4" />
+                                Marked Present
                               </>
                             ) : (
-                              'Mark Present'
+                              <>
+                                <Check className="mr-2 h-4 w-4" />
+                                Mark Attendance
+                              </>
                             )}
                           </Button>
                         )}
@@ -574,7 +636,7 @@ export default function Attendance() {
                     <motion.div
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 p-8 text-center"
+                      className="rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 p-8 text-center sm:col-span-2 lg:col-span-3"
                     >
                       <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
                         <UserPlus className="h-8 w-8 text-primary" />
@@ -621,7 +683,7 @@ export default function Attendance() {
                       </Avatar>
                       <div className="overflow-hidden">
                         <p className="font-semibold text-sm truncate">{member.full_name}</p>
-                        <p className="text-[10px] text-muted-foreground truncate">{member.department_name || 'General'}</p>
+                        <p className="text-[10px] text-muted-foreground truncate">{member.department_names?.join(', ') || 'General'}</p>
                       </div>
                     </div>
                     <Button
@@ -650,8 +712,9 @@ export default function Attendance() {
               className="grid gap-4 md:grid-cols-2"
             >
               {members.filter(m => todayAttendance.includes(m.id) || offlineMarkedIds.includes(m.id)).length === 0 ? (
-                <div className="col-span-full py-12 text-center text-muted-foreground border-2 border-dashed rounded-xl">
-                  No one marked present yet for this service.
+                <div className="py-12 text-center text-muted-foreground border-2 border-dashed rounded-xl col-span-full">
+                  <Smartphone className="h-10 w-10 mx-auto mb-4 opacity-20" />
+                  No members marked today.
                 </div>
               ) : (
                 members
@@ -723,6 +786,66 @@ export default function Attendance() {
                   </motion.div>
                 ))}
             </motion.div>
+          ) : activeTab === 'queue' ? (
+             <motion.div
+               key="queue-list"
+               initial={{ opacity: 0, y: 10 }}
+               animate={{ opacity: 1, y: 0 }}
+               exit={{ opacity: 0, y: -10 }}
+               className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
+             >
+               {queue.filter(q => q.status === 'pending').length === 0 ? (
+                 <div className="py-12 text-center text-muted-foreground border-2 border-dashed rounded-xl col-span-full">
+                   <Smartphone className="h-10 w-10 mx-auto mb-4 opacity-20" />
+                   No pending check-in requests.
+                 </div>
+               ) : (
+                 queue
+                   .filter(q => q.status === 'pending')
+                   .map((request, index) => (
+                     <motion.div
+                       key={request.id}
+                       initial={{ opacity: 0, scale: 0.95 }}
+                       animate={{ opacity: 1, scale: 1 }}
+                       transition={{ delay: index * 0.05 }}
+                       className="bg-white rounded-3xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition-all"
+                     >
+                       <div className="flex items-center gap-4 mb-4">
+                         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                           <Smartphone className="h-6 w-6" />
+                         </div>
+                         <div className="flex-1">
+                           <p className="font-bold text-slate-900">{request.phone_number}</p>
+                           <p className="text-xs text-muted-foreground">Checked in via Phone</p>
+                         </div>
+                       </div>
+                       
+                       {request.member_name && (
+                         <div className="mb-4 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                           <p className="text-[10px] font-bold uppercase text-slate-400 mb-1">Matched Member</p>
+                           <p className="font-bold text-slate-700">{request.member_name}</p>
+                         </div>
+                       )}
+
+                       <div className="flex gap-2">
+                         <Button
+                           variant="outline"
+                           className="flex-1 h-10 rounded-xl text-rose-500 hover:text-rose-600 hover:bg-rose-50 border-rose-100"
+                           onClick={() => rejectCheckIn(request.id)}
+                         >
+                           Reject
+                         </Button>
+                         <Button
+                           className="flex-1 h-10 rounded-xl btn-gold"
+                           onClick={() => confirmCheckIn({ id: request.id, phoneNumber: request.phone_number })}
+                         >
+                           Confirm
+                         </Button>
+                       </div>
+                     </motion.div>
+                   ))
+               )}
+             </motion.div>
           ) : !searchQuery.trim() ? (
             <motion.div
               key="empty-state"
@@ -764,7 +887,22 @@ export default function Attendance() {
           qrCode={selectedMemberQR.qrCode}
         />
       )}
+
+      {isServiceQROpen && (
+        <QRCodeDisplay
+          open={isServiceQROpen}
+          onOpenChange={() => setIsServiceQROpen(false)}
+          memberName="Today's Service Check-in"
+          qrCode={`${window.location.origin}/check-in`}
+          description="Scan to check in with your phone number"
+        />
+      )}
       </div>
+      <SuccessAnimation 
+        isVisible={showSuccess} 
+        onClose={() => setShowSuccess(false)} 
+        message="Attendance Marked!"
+      />
     </div>
   );
 }

@@ -22,7 +22,8 @@ import {
   Lock,
   Eye,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  ShieldCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,7 +48,10 @@ import { cn } from '@/lib/utils';
 
 export default function Settings() {
   const navigate = useNavigate();
-  const { settings, loading, saving, updateSettings, changePassword } = useSettings();
+  const { 
+    settings, loading, saving, updateSettings, changePassword, 
+    get2FAStatus, enable2FA, verify2FA, disable2FA 
+  } = useSettings();
   const { user, isAdmin, role } = useAuth();
   const { toast } = useToast();
   
@@ -71,6 +75,15 @@ export default function Settings() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
+  // 2FA State
+  const [is2FAEnabled, setIs2FAEnabled] = useState(false);
+  const [is2FADialogOpen, setIs2FADialogOpen] = useState(false);
+  const [twoFactorData, setTwoFactorData] = useState<{ qr_code: string; secret: string } | null>(null);
+  const [twoFactorToken, setTwoFactorToken] = useState('');
+  const [isVerifying2FA, setIsVerifying2FA] = useState(false);
+  const [isDisabling2FA, setIsDisabling2FA] = useState(false);
+  const [isDisableDialogOpen, setIsDisableDialogOpen] = useState(false);
+
   useEffect(() => {
     if (settings) {
       setLogoUrl(settings.logo_url || '/rccg_logo.png');
@@ -86,7 +99,13 @@ export default function Settings() {
       setSmtpPassword(settings.smtp_password || '');
       setSmtpUseTls(settings.smtp_use_tls);
     }
-  }, [settings]);
+    
+    const check2FA = async () => {
+      const status = await get2FAStatus();
+      setIs2FAEnabled(status);
+    };
+    check2FA();
+  }, [settings, get2FAStatus]);
 
   const handleSave = async () => {
     await updateSettings({
@@ -142,6 +161,38 @@ export default function Settings() {
       setIsPasswordDialogOpen(false);
       setNewPassword('');
       setConfirmPassword('');
+    }
+  };
+
+  const handleEnable2FA = async () => {
+    const data = await enable2FA();
+    if (data) {
+      setTwoFactorData(data);
+      setIs2FADialogOpen(true);
+    }
+  };
+
+  const handleVerify2FA = async () => {
+    if (twoFactorToken.length !== 6) return;
+    setIsVerifying2FA(true);
+    const success = await verify2FA(twoFactorToken);
+    setIsVerifying2FA(false);
+    if (success) {
+      setIs2FADialogOpen(false);
+      setIs2FAEnabled(true);
+      setTwoFactorToken('');
+    }
+  };
+
+  const handleDisable2FA = async () => {
+    if (twoFactorToken.length !== 6) return;
+    setIsVerifying2FA(true);
+    const success = await disable2FA(twoFactorToken);
+    setIsVerifying2FA(false);
+    if (success) {
+      setIsDisableDialogOpen(false);
+      setIs2FAEnabled(false);
+      setTwoFactorToken('');
     }
   };
 
@@ -476,6 +527,43 @@ export default function Settings() {
                             </Button>
                           </div>
                         )}
+
+                        <div className="p-6 rounded-2xl border border-slate-200 space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-1">
+                              <h5 className="font-bold text-slate-900 flex items-center gap-2">
+                                <ShieldCheck className="h-4 w-4 text-emerald-500" />
+                                Two-Factor Authentication (2FA)
+                              </h5>
+                              <p className="text-sm text-slate-500 font-medium">Add an extra layer of security to your account using an authenticator app.</p>
+                            </div>
+                            <Badge variant={is2FAEnabled ? "default" : "outline"} className={cn(
+                              "uppercase text-[10px] font-bold px-3 py-1",
+                              is2FAEnabled ? "bg-emerald-500/10 text-emerald-600 border-none" : "text-slate-400"
+                            )}>
+                              {is2FAEnabled ? "Active" : "Disabled"}
+                            </Badge>
+                          </div>
+                          
+                          <div className="pt-2">
+                            {is2FAEnabled ? (
+                              <Button 
+                                variant="outline" 
+                                className="text-red-600 border-red-100 hover:bg-red-50 h-11 rounded-xl px-6 font-bold"
+                                onClick={() => setIsDisableDialogOpen(true)}
+                              >
+                                Disable 2FA Protection
+                              </Button>
+                            ) : (
+                              <Button 
+                                className="bg-emerald-600 hover:bg-emerald-700 h-11 rounded-xl px-6 font-bold shadow-lg shadow-emerald-100"
+                                onClick={handleEnable2FA}
+                              >
+                                Enable TOTP Authentication
+                              </Button>
+                            )}
+                          </div>
+                        </div>
                       </CardContent>
                     </Card>
                   </motion.div>
@@ -662,6 +750,143 @@ export default function Settings() {
               <Download className="h-4 w-4 mr-2" /> Download Full Log
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* 2FA Enable Dialog */}
+      <Dialog open={is2FADialogOpen} onOpenChange={setIs2FADialogOpen}>
+        <DialogContent className="max-w-[440px] rounded-3xl p-8 border-none shadow-2xl overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1.5 bg-emerald-500" />
+          <DialogHeader className="pt-2 text-center items-center">
+            <div className="h-16 w-16 bg-emerald-50 rounded-2xl flex items-center justify-center mb-4">
+              <ShieldCheck className="h-8 w-8 text-emerald-600" />
+            </div>
+            <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">Enable 2FA Protection</DialogTitle>
+            <DialogDescription className="text-slate-500 font-medium">
+              Secure your account by scanning the QR code and entering the token.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 py-6">
+            <div className="flex flex-col items-center gap-6">
+              {twoFactorData?.qr_code && (
+                <div className="p-4 bg-white rounded-3xl border border-slate-100 shadow-sm transition-transform hover:scale-105">
+                  <img src={twoFactorData.qr_code} alt="QR Code" className="w-48 h-48" />
+                </div>
+              )}
+              <div className="w-full space-y-3">
+                 <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between group">
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Secret Key</p>
+                      <code className="text-sm font-bold text-slate-700 tracking-wider transition-colors group-hover:text-primary">{twoFactorData?.secret}</code>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 text-[10px] font-black uppercase text-slate-400 hover:text-primary"
+                      onClick={() => {
+                        navigator.clipboard.writeText(twoFactorData?.secret || '');
+                        toast({ title: 'Copied', description: 'Secret key copied to clipboard' });
+                      }}
+                    >
+                      Copy
+                    </Button>
+                 </div>
+                 <p className="text-[11px] text-slate-400 text-center font-medium">Scan with Google Authenticator, Authy, or Microsoft Authenticator.</p>
+              </div>
+            </div>
+
+            <div className="space-y-4 pt-2">
+              <div className="space-y-2 group">
+                <Label className="text-xs font-black uppercase text-slate-400 group-focus-within:text-emerald-600 transition-colors tracking-widest ml-1">Verification Token</Label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 group-focus-within:text-emerald-600 transition-colors pointer-events-none">
+                    <KeyRound className="h-4 w-4" />
+                  </div>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="Enter 6-digit code"
+                    value={twoFactorToken}
+                    onChange={(e) => setTwoFactorToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    className="h-12 border-slate-200 focus:ring-emerald-500/10 focus:border-emerald-500 pl-11 text-center font-black tracking-[0.5em] text-lg rounded-2xl transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-3 pt-4 sm:flex-row flex-col">
+            <Button 
+              variant="ghost" 
+              className="flex-1 font-bold text-slate-400 h-12 rounded-2xl" 
+              onClick={() => setIs2FADialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleVerify2FA} 
+              disabled={isVerifying2FA || twoFactorToken.length !== 6} 
+              className="flex-[2] bg-emerald-600 hover:bg-slate-900 text-white font-black uppercase tracking-widest text-xs h-12 rounded-2xl shadow-xl shadow-emerald-100 transition-all active:scale-[0.98]"
+            >
+              {isVerifying2FA ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ShieldCheck className="h-4 w-4 mr-2" />}
+              Complete Activation
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 2FA Disable Dialog */}
+      <Dialog open={isDisableDialogOpen} onOpenChange={setIsDisableDialogOpen}>
+        <DialogContent className="max-w-[400px] rounded-[2.5rem] p-8 border-none shadow-2xl">
+          <DialogHeader className="space-y-4 pt-4">
+            <div className="h-16 w-16 bg-red-50 rounded-2xl flex items-center justify-center">
+              <AlertTriangle className="h-8 w-8 text-red-600" />
+            </div>
+            <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">Disable Security?</DialogTitle>
+            <DialogDescription className="text-sm font-medium text-slate-500 leading-relaxed">
+              Disabling 2FA makes your account significantly more vulnerable. Please enter your 6-digit code to confirm.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 pt-6 pb-4">
+            <div className="space-y-2 group">
+              <Label className="text-xs font-black uppercase text-slate-400 group-focus-within:text-red-600 transition-colors tracking-widest ml-1">Confirmation Token</Label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 group-focus-within:text-red-600 transition-colors">
+                  <Lock className="h-4 w-4" />
+                </div>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="000 000"
+                  value={twoFactorToken}
+                  onChange={(e) => setTwoFactorToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  className="h-12 border-slate-200 focus:ring-red-500/10 focus:border-red-500 pl-11 text-center font-black tracking-[0.5em] text-lg rounded-2xl"
+                />
+              </div>
+            </div>
+            
+            <div className="flex gap-3">
+              <Button 
+                variant="ghost" 
+                onClick={() => {
+                  setIsDisableDialogOpen(false);
+                  setTwoFactorToken('');
+                }} 
+                className="flex-1 h-12 rounded-2xl font-black text-slate-400 text-[10px] tracking-widest uppercase"
+              >
+                Keep Protected
+              </Button>
+              <Button 
+                onClick={handleDisable2FA} 
+                className="flex-[2] h-12 rounded-2xl bg-red-600 hover:bg-slate-900 text-white font-black text-xs tracking-widest uppercase shadow-xl shadow-red-100 transition-all hover:scale-[1.02]"
+                disabled={isVerifying2FA || twoFactorToken.length !== 6}
+              >
+                {isVerifying2FA ? 'Confirming...' : 'Disable Security'}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

@@ -36,6 +36,7 @@ const contributionTypes = [
   { value: 'building_fund', label: 'Building Fund' },
   { value: 'thanksgiving', label: 'Thanksgiving' },
   { value: 'seeds', label: 'Seeds' },
+  { value: 'donation', label: 'Donation' },
   { value: 'other', label: 'Other' },
 ];
 
@@ -52,7 +53,7 @@ const formSchema = z.object({
   amount: z.string().refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
     message: 'Amount must be a positive number',
   }),
-  contribution_type: z.enum(['tithe', 'offering', 'welfare', 'building_fund', 'thanksgiving', 'seeds', 'other']),
+  contribution_type: z.enum(['tithe', 'offering', 'welfare', 'building_fund', 'thanksgiving', 'seeds', 'donation', 'other']),
   date: z.string(),
   payment_method: z.enum(['cash', 'bank_transfer', 'pos', 'cheque', 'online']),
   notes: z.string().optional(),

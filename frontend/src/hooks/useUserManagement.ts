@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
-export type AppRole = 'admin' | 'attendance_officer' | 'finance_officer' | 'children_officer' | 'prayer_officer' | 'viewer';
+export type AppRole = 'admin' | 'attendance_officer' | 'finance_officer' | 'children_officer' | 'prayer_officer' | 'hod' | 'viewer';
 
 export interface UserWithRole {
   id: string;
@@ -10,6 +10,7 @@ export interface UserWithRole {
   full_name: string | null;
   created_at: string;
   role: AppRole | null;
+  member: string | number | null;
   can_manage_members: boolean;
   can_manage_attendance: boolean;
   can_manage_financials: boolean;
@@ -57,11 +58,12 @@ export function useUserManagement() {
       });
       await fetchUsers(true);
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error assigning role:', error);
-      const detail = error.response?.data?.detail;
-      const errorData = error.response?.data;
-      const description = detail || (errorData ? JSON.stringify(errorData) : error.message) || 'Failed to assign role';
+      const axiosError = error as { response?: { data?: { detail?: string } } };
+      const detail = axiosError.response?.data?.detail;
+      const errorData = axiosError.response?.data;
+      const description = detail || (errorData ? JSON.stringify(errorData) : error instanceof Error ? error.message : 'Failed to assign role');
       
       toast({
         title: 'Error',
@@ -97,11 +99,12 @@ export function useUserManagement() {
       // Still fetch to ensure total sync, but the UI is already updated
       await fetchUsers(true);
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating permissions:', error);
-      const detail = error.response?.data?.detail;
-      const errorData = error.response?.data;
-      const description = detail || (errorData ? JSON.stringify(errorData) : error.message) || 'Failed to update permissions';
+      const axiosError = error as { response?: { data?: { detail?: string } } };
+      const detail = axiosError.response?.data?.detail;
+      const errorData = axiosError.response?.data;
+      const description = detail || (errorData ? JSON.stringify(errorData) : error instanceof Error ? error.message : 'Failed to update permissions');
       
       toast({
         title: 'Error',
@@ -126,11 +129,70 @@ export function useUserManagement() {
       });
       await fetchUsers(true);
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error removing role:', error);
-      const detail = error.response?.data?.detail;
-      const errorData = error.response?.data;
-      const description = detail || (errorData ? JSON.stringify(errorData) : error.message) || 'Failed to remove role';
+      const axiosError = error as { response?: { data?: { detail?: string } } };
+      const detail = axiosError.response?.data?.detail;
+      const errorData = axiosError.response?.data;
+      const description = detail || (errorData ? JSON.stringify(errorData) : error instanceof Error ? error.message : 'Failed to remove role');
+      
+      toast({
+        title: 'Error',
+        description: description,
+        variant: 'destructive',
+      });
+      return false;
+    }
+  };
+
+  const createUser = async (email: string, fullName: string, initialPassword: string): Promise<boolean> => {
+    try {
+      await api.post('/register/', {
+        username: email,
+        email,
+        password: initialPassword,
+        full_name: fullName
+      });
+      
+      toast({
+        title: 'Success',
+        description: 'User created successfully',
+      });
+      
+      await fetchUsers(true);
+      return true;
+    } catch (error: unknown) {
+      console.error('Error creating user:', error);
+      const axiosError = error as { response?: { data?: Record<string, unknown> } };
+      const description = axiosError.response?.data ? JSON.stringify(axiosError.response.data) : 'Failed to create user';
+      
+      toast({
+        title: 'Error',
+        description: description,
+        variant: 'destructive',
+      });
+      return false;
+    }
+  };
+
+  const deleteUser = async (userId: string): Promise<boolean> => {
+    try {
+      await api.delete(`/profiles/${userId}/`);
+      
+      // Update local state immediately
+      setUsers(prev => prev.filter(u => String(u.id) !== String(userId)));
+      
+      toast({
+        title: 'Success',
+        description: 'User deleted successfully',
+      });
+      return true;
+    } catch (error: unknown) {
+      console.error('Error deleting user:', error);
+      const axiosError = error as { response?: { data?: { detail?: string } } };
+      const detail = axiosError.response?.data?.detail;
+      const errorData = axiosError.response?.data;
+      const description = detail || (errorData ? JSON.stringify(errorData) : error instanceof Error ? error.message : 'Failed to delete user');
       
       toast({
         title: 'Error',
@@ -149,8 +211,10 @@ export function useUserManagement() {
     users,
     loading,
     fetchUsers,
+    createUser,
     assignRole,
     updatePermissions,
     removeRole,
+    deleteUser,
   };
 }

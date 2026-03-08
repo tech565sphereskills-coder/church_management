@@ -1,18 +1,26 @@
 from django.utils import timezone
 from datetime import timedelta
 import pandas as pd
+import pyotp
+import qrcode
+import base64
 import io
+from io import BytesIO
 from django.http import HttpResponse
 from django.contrib.auth.models import User
-from rest_framework import viewsets, permissions, status
+from rest_framework import viewsets, permissions, status, serializers
 from rest_framework.response import Response
 from rest_framework.decorators import action
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from django.db.models import Count, Q, Avg, Sum
 from django.db.models.functions import TruncMonth
 from .models import (
     Role, Profile, Member, Service, AttendanceRecord, MemberFollowUp, 
     Contribution, Department, Child, ChildCheckIn, PrayerRequest, ChurchSettings,
-    CommunicationLog, Expense, CalendarEvent, AuditLog, SMSTemplate
+    CommunicationLog, Expense, CalendarEvent, AuditLog, SMSTemplate, Budget, Pledge,
+    CheckInQueue, Family, InventoryItem
 )
 from .serializers import (
     AttendanceRecordSerializer, MemberFollowUpSerializer,
@@ -21,7 +29,8 @@ from .serializers import (
     ServiceSerializer, ChildSerializer, ChildCheckInSerializer,
     PrayerRequestSerializer, ChurchSettingsSerializer, CommunicationLogSerializer,
     ExpenseSerializer, CalendarEventSerializer, AuditLogSerializer,
-    SMSTemplateSerializer
+    SMSTemplateSerializer, BudgetSerializer, PledgeSerializer,
+    CheckInQueueSerializer, FamilySerializer, InventoryItemSerializer
 )
 from .permissions import (
     IsAdmin, IsFinanceOfficer, IsAttendanceOfficerOrHigher, 
@@ -83,7 +92,7 @@ class AuditableModelViewSetMixin:
 class RegisterView(viewsets.GenericViewSet, viewsets.mixins.CreateModelMixin):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [IsAdmin]
 
 class ProfileViewSet(viewsets.ModelViewSet):
     queryset = Profile.objects.all()
@@ -166,6 +175,10 @@ class ProfileViewSet(viewsets.ModelViewSet):
             elif role == Role.PRAYER_OFFICER:
                 profile.can_manage_prayer_requests = True
                 profile.can_view_reports = True
+            elif role == Role.HOD:
+                profile.can_manage_attendance = True
+                profile.can_manage_members = True
+                profile.can_view_reports = True
             elif role == Role.VIEWER:
                 profile.can_view_reports = True
                 
@@ -180,25 +193,71 @@ class ProfileViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Permission denied'}, status=403)
             
         profile = self.get_object()
-        profile.role = 'viewer' # Default to viewer instead of None
+        profile.role = None # Set to None/Pending
         profile.save()
         serializer = self.get_serializer(profile)
         return Response(serializer.data)
 
+    def perform_destroy(self, instance):
+        user = instance.user
+        instance_id = instance.id
+        username = user.username
+        
+        # Log before deletion
+        log_activity(
+            self.request.user, 
+            AuditLog.Action.DELETE, 
+            'Profile/User', 
+            instance_id, 
+            f"User: {username}"
+        )
+        
+        # User.CASCADE will delete the Profile, but we delete from ProfileViewSet
+        # so we delete the User object directly.
+        user.delete()
+
     def get_queryset(self):
         user = self.request.user
         if hasattr(user, 'profile') and user.profile.role == 'admin':
-            return self.queryset
-        return self.queryset.filter(user=user)
+            return Profile.objects.all()
+        return Profile.objects.filter(user=user)
+
+    def get_permissions(self):
+        if self.action == 'destroy':
+            return [IsAdmin()]
+        return super().get_permissions()
 
 class MemberViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
     queryset = Member.objects.all()
     serializer_class = MemberSerializer
     
+    def get_queryset(self):
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            return Member.objects.none()
+        
+        profile = getattr(user, 'profile', None)
+        if profile and profile.role == Role.HOD and profile.member:
+            dept_ids = profile.member.headed_departments.values_list('id', flat=True)
+            return Member.objects.filter(department_id__in=dept_ids)
+            
+        return Member.objects.all()
+    
     def get_permissions(self):
-        if self.action in ['create', 'update', 'partial_update', 'destroy', 'import_members', 'export_excel']:
+        if self.action in ['create', 'update', 'partial_update', 'destroy', 'import_members', 'export_excel', 'import_members_v2']:
             return [IsAttendanceOfficerOrHigher()]
         return [IsViewerOrHigher()]
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        log_activity(
+            request.user, 
+            'view_details', 
+            instance.__class__.__name__, 
+            instance.id, 
+            str(instance)
+        )
+        return super().retrieve(request, *args, **kwargs)
 
     @action(detail=True, methods=['get'])
     def attendance(self, request, pk=None):
@@ -293,6 +352,18 @@ class AttendanceRecordViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet)
     queryset = AttendanceRecord.objects.all()
     serializer_class = AttendanceRecordSerializer
     
+    def get_queryset(self):
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            return AttendanceRecord.objects.none()
+        
+        profile = getattr(user, 'profile', None)
+        if profile and profile.role == Role.HOD and profile.member:
+            dept_ids = profile.member.headed_departments.values_list('id', flat=True)
+            return AttendanceRecord.objects.filter(member__departments__id__in=dept_ids).distinct()
+            
+        return AttendanceRecord.objects.all()
+
     def get_permissions(self):
         if self.action == 'create':
             return [IsAttendanceOfficerOrHigher()]
@@ -331,13 +402,14 @@ class AttendanceRecordViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet)
         records = AttendanceRecord.objects.select_related('member').order_by('-marked_at')[:5]
         data = []
         for r in records:
+            depts = r.member.departments.all()
             data.append({
                 'id': str(r.id),
                 'marked_at': r.marked_at,
                 'members': {
                     'id': str(r.member.id),
                     'full_name': r.member.full_name,
-                    'department': r.member.department.name if r.member.department else None
+                    'department': depts[0].name if depts.exists() else None
                 }
             })
         return Response(data)
@@ -436,7 +508,7 @@ class MemberFollowUpViewSet(viewsets.ModelViewSet):
         return self.queryset.filter(needs_follow_up=True)
 
 class StatsViewSet(viewsets.ViewSet):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsViewerOrHigher]
 
     def list(self, request):
         today = timezone.now().date()
@@ -522,11 +594,11 @@ class StatsViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['get'])
     def department_distribution(self, request):
         dist = (
-            Member.objects.values('department__name')
+            Member.objects.values('departments__name')
             .annotate(value=Count('id'))
             .order_by('-value')
         )
-        data = [{'name': d['department__name'] or 'None', 'value': d['value']} for d in dist]
+        data = [{'name': d['departments__name'] or 'None', 'value': d['value']} for d in dist]
         return Response(data)
 
     @action(detail=False, methods=['get'])
@@ -654,25 +726,155 @@ class ContributionViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
     serializer_class = ContributionSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdmin | IsFinanceOfficer]
 
-    def perform_create(self, serializer):
-        instance = serializer.save(recorded_by=self.request.user)
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
         log_activity(
-            self.request.user, 
-            AuditLog.Action.CREATE, 
+            request.user, 
+            'view_details', 
             instance.__class__.__name__, 
             instance.id, 
             str(instance)
         )
+        return super().retrieve(request, *args, **kwargs)
+
+    def perform_create(self, serializer):
+        serializer.save(recorded_by=self.request.user)
+        # Audit logging is handled by AuditableModelViewSetMixin.perform_create
+        super().perform_create(serializer)
 
     def perform_update(self, serializer):
-        instance = serializer.save()
-        log_activity(
-            self.request.user, 
-            AuditLog.Action.UPDATE, 
-            instance.__class__.__name__, 
-            instance.id, 
-            str(instance)
-        )
+        # Audit logging is handled by AuditableModelViewSetMixin.perform_update
+        super().perform_update(serializer)
+
+    def perform_destroy(self, instance):
+        # Audit logging is handled by AuditableModelViewSetMixin.perform_destroy
+        super().perform_destroy(instance)
+
+    @action(detail=True, methods=['get'])
+    def generate_receipt(self, request, pk=None):
+        from reportlab.pdfgen import canvas
+        from reportlab.lib.pagesizes import letter
+        from reportlab.lib.units import inch
+        from reportlab.lib import colors
+        from reportlab.lib.styles import getSampleStyleSheet
+        
+        contribution = self.get_object()
+        settings, _ = ChurchSettings.objects.get_or_create(id=1)
+        buffer = io.BytesIO()
+        p = canvas.Canvas(buffer, pagesize=letter)
+        width, height = letter
+        
+        # --- Professional RCCG Branding ---
+        # Header Background
+        p.setFillColor(colors.HexColor("#0f172a")) # Slate 900
+        p.rect(0, height - 1.5*inch, width, 1.5*inch, fill=1)
+        
+        # Church Name
+        p.setFillColor(colors.white)
+        p.setFont("Helvetica-Bold", 20)
+        p.drawString(0.5*inch, height - 0.7*inch, settings.church_name.upper())
+        
+        # Motto/Subtitle (Optional placeholder)
+        p.setFont("Helvetica", 10)
+        p.drawString(0.5*inch, height - 0.9*inch, "Official Treasury Division")
+        
+        # Receipt Label
+        p.setFont("Helvetica-Bold", 40)
+        p.setStrokeColor(colors.white)
+        p.setFillColor(colors.white)
+        p.drawRightString(width - 0.5*inch, height - 0.8*inch, "RECEIPT")
+        
+        # --- Info Section ---
+        p.setFillColor(colors.black)
+        p.setFont("Helvetica-Bold", 12)
+        p.drawString(0.5*inch, height - 2.0*inch, "RECEIPT TO:")
+        
+        p.setFont("Helvetica", 11)
+        p.drawString(0.5*inch, height - 2.2*inch, contribution.member.full_name if contribution.member else "Anonymous Contributor")
+        if contribution.member:
+            p.drawString(0.5*inch, height - 2.4*inch, f"ID: {str(contribution.member.id)[:8].upper()}")
+            if contribution.member.email:
+                p.drawString(0.5*inch, height - 2.6*inch, contribution.member.email)
+        
+        # Receipt Details Table-like box
+        p.setFont("Helvetica-Bold", 12)
+        p.drawRightString(width - 0.5*inch, height - 2.0*inch, "RECEIPT DETAILS:")
+        p.setFont("Helvetica", 11)
+        p.drawRightString(width - 0.5*inch, height - 2.2*inch, f"Number: #{str(contribution.id)[:8].upper()}")
+        p.drawRightString(width - 0.5*inch, height - 2.4*inch, f"Date: {contribution.date}")
+        p.drawRightString(width - 0.5*inch, height - 2.6*inch, f"Method: {contribution.payment_method.replace('_', ' ').title()}")
+        
+        # --- Main content box ---
+        p.setStrokeColor(colors.HexColor("#e2e8f0")) # Slate 200
+        p.setFillColor(colors.HexColor("#f8fafc")) # Slate 50
+        p.rect(0.5*inch, 4.5*inch, width - 1*inch, 2.5*inch, fill=1)
+        
+        p.setFillColor(colors.black)
+        p.setFont("Helvetica-Bold", 14)
+        p.drawString(0.8*inch, 6.5*inch, "DESCRIPTION")
+        p.drawRightString(width - 0.8*inch, 6.5*inch, "AMOUNT")
+        p.line(0.8*inch, 6.3*inch, width - 0.8*inch, 6.3*inch)
+        
+        p.setFont("Helvetica", 12)
+        p.drawString(0.8*inch, 5.8*inch, contribution.contribution_type.replace('_', ' ').title())
+        p.drawRightString(width - 0.8*inch, 5.8*inch, f"NGN {contribution.amount:,.2f}")
+        
+        if contribution.notes:
+            p.setFont("Helvetica-Oblique", 10)
+            p.setFillColor(colors.grey)
+            p.drawString(0.8*inch, 5.5*inch, f"Note: {contribution.notes}")
+        
+        # --- Totals ---
+        p.setFillColor(colors.black)
+        p.line(width - 3*inch, 5.0*inch, width - 0.8*inch, 5.0*inch)
+
+class FamilyViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
+    queryset = Family.objects.all()
+    serializer_class = FamilySerializer
+    permission_classes = [IsViewerOrHigher]
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [IsAdmin()]
+        return super().get_permissions()
+
+class InventoryItemViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
+    queryset = InventoryItem.objects.all()
+    serializer_class = InventoryItemSerializer
+    permission_classes = [IsAdmin | IsFinanceOfficer]
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [IsAdmin | IsFinanceOfficer]
+        return [IsViewerOrHigher()]
+        p.setFont("Helvetica-Bold", 16)
+        p.drawString(width - 3*inch, 4.7*inch, "TOTAL")
+        p.drawRightString(width - 0.8*inch, 4.7*inch, f"NGN {contribution.amount:,.2f}")
+        
+        # --- Footer ---
+        p.setFont("Helvetica-Bold", 12)
+        p.drawString(0.5*inch, 3.5*inch, "Authorized Signature")
+        p.line(0.5*inch, 3.7*inch, 2.5*inch, 3.7*inch)
+        
+        p.setFont("Helvetica-Oblique", 10)
+        p.drawCentredString(width/2, 2.5*inch, "This is an electronically generated receipt. No signature required.")
+        p.setFont("Helvetica-Bold", 10)
+        p.drawCentredString(width/2, 2.3*inch, f"God bless you for your {contribution.contribution_type.replace('_', ' ')}.")
+        
+        # Church Footer Info
+        p.setFillColor(colors.grey)
+        p.setFont("Helvetica", 9)
+        p.drawCentredString(width/2, 1.0*inch, f"{settings.church_name} | {settings.address or ''}")
+        if settings.contact_email:
+            p.drawCentredString(width/2, 0.8*inch, f"Email: {settings.contact_email}")
+            
+        p.showPage()
+        p.save()
+        
+        buffer.seek(0)
+        response = HttpResponse(buffer, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename=receipt_{contribution.id}.pdf'
+        return response
 
 
     @action(detail=False, methods=['get'])
@@ -722,24 +924,14 @@ class ExpenseViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, IsAdmin | IsFinanceOfficer]
 
     def perform_create(self, serializer):
-        instance = serializer.save(recorded_by=self.request.user)
-        log_activity(
-            self.request.user, 
-            AuditLog.Action.CREATE, 
-            instance.__class__.__name__, 
-            instance.id, 
-            str(instance)
-        )
+        serializer.save(recorded_by=self.request.user)
+        super().perform_create(serializer)
 
     def perform_update(self, serializer):
-        instance = serializer.save()
-        log_activity(
-            self.request.user, 
-            AuditLog.Action.UPDATE, 
-            instance.__class__.__name__, 
-            instance.id, 
-            str(instance)
-        )
+        super().perform_update(serializer)
+
+    def perform_destroy(self, instance):
+        super().perform_destroy(instance)
 
 
     @action(detail=False, methods=['get'])
@@ -925,3 +1117,194 @@ class PrayerRequestViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
         request_obj.status = 'answered'
         request_obj.save()
         return Response({'status': 'marked as answered'})
+
+class BudgetViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
+    queryset = Budget.objects.all().order_by('-year', '-month')
+    serializer_class = BudgetSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdmin | IsFinanceOfficer]
+
+class PledgeViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
+    queryset = Pledge.objects.all().order_by('-target_date')
+    serializer_class = PledgeSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdmin | IsFinanceOfficer]
+class CheckInQueueViewSet(viewsets.ModelViewSet):
+    queryset = CheckInQueue.objects.all()
+    serializer_class = CheckInQueueSerializer
+
+    def get_permissions(self):
+        if self.action == 'create':
+            return [permissions.AllowAny()]
+        return [IsAttendanceOfficerOrHigher()]
+
+    def perform_create(self, serializer):
+        phone_number = self.request.data.get('phone_number')
+        # Try to find a member with this phone number
+        member = Member.objects.filter(phone=phone_number).first()
+        
+        # Get latest active service
+        today = timezone.now().date()
+        service = Service.objects.filter(service_date=today).order_by('-created_at').first()
+        
+        if not service:
+            # Fallback to absolute latest service if none today
+            service = Service.objects.all().order_by('-service_date', '-id').first()
+
+        serializer.save(member=member, service=service)
+        
+        # Log public check-in
+        log_activity(
+            None, 
+            'public_check_in_request', 
+            'CheckInQueue', 
+            None, 
+            f"Phone: {phone_number}",
+            details={'member_found': member.id if member else None}
+        )
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAttendanceOfficerOrHigher])
+    def confirm(self, request, pk=None):
+        queue_item = self.get_object()
+        if queue_item.status != 'pending':
+            return Response({'error': 'Already processed'}, status=400)
+
+        # Check for phone number update if provided
+        new_phone = request.data.get('phone_number')
+        member = queue_item.member
+
+        if member:
+            if new_phone and new_phone != member.phone:
+                # Update member's phone number
+                old_phone = member.phone
+                member.phone = new_phone
+                member.save()
+                log_activity(
+                    request.user,
+                    AuditLog.Action.UPDATE,
+                    'Member',
+                    member.id,
+                    member.full_name,
+                    details={'old_phone': old_phone, 'new_phone': new_phone}
+                )
+
+            # Mark attendance
+            AttendanceRecord.objects.get_or_create(
+                member=member,
+                service=queue_item.service,
+                defaults={'marked_by': request.user}
+            )
+            
+            queue_item.status = 'confirmed'
+            queue_item.save()
+            
+            return Response(self.get_serializer(queue_item).data)
+        
+        return Response({'error': 'No member linked to this request'}, status=400)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAttendanceOfficerOrHigher])
+    def reject(self, request, pk=None):
+        queue_item = self.get_object()
+        queue_item.status = 'rejected'
+        queue_item.save()
+        return Response(self.get_serializer(queue_item).data)
+class TwoFactorViewSet(viewsets.ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
+    @action(detail=False, methods=['post'])
+    def enable(self, request):
+        profile = request.user.profile
+        if profile.is_two_factor_enabled:
+            return Response({'error': '2FA is already enabled'}, status=400)
+            
+        if not profile.two_factor_secret:
+            profile.two_factor_secret = pyotp.random_base32()
+            profile.save()
+            
+        totp = pyotp.TOTP(profile.two_factor_secret)
+        provisioning_url = totp.provisioning_uri(
+            name=request.user.email,
+            issuer_name="RCCG Sanctuary"
+        )
+        
+        # Generate QR Code as base64
+        qr = qrcode.QRCode(version=1, box_size=10, border=5)
+        qr.add_data(provisioning_url)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        
+        buffered = BytesIO()
+        img.save(buffered, format="PNG")
+        qr_base64 = base64.b64encode(buffered.getvalue()).decode()
+        
+        return Response({
+            'qr_code': f"data:image/png;base64,{qr_base64}",
+            'secret': profile.two_factor_secret
+        })
+
+    @action(detail=False, methods=['post'])
+    def verify(self, request):
+        token = request.data.get('token')
+        profile = request.user.profile
+        
+        if not profile.two_factor_secret:
+            return Response({'error': '2FA not initialized'}, status=400)
+            
+        totp = pyotp.TOTP(profile.two_factor_secret)
+        if totp.verify(token):
+            profile.is_two_factor_enabled = True
+            profile.save()
+            log_activity(request.user, AuditLog.Action.UPDATE, 'Profile', profile.id, '2FA Enabled')
+            return Response({'status': '2FA enabled successfully'})
+        else:
+            return Response({'error': 'Invalid token'}, status=400)
+
+    @action(detail=False, methods=['post'])
+    def disable(self, request):
+        token = request.data.get('token')
+        profile = request.user.profile
+        
+        if not profile.is_two_factor_enabled:
+            return Response({'error': '2FA is not enabled'}, status=400)
+            
+        totp = pyotp.TOTP(profile.two_factor_secret)
+        if totp.verify(token):
+            profile.is_two_factor_enabled = False
+            # We keep the secret for now in case they want to re-enable, 
+            # or we could clear it for full reset.
+            profile.save()
+            log_activity(request.user, AuditLog.Action.UPDATE, 'Profile', profile.id, '2FA Disabled')
+            return Response({'status': '2FA disabled successfully'})
+        else:
+            return Response({'error': 'Invalid token'}, status=400)
+
+        return Response({
+            'is_enabled': request.user.profile.is_two_factor_enabled
+        })
+
+class TwoFactorTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        # First, standard password validation
+        try:
+            data = super().validate(attrs)
+        except Exception as e:
+            raise e
+            
+        profile = getattr(self.user, 'profile', None)
+        if profile and profile.is_two_factor_enabled:
+            token = self.context['request'].data.get('two_factor_token')
+            if not token:
+                # Signal to frontend that 2FA is required
+                raise serializers.ValidationError({
+                    'two_factor_required': True,
+                    'detail': '2FA token required'
+                }, code='2fa_required')
+            
+            totp = pyotp.TOTP(profile.two_factor_secret)
+            if not totp.verify(token):
+                raise serializers.ValidationError({
+                    'detail': 'Invalid 2FA token'
+                }, code='invalid_2fa')
+                
+        return data
+
+class TwoFactorTokenObtainPairView(TokenObtainPairView):
+    serializer_class = TwoFactorTokenObtainPairSerializer

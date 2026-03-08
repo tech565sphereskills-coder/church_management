@@ -1,4 +1,4 @@
-export type AppRole = 'admin' | 'attendance_officer' | 'finance_officer' | 'children_officer' | 'prayer_officer' | 'viewer';
+export type AppRole = 'admin' | 'attendance_officer' | 'finance_officer' | 'children_officer' | 'prayer_officer' | 'hod' | 'viewer';
 
 export interface User {
   id: string;
@@ -10,8 +10,7 @@ export interface AuthContextType {
   user: User | null;
   role: AppRole | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
-  signInWithGoogle: (accessToken: string) => Promise<{ error: string | null }>;
+  signIn: (email: string, password: string, twoFactorToken?: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   isAdmin: boolean;
@@ -19,6 +18,8 @@ export interface AuthContextType {
   isFinanceOfficer: boolean;
   isChildrenOfficer: boolean;
   isPrayerOfficer: boolean;
+  isHOD: boolean;
+  hodDepartments: { id: string; name: string }[];
   canManageAttendance: boolean;
   canManageFinances: boolean;
   canManageChildren: boolean;
@@ -30,4 +31,4 @@ export interface AuthContextType {
   canManageSettings: boolean;
 }
 
-export type PermissionKey = keyof Omit<AuthContextType, 'user' | 'role' | 'loading' | 'signIn' | 'signInWithGoogle' | 'signUp' | 'signOut' | 'isAdmin' | 'isOfficer' | 'isFinanceOfficer' | 'isChildrenOfficer' | 'isPrayerOfficer'>;
+export type PermissionKey = keyof Omit<AuthContextType, 'user' | 'role' | 'loading' | 'signIn' | 'signUp' | 'signOut' | 'isAdmin' | 'isOfficer' | 'isFinanceOfficer' | 'isChildrenOfficer' | 'isPrayerOfficer'>;

@@ -8,6 +8,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
+  const [hodDepartments, setHodDepartments] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [permissions, setPermissions] = useState({
     can_manage_members: false,
@@ -28,7 +29,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         id, email, username, role: userRole,
         can_manage_members, can_manage_attendance, can_manage_financials,
         can_manage_departments, can_manage_children, can_manage_prayer_requests,
-        can_manage_calendar, can_view_reports, can_manage_settings
+        can_manage_calendar, can_view_reports, can_manage_settings,
+        hod_departments
       } = response.data;
       
       setUser({ id, email, username });
@@ -38,6 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         can_manage_departments, can_manage_children, can_manage_prayer_requests,
         can_manage_calendar, can_view_reports, can_manage_settings
       });
+      setHodDepartments(hod_departments || []);
     } catch (error) {
       console.error('Error fetching profile:', error);
       setUser(null);
@@ -56,10 +59,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, twoFactorToken?: string) => {
     try {
       console.log('Attempting sign-in for:', email);
-      const response = await api.post('/auth/login/', { email, password });
+      const response = await api.post('/token/', { 
+        email, 
+        password,
+        two_factor_token: twoFactorToken 
+      });
       
       const accessToken = response.data.access || response.data.access_token || response.data.token;
       const refreshToken = response.data.refresh || response.data.refresh_token;
@@ -75,9 +82,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: null };
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
-        const detail = error.response?.data?.detail || 
-                      error.response?.data?.non_field_errors?.[0] || 
-                      JSON.stringify(error.response?.data) ||
+        // Handle 2FA Required
+        const responseData = error.response?.data as { 
+          two_factor_required?: boolean; 
+          detail?: string;
+          non_field_errors?: string[];
+        };
+        
+        if (responseData?.two_factor_required) {
+          return { error: '2fa_required' };
+        }
+        
+        const detail = responseData?.detail || 
+                      responseData?.non_field_errors?.[0] || 
+                      JSON.stringify(responseData) ||
                       'Login failed';
         return { error: detail };
       }
@@ -85,20 +103,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signInWithGoogle = async (accessToken: string) => {
-    try {
-      const response = await api.post('/auth/google/', { access_token: accessToken });
-      localStorage.setItem('access_token', response.data.access);
-      localStorage.setItem('refresh_token', response.data.refresh);
-      await fetchUserProfile();
-      return { error: null };
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        return { error: error.response?.data?.detail || 'Google login failed' };
-      }
-      return { error: 'Google login failed' };
-    }
-  };
 
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
@@ -139,7 +143,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role,
         loading,
         signIn,
-        signInWithGoogle,
         signUp,
         signOut,
         isAdmin,
@@ -147,6 +150,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isFinanceOfficer: isAdmin || role === 'finance_officer' || permissions.can_manage_financials,
         isChildrenOfficer: isAdmin || role === 'children_officer' || permissions.can_manage_children,
         isPrayerOfficer: isAdmin || role === 'prayer_officer' || permissions.can_manage_prayer_requests,
+        isHOD: isAdmin || role === 'hod' || hodDepartments.length > 0,
+        hodDepartments,
         canManageAttendance,
         canManageFinances,
         canManageChildren,

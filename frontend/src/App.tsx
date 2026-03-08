@@ -19,6 +19,10 @@ import FollowUp from "./pages/FollowUp";
 import Messaging from "./pages/Messaging";
 import Financials from "./pages/Financials";
 import Departments from "./pages/Departments";
+import DepartmentReports from "./pages/DepartmentReports";
+import Ministers from "./pages/Ministers";
+import Family from "./pages/Family";
+import Inventory from "./pages/Inventory";
 import Auth from "./pages/Auth";
 import Children from "./pages/Children";
 import PrayerRequests from "./pages/PrayerRequests";
@@ -27,6 +31,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Calendar from "./pages/Calendar";
 import AuditLogs from "./pages/AuditLogs";
 import Notifications from "./pages/Notifications";
+import CheckIn from "./pages/CheckIn";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +51,7 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/submit-prayer" element={<SubmitPrayer />} />
+              <Route path="/check-in" element={<CheckIn />} />
               
               {/* Protected routes */}
               <Route element={<ProtectedRoute />}>
@@ -88,6 +94,14 @@ const App = () => (
                     <Route index element={<Financials />} />
                   </Route>
                   <Route path="/departments" element={<Departments />} />
+                  <Route path="/departments/reports" element={<ProtectedRoute requiredPermission="canViewReports" />}>
+                    <Route index element={<DepartmentReports />} />
+                  </Route>
+                  <Route path="/ministers" element={<ProtectedRoute requiredPermission="canManageDepartments" />}>
+                    <Route index element={<Ministers />} />
+                  </Route>
+                  <Route path="/family" element={<Family />} />
+                  <Route path="/inventory" element={<Inventory />} />
                   <Route path="/children" element={<ProtectedRoute requiredPermission="canManageChildren" />}>
                     <Route index element={<Children />} />
                   </Route>

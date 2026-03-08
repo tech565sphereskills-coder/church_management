@@ -10,12 +10,12 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Pencil, Loader2 } from 'lucide-react';
 import type { Member, MemberStatus } from '@/hooks/useMembers';
 import { useDepartments } from '@/hooks/useDepartments';
+import { useFamilies, Family } from '@/hooks/useFamilies';
 
 // Departments constant removed to use dynamic data
 
@@ -23,11 +23,12 @@ const editSchema = z.object({
   full_name: z.string().min(2, 'Name must be at least 2 characters'),
   phone: z.string().min(10, 'Please enter a valid phone number'),
   gender: z.enum(['male', 'female']),
-  department: z.string().optional(),
-  email: z.string().email('Invalid email').optional().or(z.literal('')),
   address: z.string().optional(),
   status: z.enum(['active', 'inactive', 'first_timer']),
   date_of_birth: z.string().optional(),
+  departments: z.array(z.string()).optional(),
+  email: z.string().email('Invalid email').optional().or(z.literal('')),
+  family: z.string().optional(),
 });
 
 type EditFormData = z.infer<typeof editSchema>;
@@ -42,12 +43,15 @@ interface EditMemberDialogProps {
 export function EditMemberDialog({ open, onOpenChange, member, onSave }: EditMemberDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const { departments } = useDepartments();
+  const { families } = useFamilies();
 
   const form = useForm<EditFormData>({
     resolver: zodResolver(editSchema),
     defaultValues: {
-      full_name: '', phone: '', gender: 'male', department: '',
+      full_name: '', phone: '', gender: 'male', 
       email: '', address: '', status: 'active', date_of_birth: '',
+      departments: [],
+      family: '',
     },
   });
 
@@ -57,11 +61,12 @@ export function EditMemberDialog({ open, onOpenChange, member, onSave }: EditMem
         full_name: member.full_name,
         phone: member.phone,
         gender: member.gender,
-        department: member.department || '',
-        email: member.email || '',
         address: member.address || '',
         status: member.status,
         date_of_birth: member.date_of_birth || '',
+        departments: member.departments || [],
+        email: member.email || '',
+        family: member.family || '',
       });
     }
   }, [member, open, form]);
@@ -73,8 +78,8 @@ export function EditMemberDialog({ open, onOpenChange, member, onSave }: EditMem
     // Create a typed updates object
     const updates: Partial<EditFormData> & { email?: string | null; address?: string | null; date_of_birth?: string | null } = { ...data };
     
-    if (updates.department === 'none') {
-        updates.department = undefined;
+    if (updates.departments && updates.departments.length === 0) {
+        // Option to handle empty depts if needed
     }
     
     if (!updates.email) updates.email = null;
@@ -145,19 +150,60 @@ export function EditMemberDialog({ open, onOpenChange, member, onSave }: EditMem
                 </FormItem>
               )} />
 
-              <FormField control={form.control} name="department" render={({ field }) => (
+              <FormField control={form.control} name="family" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Department</FormLabel>
+                  <FormLabel>Family</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger></FormControl>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      {departments.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                    <FormControl>
+                      <SelectTrigger className="h-10 rounded-xl">
+                        <SelectValue placeholder="Select family" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="rounded-xl">
+                      <SelectItem value="none">-- None --</SelectItem>
+                      {families.map((f: Family) => (
+                        <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
                 </FormItem>
               )} />
+
+              <FormField
+                control={form.control}
+                name="departments"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Departments (Select multiple)</FormLabel>
+                    <div className="grid grid-cols-2 gap-2 p-4 rounded-xl border bg-slate-50/50">
+                      {departments.map((dept) => (
+                        <div key={dept.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`edit-dept-${dept.id}`}
+                            checked={field.value?.includes(dept.id)}
+                            onCheckedChange={(checked) => {
+                              const current = field.value || [];
+                              if (checked) {
+                                field.onChange([...current, dept.id]);
+                              } else {
+                                field.onChange(current.filter((id) => id !== dept.id));
+                              }
+                            }}
+                          />
+                          <label
+                            htmlFor={`edit-dept-${dept.id}`}
+                            className="text-sm font-medium leading-none cursor-pointer"
+                          >
+                            {dept.name}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <FormField control={form.control} name="date_of_birth" render={({ field }) => (
                 <FormItem>

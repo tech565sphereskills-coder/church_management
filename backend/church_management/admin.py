@@ -9,8 +9,8 @@ class ProfileAdmin(admin.ModelAdmin):
 
 @admin.register(Member)
 class MemberAdmin(admin.ModelAdmin):
-    list_display = ('full_name', 'phone', 'gender', 'department', 'status', 'qr_code')
-    list_filter = ('gender', 'status', 'department')
+    list_display = ('full_name', 'phone', 'gender', 'status', 'qr_code')
+    list_filter = ('gender', 'status', 'departments')
     search_fields = ('full_name', 'phone', 'email', 'qr_code')
 
 @admin.register(Service)

@@ -12,8 +12,8 @@ export interface Member {
   full_name: string;
   phone: string;
   gender: Gender;
-  department: string | null;
-  department_name?: string | null;
+  departments: string[];
+  department_names?: string[];
   date_joined: string;
   status: MemberStatus;
   invited_by: string | null;
@@ -21,6 +21,8 @@ export interface Member {
   address: string | null;
   date_of_birth: string | null;
   qr_code: string | null;
+  family: string | null;
+  family_name?: string;
   photo_url: string | null;
   created_by: string | null;
   created_at: string;
@@ -31,11 +33,12 @@ export interface NewMemberData {
   full_name: string;
   phone: string;
   gender: Gender;
-  department?: string;
+  departments?: string[];
   invited_by?: string;
   email?: string;
   address?: string;
   date_of_birth?: string;
+  family?: string;
 }
 
 export function useMembers() {
@@ -103,6 +106,12 @@ export function useMembers() {
         toast({
           title: 'Duplicate Phone Number',
           description: 'A member with this phone number already exists.',
+          variant: 'destructive',
+        });
+      } else if (error.response?.data?.non_field_errors) {
+        toast({
+          title: 'Duplicate Registration',
+          description: error.response.data.non_field_errors[0],
           variant: 'destructive',
         });
       } else {

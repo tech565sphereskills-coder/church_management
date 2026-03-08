@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Header } from '@/components/layout/Header';
 import { motion } from 'framer-motion';
-import { Users, Shield, UserCheck, Eye, Loader2 } from 'lucide-react';
+import { Users, Shield, UserCheck, Eye, Loader2, Plus, Lock, Mail, UserPlus, Trash2, AlertTriangle } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useUserManagement, UserWithRole, AppRole } from '@/hooks/useUserManagement';
+import { useMembers } from '@/hooks/useMembers';
 import { Badge } from '@/components/ui/badge';
 import {
   Select,
@@ -56,10 +59,15 @@ const roleConfig: Record<AppRole, { label: string; icon: React.ReactNode; color:
     icon: <UserCheck className="h-3 w-3" />,
     color: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20',
   },
+  hod: {
+    label: 'Head of Dept.',
+    icon: <Users className="h-3 w-3" />,
+    color: 'bg-violet-500/10 text-violet-600 border-violet-500/20',
+  },
   viewer: {
     label: 'Viewer',
     icon: <Eye className="h-3 w-3" />,
-  color: 'bg-muted text-muted-foreground border-border',
+    color: 'bg-muted text-muted-foreground border-border',
   },
 };
 
@@ -109,7 +117,7 @@ const PermissionSummary = ({ user }: { user: UserWithRole }) => {
 };
 
 export default function UserManagement() {
-  const { users, loading, assignRole, updatePermissions, fetchUsers } = useUserManagement();
+  const { users, loading, assignRole, updatePermissions, fetchUsers, createUser, deleteUser } = useUserManagement();
 
   const handlePermissionsUpdate = async (userId: string, permissions: Partial<UserWithRole>) => {
     const success = await updatePermissions(userId, permissions);
@@ -207,12 +215,15 @@ export default function UserManagement() {
                       </Select>
                     </TableCell>
                     <TableCell className="text-right">
-                        <div className="flex flex-col items-end gap-1">
-                            <PermissionSummary user={user} />
-                            <PermissionDialog 
-                                user={user} 
-                                onSave={(perms) => handlePermissionsUpdate(user.id, perms)} 
-                            />
+                        <div className="flex items-center justify-end gap-2">
+                            <div className="flex flex-col items-end gap-1">
+                                <PermissionSummary user={user} />
+                                <PermissionDialog 
+                                    user={user} 
+                                    onSave={(perms) => handlePermissionsUpdate(user.id, perms)} 
+                                />
+                            </div>
+                            <DeleteUserDialog user={user} onDelete={() => deleteUser(user.id)} />
                         </div>
                     </TableCell>
                   </TableRow>
@@ -229,17 +240,20 @@ export default function UserManagement() {
             transition={{ delay: 0.1 }}
             className="rounded-xl border border-border bg-card p-6"
         >
-            <div className="flex items-center gap-3 mb-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                    <Shield className="h-5 w-5 text-primary" />
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                            <Shield className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                            <h3 className="font-semibold">Active Users</h3>
+                            <p className="text-sm text-muted-foreground">
+                                {activeUsers.length} user(s) with assigned roles
+                            </p>
+                        </div>
+                    </div>
+                    <CreateUserDialog onCreate={createUser} />
                 </div>
-                <div>
-                    <h3 className="font-semibold">Active Users</h3>
-                    <p className="text-sm text-muted-foreground">
-                        {activeUsers.length} user(s) with assigned roles
-                    </p>
-                </div>
-            </div>
 
             {loading ? (
                 <div className="flex items-center justify-center py-8">
@@ -292,10 +306,13 @@ export default function UserManagement() {
                                     <PermissionSummary user={user} />
                                 </TableCell>
                                 <TableCell className="text-right">
-                                    <PermissionDialog 
-                                        user={user} 
-                                        onSave={(perms) => handlePermissionsUpdate(user.id, perms)} 
-                                    />
+                                    <div className="flex items-center justify-end gap-2">
+                                        <PermissionDialog 
+                                            user={user} 
+                                            onSave={(perms) => handlePermissionsUpdate(user.id, perms)} 
+                                        />
+                                        <DeleteUserDialog user={user} onDelete={() => deleteUser(user.id)} />
+                                    </div>
                                 </TableCell>
                             </TableRow>
                         ))}
@@ -313,10 +330,12 @@ function PermissionDialog({ user, onSave }: { user: UserWithRole; onSave: (perms
     const [open, setOpen] = useState(false);
     const [tempPermissions, setTempPermissions] = useState<Partial<UserWithRole>>({});
     const [saving, setSaving] = useState(false);
+    const { members } = useMembers();
 
     useEffect(() => {
         if (open && !saving) {
             setTempPermissions({
+                member: user.member || null,
                 can_manage_members: Boolean(user.can_manage_members),
                 can_manage_attendance: Boolean(user.can_manage_attendance),
                 can_manage_financials: Boolean(user.can_manage_financials),
@@ -387,6 +406,25 @@ function PermissionDialog({ user, onSave }: { user: UserWithRole; onSave: (perms
                             </div>
                         ) : (
                             <>
+                                <div className="space-y-2 pb-4 border-b border-slate-100">
+                                    <label className="text-sm font-bold text-slate-700">Link to Church Member</label>
+                                    <Select 
+                                        value={String(tempPermissions.member || 'none')} 
+                                        onValueChange={(val) => setTempPermissions(prev => ({ ...prev, member: val === 'none' ? null : val }))}
+                                    >
+                                        <SelectTrigger className="w-full bg-slate-50 border-slate-200">
+                                            <SelectValue placeholder="Select member record..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="none">Not linked</SelectItem>
+                                            {members.map((m: { id: string | number; full_name: string }) => (
+                                                <SelectItem key={m.id} value={String(m.id)}>{m.full_name}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <p className="text-[10px] text-slate-400 italic">Required for the "Head of Dept." portal to identify their team.</p>
+                                </div>
+
                                 <div className="grid grid-cols-1 gap-2 max-h-[320px] overflow-y-auto pr-1">
                                     {permissionsList.map((perm) => (
                                         <div 
@@ -423,6 +461,186 @@ function PermissionDialog({ user, onSave }: { user: UserWithRole; onSave: (perms
                                 </div>
                             </>
                         )}
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function CreateUserDialog({ onCreate }: { onCreate: (email: string, fullName: string, password: string) => Promise<boolean> }) {
+    const [open, setOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    
+    const [email, setEmail] = useState('');
+    const [fullName, setFullName] = useState('');
+    const [password, setPassword] = useState('');
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoading(true);
+        const success = await onCreate(email, fullName, password);
+        setIsLoading(false);
+        if (success) {
+            setOpen(false);
+            setEmail('');
+            setFullName('');
+            setPassword('');
+        }
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button className="rounded-xl gap-2 font-black tracking-tight shadow-md shadow-primary/20">
+                    <UserPlus className="h-4 w-4" />
+                    Create New User
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl">
+                <div className="h-2 w-full bg-primary" />
+                <div className="p-8 space-y-6">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-black flex items-center gap-3 tracking-tight">
+                            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                                <UserPlus className="h-5 w-5 text-primary" />
+                            </div>
+                            Create Internal User
+                        </DialogTitle>
+                        <p className="text-sm text-muted-foreground font-medium pt-1">
+                            Set up a new system account. The user can change their password later in Settings.
+                        </p>
+                    </DialogHeader>
+
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="create-fullName" className="text-xs font-bold text-slate-700 ml-1">Full Name</Label>
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none group-focus-within:text-primary transition-colors">
+                                    <Users className="h-4 w-4 text-slate-400" />
+                                </div>
+                                <Input
+                                    id="create-fullName"
+                                    placeholder="Enter full name"
+                                    value={fullName}
+                                    onChange={(e) => setFullName(e.target.value)}
+                                    className="pl-11 h-11 bg-slate-50 border-slate-200 rounded-xl font-medium focus:ring-primary/20"
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <Label htmlFor="create-email" className="text-xs font-bold text-slate-700 ml-1">Email Address</Label>
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none group-focus-within:text-primary transition-colors">
+                                    <Mail className="h-4 w-4 text-slate-400" />
+                                </div>
+                                <Input
+                                    id="create-email"
+                                    type="email"
+                                    placeholder="user@example.com"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="pl-11 h-11 bg-slate-50 border-slate-200 rounded-xl font-medium focus:ring-primary/20"
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-1.5 pb-2">
+                            <Label htmlFor="create-password" className="text-xs font-bold text-slate-700 ml-1">Initial Password</Label>
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none group-focus-within:text-primary transition-colors">
+                                    <Lock className="h-4 w-4 text-slate-400" />
+                                </div>
+                                <Input
+                                    id="create-password"
+                                    type="text"
+                                    placeholder="Enter initial password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="pl-11 h-11 bg-slate-50 border-slate-200 rounded-xl font-medium focus:ring-primary/20"
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3 pt-2">
+                            <Button type="button" variant="ghost" onClick={() => setOpen(false)} className="flex-1 rounded-xl h-11 font-bold text-slate-500">
+                                Cancel
+                            </Button>
+                            <Button type="submit" className="flex-[2] rounded-xl h-11 font-black tracking-tight shadow-lg shadow-primary/20" disabled={isLoading}>
+                                {isLoading ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        CREATING...
+                                    </>
+                                ) : (
+                                    'CREATE ACCOUNT'
+                                )}
+                            </Button>
+                        </div>
+                    </form>
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+}
+function DeleteUserDialog({ user, onDelete }: { user: UserWithRole; onDelete: () => Promise<boolean> }) {
+    const [open, setOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleDelete = async () => {
+        setIsDeleting(true);
+        const success = await onDelete();
+        setIsDeleting(false);
+        if (success) {
+            setOpen(false);
+        }
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-destructive hover:bg-destructive/10">
+                    <Trash2 className="h-4 w-4" />
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md rounded-2xl p-0 overflow-hidden border-none shadow-2xl">
+                <div className="h-2 w-full bg-destructive" />
+                <div className="p-6 space-y-6">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-bold flex items-center gap-2 text-destructive">
+                            <AlertTriangle className="h-5 w-5" />
+                            Delete Account
+                        </DialogTitle>
+                        <div className="pt-2">
+                            <p className="text-sm text-slate-600">
+                                Are you sure you want to delete <span className="font-bold text-slate-900">{user.full_name || user.email}</span>?
+                            </p>
+                            <p className="text-xs text-slate-400 mt-2 bg-slate-50 p-3 rounded-lg border border-slate-100 italic">
+                                This action is permanent and will remove all authentication and profile data for this user.
+                            </p>
+                        </div>
+                    </DialogHeader>
+
+                    <div className="flex gap-3">
+                        <Button variant="ghost" onClick={() => setOpen(false)} className="flex-1 rounded-xl h-11 font-bold text-slate-500">
+                            Cancel
+                        </Button>
+                        <Button 
+                            variant="destructive" 
+                            onClick={handleDelete} 
+                            disabled={isDeleting}
+                            className="flex-1 rounded-xl h-11 font-bold shadow-lg shadow-destructive/20"
+                        >
+                            {isDeleting ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                                'Delete Forever'
+                            )}
+                        </Button>
                     </div>
                 </div>
             </DialogContent>

@@ -21,6 +21,8 @@ import {
   CalendarDays,
   Calendar as CalendarIcon,
   ShieldCheck,
+  PieChart,
+  Package,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -47,6 +49,10 @@ const menuItems: MenuItem[] = [
   { icon: AlertTriangle, label: 'Follow-Up', path: '/follow-up', permission: 'canManageMembers' },
   { icon: Banknote, label: 'Financials', path: '/financials', permission: 'canManageFinances' },
   { icon: Building2, label: 'Departments', path: '/departments', permission: 'canManageDepartments' },
+  { icon: ShieldCheck, label: 'Ministers', path: '/ministers', permission: 'canManageDepartments' },
+  { icon: Users, label: 'Family', path: '/family' },
+  { icon: Package, label: 'Inventory', path: '/inventory' },
+  { icon: PieChart, label: 'Dept. Reports', path: '/departments/reports', permission: 'canViewReports' },
   { icon: Baby, label: 'Children', path: '/children', permission: 'canManageChildren' },
   { icon: HandHelping, label: 'Prayer Requests', path: '/prayer-requests', permission: 'canManagePrayer' },
   { icon: History, label: 'History', path: '/history' },
@@ -80,6 +86,7 @@ export function AppSidebar({ isCollapsed, onToggle, isMobile, mobileOpen, onMobi
       case 'finance_officer': return 'Finance Officer';
       case 'children_officer': return 'Children Officer';
       case 'prayer_officer': return 'Prayer Officer';
+      case 'hod': return 'Head of Dept.';
       case 'viewer': return 'Viewer';
       default: return 'Pending';
     }

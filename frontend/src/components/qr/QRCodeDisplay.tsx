@@ -14,9 +14,16 @@ interface QRCodeDisplayProps {
   onOpenChange: (open: boolean) => void;
   memberName: string;
   qrCode: string;
+  description?: string;
 }
 
-export function QRCodeDisplay({ open, onOpenChange, memberName, qrCode }: QRCodeDisplayProps) {
+export function QRCodeDisplay({ 
+  open, 
+  onOpenChange, 
+  memberName, 
+  qrCode,
+  description 
+}: QRCodeDisplayProps) {
   const handleDownload = () => {
     const svg = document.getElementById('member-qr-code');
     if (!svg) return;
@@ -67,7 +74,11 @@ export function QRCodeDisplay({ open, onOpenChange, memberName, qrCode }: QRCode
           
           <div className="text-center">
             <p className="text-lg font-semibold text-foreground">{memberName}</p>
-            <p className="text-sm text-muted-foreground">{qrCode}</p>
+            {description ? (
+              <p className="text-sm text-primary font-bold mt-1">{description}</p>
+            ) : (
+              <p className="text-sm text-muted-foreground">{qrCode}</p>
+            )}
           </div>
           
           <Button onClick={handleDownload} className="btn-gold">

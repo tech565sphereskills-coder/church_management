@@ -121,6 +121,7 @@ export function ExpenseDialog({ open, onOpenChange, onSave, initialData }: Expen
                     <SelectItem value="projects">Church Projects</SelectItem>
                     <SelectItem value="administration">Administration</SelectItem>
                     <SelectItem value="outreach">Outreach</SelectItem>
+                    <SelectItem value="purchase">Purchases / Equipment</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>

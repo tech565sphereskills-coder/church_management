@@ -26,8 +26,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { UserPlus, Loader2 } from 'lucide-react';
+import { UserPlus, Loader2, Image as ImageIcon, Camera, Plus } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useDepartments } from '@/hooks/useDepartments';
+import { useFamilies, Family } from '@/hooks/useFamilies';
 import { MemberStatus } from '@/hooks/useMembers';
 
 export type Gender = 'male' | 'female';
@@ -36,12 +38,13 @@ export interface NewMemberData {
   full_name: string;
   phone: string;
   gender: Gender;
-  department?: string;
   invited_by?: string;
   email?: string;
   address?: string;
   date_of_birth?: string;
   status: MemberStatus;
+  departments?: string[];
+  family?: string;
 }
 
 // Departments constant removed to use dynamic data
@@ -50,11 +53,12 @@ const formSchema = z.object({
   full_name: z.string().min(2, 'Name must be at least 2 characters'),
   phone: z.string().min(10, 'Please enter a valid phone number'),
   gender: z.enum(['male', 'female']),
-  department: z.string().optional(),
-  invited_by: z.string().optional(),
-  email: z.string().email('Invalid email').optional().or(z.literal('')),
   date_of_birth: z.string().optional(),
   status: z.enum(['active', 'inactive', 'first_timer']),
+  departments: z.array(z.string()).optional(),
+  email: z.string().email('Invalid email').optional().or(z.literal('')),
+  invited_by: z.string().optional(),
+  family: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -73,7 +77,9 @@ export function NewMemberDialog({
   initialName = '',
 }: NewMemberDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const { departments } = useDepartments();
+  const { families } = useFamilies();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -81,11 +87,12 @@ export function NewMemberDialog({
       full_name: initialName,
       phone: '',
       gender: 'male',
-      department: '',
-      invited_by: '',
-      email: '',
       date_of_birth: '',
       status: 'first_timer',
+      departments: [],
+      email: '',
+      invited_by: '',
+      family: '',
     },
   });
 
@@ -103,11 +110,12 @@ export function NewMemberDialog({
       full_name: data.full_name,
       phone: data.phone,
       gender: data.gender as Gender,
-      department: data.department || undefined,
-      invited_by: data.invited_by || undefined,
       email: data.email || undefined,
       date_of_birth: data.date_of_birth || undefined,
       status: data.status as MemberStatus,
+      departments: data.departments || [],
+      invited_by: data.invited_by || undefined,
+      family: data.family || undefined,
     };
 
     await onMemberCreated(newMember);
@@ -128,6 +136,39 @@ export function NewMemberDialog({
             marked present after registration.
           </DialogDescription>
         </DialogHeader>
+
+        <div className="flex flex-col items-center justify-center py-6 bg-slate-50 border-y border-slate-100 -mx-6 mb-6">
+           <div className="relative group cursor-pointer" onClick={() => document.getElementById('photo-upload')?.click()}>
+              <div className="h-24 w-24 rounded-full border-2 border-dashed border-slate-300 bg-white flex items-center justify-center overflow-hidden transition-all group-hover:border-primary">
+                 {photoPreview ? (
+                    <img src={photoPreview} alt="Preview" className="h-full w-full object-cover" />
+                 ) : (
+                    <div className="flex flex-col items-center text-slate-400">
+                       <Camera className="h-8 w-8 mb-1" />
+                       <span className="text-[10px] font-bold uppercase">Add Photo</span>
+                    </div>
+                 )}
+              </div>
+              <div className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center shadow-lg transform transition-transform group-hover:scale-110">
+                 <Plus className="h-4 w-4" />
+              </div>
+              <input 
+                id="photo-upload" 
+                type="file" 
+                accept="image/*" 
+                className="hidden" 
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => setPhotoPreview(reader.result as string);
+                    reader.readAsDataURL(file);
+                  }
+                }}
+              />
+           </div>
+           <p className="text-[10px] text-slate-400 font-bold uppercase mt-4 tracking-widest italic">Optional: Member Photo</p>
+        </div>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -184,24 +225,34 @@ export function NewMemberDialog({
 
               <FormField
                 control={form.control}
-                name="department"
+                name="departments"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Department (Optional)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select department" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {departments.map((dept) => (
-                          <SelectItem key={dept.id} value={dept.id}>
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Departments (Select multiple)</FormLabel>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-4 rounded-xl border bg-slate-50/50">
+                      {departments.map((dept) => (
+                        <div key={dept.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`dept-${dept.id}`}
+                            checked={field.value?.includes(dept.id)}
+                            onCheckedChange={(checked) => {
+                              const current = field.value || [];
+                              if (checked) {
+                                field.onChange([...current, dept.id]);
+                              } else {
+                                field.onChange(current.filter((id) => id !== dept.id));
+                              }
+                            }}
+                          />
+                          <label
+                            htmlFor={`dept-${dept.id}`}
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                          >
                             {dept.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                          </label>
+                        </div>
+                      ))}
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -230,6 +281,30 @@ export function NewMemberDialog({
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="family"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Family (Optional)</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="h-12 rounded-2xl">
+                          <SelectValue placeholder="Select a family" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="rounded-2xl">
+                        <SelectItem value="none">-- None --</SelectItem>
+                        {families.map((f: Family) => (
+                          <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}

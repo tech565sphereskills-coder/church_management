@@ -25,6 +25,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { useDepartments, Department } from '@/hooks/useDepartments';
 import { DepartmentDialog } from '@/components/departments/DepartmentDialog';
+import { DepartmentMembersDialog } from '@/components/departments/DepartmentMembersDialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   DropdownMenu,
@@ -38,6 +39,8 @@ export default function Departments() {
   const { departments, loading, createDepartment, updateDepartment, deleteDepartment } = useDepartments();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
+  const [isMembersDialogOpen, setIsMembersDialogOpen] = useState(false);
+  const [selectedDeptForMembers, setSelectedDeptForMembers] = useState<Department | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const { isAdmin } = useAuth();
 
@@ -57,6 +60,11 @@ export default function Departments() {
   const handleAdd = () => {
     setSelectedDepartment(null);
     setIsDialogOpen(true);
+  };
+
+  const handleViewMembers = (dept: Department) => {
+    setSelectedDeptForMembers(dept);
+    setIsMembersDialogOpen(true);
   };
 
   if (loading) {
@@ -104,7 +112,8 @@ export default function Departments() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: index * 0.05 }}
-              className="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 transition-all hover:bg-accent/5"
+              onClick={() => handleViewMembers(dept)}
+              className="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 transition-all hover:bg-accent/5 cursor-pointer"
             >
               <div className="mb-4 flex items-start justify-between">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
@@ -113,7 +122,12 @@ export default function Departments() {
                 {isAdmin && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -167,6 +181,12 @@ export default function Departments() {
         onOpenChange={setIsDialogOpen}
         department={selectedDepartment}
         onSave={selectedDepartment ? (data) => updateDepartment(selectedDepartment.id, data) : createDepartment}
+      />
+
+      <DepartmentMembersDialog
+        open={isMembersDialogOpen}
+        onOpenChange={setIsMembersDialogOpen}
+        department={selectedDeptForMembers}
       />
     </div>
   );
