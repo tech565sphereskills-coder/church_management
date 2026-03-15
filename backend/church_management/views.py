@@ -6,6 +6,8 @@ import qrcode
 import base64
 import io
 from io import BytesIO
+import traceback
+from django.conf import settings
 from django.http import HttpResponse
 from django.contrib.auth.models import User
 from rest_framework import viewsets, permissions, status, serializers
@@ -239,7 +241,7 @@ class MemberViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
         profile = getattr(user, 'profile', None)
         if profile and profile.role == Role.HOD and profile.member:
             dept_ids = profile.member.headed_departments.values_list('id', flat=True)
-            return Member.objects.filter(department_id__in=dept_ids)
+            return Member.objects.filter(departments__id__in=dept_ids).distinct()
             
         return Member.objects.all()
     
@@ -284,7 +286,7 @@ class MemberViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], permission_classes=[IsAttendanceOfficerOrHigher])
     def import_members(self, request):
-        log_activity(request.user, AuditLog.Action.EXPORT, 'Member', None, 'Member List Import')
+        log_activity(request.user, AuditLog.Action.CREATE, 'Member', None, 'Member List Import Started')
         file = request.FILES.get('file')
         if not file:
             return Response({'error': 'No file provided'}, status=400)
@@ -295,41 +297,208 @@ class MemberViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
             elif file.name.endswith(('.xls', '.xlsx')):
                 df = pd.read_excel(file)
             else:
-                return Response({'error': 'Unsupported file format'}, status=400)
+                return Response({'error': 'Unsupported file format. Please use CSV or Excel.'}, status=400)
                 
-            required_fields = ['full_name', 'email']
-            for field in required_fields:
-                if field not in df.columns:
-                    return Response({'error': f'Missing required column: {field}'}, status=400)
+            if df.empty:
+                return Response({'error': 'The uploaded file is empty.'}, status=400)
+
+            # Clean column names
+            original_cols = list(df.columns)
+            df.columns = [c.lower().replace(' ', '_').strip() for c in df.columns]
+            found_cols = list(df.columns)
             
             created_count = 0
-            for _, row in df.iterrows():
-                # Basic cleaned data
+            updated_count = 0
+            skipped_count = 0
+            skip_reasons = []
+
+            for i, row in df.iterrows():
+                # Extract names - support user's specific headers
+                surname = str(row.get('surname', row.get('last_name', ''))).strip() if pd.notna(row.get('surname')) or pd.notna(row.get('last_name')) else ''
+                
+                # Support "first_name_and_other_name"
+                firstname_val = row.get('firstname', row.get('first_name', row.get('first_name_and_other_name', '')))
+                firstname = str(firstname_val).strip() if pd.notna(firstname_val) else ''
+                
+                other_name = str(row.get('other_name', '')).strip() if pd.notna(row.get('other_name')) else ''
+                full_name = str(row.get('full_name', row.get('name', ''))).strip() if pd.notna(row.get('full_name')) or pd.notna(row.get('name')) else ''
+
+                # Specific handling for "first_name_and_other_name" splitting
+                if 'first_name_and_other_name' in row and pd.notna(row['first_name_and_other_name']):
+                    val = str(row['first_name_and_other_name']).strip()
+                    parts = val.split(' ', 1)
+                    firstname = parts[0]
+                    if len(parts) > 1 and not other_name:
+                        other_name = parts[1]
+
+                # If structured names are missing but full_name is present, split it
+                if (not surname or not firstname) and full_name:
+                    names = full_name.split(' ')
+                    if len(names) >= 2:
+                        surname = names[0]
+                        firstname = names[1]
+                        other_name = ' '.join(names[2:]) if len(names) > 2 else other_name
+                    elif names:
+                        surname = names[0]
+                        firstname = 'TBD'
+                
+                if not surname or not firstname:
+                    skipped_count += 1
+                    if i < 5: skip_reasons.append(f"Row {i+1}: Missing surname/firstname (Headers: {found_cols})")
+                    continue
+
+                # Phone number mapping
+                phone_val = row.get('phone', row.get('phone_number', row.get('mobile', '')))
+                if pd.isna(phone_val):
+                    phone = ''
+                else:
+                    phone = str(phone_val)
+                    if phone.endswith('.0'):
+                        phone = phone[:-2]
+                    phone = ''.join(filter(str.isdigit, phone))
+                
+                email = str(row.get('email', '')).strip() if pd.notna(row.get('email')) else None
+                if email and '@' not in email: email = None
+                
+                # Check for existing member
+                member = None
+                if email:
+                    member = Member.objects.filter(email=email).first()
+                if not member and phone:
+                    member = Member.objects.filter(surname=surname, firstname=firstname, phone=phone).first() or \
+                             Member.objects.filter(phone=phone).first()
+                
+                # Defaults for required fields
+                gender = str(row.get('gender', 'male')).lower() if pd.notna(row.get('gender')) else 'male'
+                if gender.startswith('f'): gender = 'female'
+                elif not gender.startswith('m'): gender = 'male'
+
+                marital_status = str(row.get('marital_status', 'single')).lower() if pd.notna(row.get('marital_status')) else 'single'
+                if marital_status not in ['single', 'married', 'widowed', 'divorced']: marital_status = 'single'
+
+                church_membership = str(row.get('church_membership', '')).lower() if pd.notna(row.get('church_membership')) else None
+                if church_membership:
+                    if 'minister' in church_membership: church_membership = 'minister'
+                    elif 'worker' in church_membership: church_membership = 'worker'
+                    else: church_membership = None
+
+                # Handle Date of Birth
+                dob = None
+                dob_val = row.get('date_of_birth', row.get('dob', ''))
+                dob_str = str(dob_val).strip() if pd.notna(dob_val) else ''
+                if dob_str:
+                    try:
+                        dob = pd.to_datetime(dob_str).date()
+                    except:
+                        pass
+
+                # Year mapping based on user headers
+                year_joined_header = 'what_year_did_you_join_rccg?'
+                year_ordination_header = 'year_of_ordination'
+                ordained_as_header = 'currently_ordained_as:'
+                dept_post_header = 'post_in_the_department'
+                spouse_name_header = "spouse's_full_name"
+                spouse_phone_header = "spouse's_phone_no"
+
+                # Data mapping
+                def safe_int(val):
+                    if pd.isna(val) or val == '': return None
+                    try:
+                        return int(float(val))
+                    except:
+                        return None
+
                 data = {
-                    'full_name': str(row['full_name']),
-                    'email': str(row['email']) if pd.notna(row['email']) else None,
-                    'phone': str(row['phone']) if 'phone' in df.columns and pd.notna(row['phone']) else None,
-                    'address': str(row['address']) if 'address' in df.columns and pd.notna(row['address']) else None,
-                    'status': str(row['status']).lower() if 'status' in df.columns and pd.notna(row['status']) else 'active',
+                    'surname': surname,
+                    'firstname': firstname,
+                    'other_name': other_name,
+                    'phone': phone or '0000000000',
+                    'email': email,
+                    'gender': gender,
+                    'address': str(row.get('address', '')).strip() if pd.notna(row.get('address')) else '',
+                    'marital_status': marital_status,
+                    'date_of_birth': dob,
+                    'church_membership': church_membership,
+                    'department_post': str(row.get(dept_post_header, row.get('department_post', ''))).strip() if pd.notna(row.get(dept_post_header, row.get('department_post'))) else '',
+                    'year_joined': safe_int(row.get(year_joined_header, row.get('year_joined'))),
+                    'ordained_as': str(row.get(ordained_as_header, row.get('ordained_as', ''))).strip() if pd.notna(row.get(ordained_as_header, row.get('ordained_as'))) else None,
+                    'year_ordination': safe_int(row.get(year_ordination_header, row.get('year_ordination'))),
+                    'spouse_full_name': str(row.get(spouse_name_header, row.get('spouse_full_name', ''))).strip() if pd.notna(row.get(spouse_name_header, row.get('spouse_full_name'))) else '',
+                    'spouse_phone_number': str(row.get(spouse_phone_header, row.get('spouse_phone_number', ''))).strip() if pd.notna(row.get(spouse_phone_header, row.get('spouse_phone_number'))) else '',
                 }
                 
-                # Check for existing by email if provided
-                if data['email']:
-                    member, created = Member.objects.get_or_create(email=data['email'], defaults=data)
-                    if created: created_count += 1
-                else:
-                    Member.objects.create(**data)
-                    created_count += 1
-                    
-            return Response({'status': f'Successfully imported {created_count} members'})
+                try:
+                    if member:
+                        for key, value in data.items():
+                            setattr(member, key, value)
+                        member.save()
+                        updated_count += 1
+                    else:
+                        Member.objects.create(**data)
+                        created_count += 1
+                except Exception as e:
+                    skipped_count += 1
+                    if i < 5: skip_reasons.append(f"Row {i+1}: Save error - {str(e)}")
+
+            status_msg = f"Import complete. Created: {created_count}, Updated: {updated_count}, Skipped: {skipped_count}."
+            if skipped_count > 0:
+                status_msg += f" Reasons: {'; '.join(skip_reasons[:3])}"
+            
+            log_activity(request.user, AuditLog.Action.CREATE, 'Member', None, status_msg)
+            
+            # Sanitize sample row for JSON serialization
+            sample_row = None
+            if not df.empty:
+                sample_row = {k: (str(v) if pd.notna(v) else None) for k, v in df.iloc[0].to_dict().items()}
+
+            return Response({
+                'status': status_msg,
+                'summary': {
+                    'total_rows': len(df),
+                    'created': created_count,
+                    'updated': updated_count,
+                    'skipped': skipped_count
+                },
+                'debug_info': {
+                    'headers_found': found_cols,
+                    'sample_row': sample_row
+                }
+            })
         except Exception as e:
-            return Response({'error': str(e)}, status=400)
+            print(f"IMPORT ERROR: {str(e)}")
+            print(traceback.format_exc())
+            return Response({
+                'error': f"Processing Error: {str(e)}", 
+                'debug': str(traceback.format_exc()) if settings.DEBUG else "Check server logs for details."
+            }, status=400)
 
     @action(detail=False, methods=['get'], permission_classes=[IsAttendanceOfficerOrHigher])
     def export_excel(self, request):
         log_activity(request.user, AuditLog.Action.EXPORT, 'Member', None, 'Member List Export')
-        members = Member.objects.all().values()
-        df = pd.DataFrame(list(members))
+        # Get all fields including properties
+        members = Member.objects.all()
+        data = []
+        for m in members:
+            data.append({
+                'surname': m.surname,
+                'firstname': m.firstname,
+                'other_name': m.other_name,
+                'full_name': m.full_name,
+                'email': m.email,
+                'phone': m.phone,
+                'gender': m.gender,
+                'marital_status': m.marital_status,
+                'address': m.address,
+                'spouse_full_name': m.spouse_full_name,
+                'spouse_phone_number': m.spouse_phone_number,
+                'church_membership': m.church_membership,
+                'department_post': m.department_post,
+                'year_joined': m.year_joined,
+                'ordained_as': m.ordained_as,
+                'year_ordination': m.year_ordination,
+                'status': m.status,
+            })
+        df = pd.DataFrame(data)
         
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
@@ -827,6 +996,35 @@ class ContributionViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
         # --- Totals ---
         p.setFillColor(colors.black)
         p.line(width - 3*inch, 5.0*inch, width - 0.8*inch, 5.0*inch)
+        
+        p.setFont("Helvetica-Bold", 16)
+        p.drawString(width - 3*inch, 4.7*inch, "TOTAL")
+        p.drawRightString(width - 0.8*inch, 4.7*inch, f"NGN {contribution.amount:,.2f}")
+        
+        # --- Footer ---
+        p.setFont("Helvetica-Bold", 12)
+        p.drawString(0.5*inch, 3.5*inch, "Authorized Signature")
+        p.line(0.5*inch, 3.7*inch, 2.5*inch, 3.7*inch)
+        
+        p.setFont("Helvetica-Oblique", 10)
+        p.drawCentredString(width/2, 2.5*inch, "This is an electronically generated receipt. No signature required.")
+        p.setFont("Helvetica-Bold", 10)
+        p.drawCentredString(width/2, 2.3*inch, f"God bless you for your {contribution.contribution_type.replace('_', ' ')}.")
+        
+        # Church Footer Info
+        p.setFillColor(colors.grey)
+        p.setFont("Helvetica", 9)
+        p.drawCentredString(width/2, 1.0*inch, f"{settings.church_name} | {settings.address or ''}")
+        if settings.contact_email:
+            p.drawCentredString(width/2, 0.8*inch, f"Email: {settings.contact_email}")
+            
+        p.showPage()
+        p.save()
+        
+        buffer.seek(0)
+        response = HttpResponse(buffer, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename=receipt_{contribution.id}.pdf'
+        return response
 
 class FamilyViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
     queryset = Family.objects.all()

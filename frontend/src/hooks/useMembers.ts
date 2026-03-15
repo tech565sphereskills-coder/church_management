@@ -9,20 +9,36 @@ export type Gender = 'male' | 'female';
 
 export interface Member {
   id: string;
+  surname: string;
+  firstname: string;
+  other_name: string | null;
   full_name: string;
   phone: string;
   gender: Gender;
-  departments: string[];
-  department_names?: string[];
-  date_joined: string;
-  status: MemberStatus;
-  invited_by: string | null;
   email: string | null;
   address: string | null;
   date_of_birth: string | null;
-  qr_code: string | null;
+  
+  marital_status: 'single' | 'married' | 'widowed' | 'divorced';
+  spouse_full_name: string | null;
+  spouse_phone_number: string | null;
+  
+  church_membership: 'worker' | 'minister' | null;
+  departments: string[];
+  department_names?: string[];
+  department_post: string | null;
   family: string | null;
   family_name?: string;
+  
+  year_joined: number | null;
+  date_joined: string;
+  
+  ordained_as: 'deacon' | 'deaconess' | 'full_pastor' | null;
+  year_ordination: number | null;
+  
+  qr_code: string | null;
+  status: MemberStatus;
+  invited_by: string | null;
   photo_url: string | null;
   created_by: string | null;
   created_at: string;
@@ -30,15 +46,30 @@ export interface Member {
 }
 
 export interface NewMemberData {
-  full_name: string;
+  surname: string;
+  firstname: string;
+  other_name?: string;
   phone: string;
   gender: Gender;
-  departments?: string[];
-  invited_by?: string;
   email?: string;
   address?: string;
   date_of_birth?: string;
+  
+  marital_status?: string;
+  spouse_full_name?: string;
+  spouse_phone_number?: string;
+  
+  church_membership?: string;
+  departments?: string[];
+  department_post?: string;
   family?: string;
+  
+  year_joined?: number;
+  ordained_as?: string;
+  year_ordination?: number;
+  
+  status?: MemberStatus;
+  invited_by?: string;
 }
 
 export function useMembers() {
@@ -94,7 +125,7 @@ export function useMembers() {
 
       toast({
         title: 'Member Created',
-        description: `${memberData.full_name} has been registered successfully.`,
+        description: `${memberData.surname} ${memberData.firstname} has been registered successfully.`,
       });
 
       queryClient.invalidateQueries({ queryKey: ['members'] });

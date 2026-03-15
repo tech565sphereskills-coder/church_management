@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import { Bell, Search, Menu, Sun, Moon, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from 'next-themes';
@@ -19,8 +19,9 @@ interface HeaderProps {
   showMenuButton?: boolean;
 }
 
-export function Header({ title, subtitle, onMenuToggle, showMenuButton }: HeaderProps) {
+export function Header({ title, subtitle }: HeaderProps) {
   const navigate = useNavigate();
+  const { setMobileOpen } = useOutletContext<{ setMobileOpen: (open: boolean) => void }>();
   const { theme, setTheme } = useTheme();
   const [notifications, setNotifications] = useState([
     { id: 1, title: 'New Member Registered', description: 'Michael Smith just joined the workforce.', time: '2m ago', icon: 'user' },
@@ -47,16 +48,14 @@ export function Header({ title, subtitle, onMenuToggle, showMenuButton }: Header
   return (
     <header className="sticky top-0 z-30 flex h-20 items-center justify-between border-b border-border bg-background/80 px-6 backdrop-blur-md">
       <div className="flex items-center gap-4">
-        {showMenuButton && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onMenuToggle}
-            className="lg:hidden"
-          >
-            <Menu className="h-6 w-6" />
-          </Button>
-        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setMobileOpen(true)}
+          className="lg:hidden -ml-2 h-10 w-10 md:h-12 md:w-12"
+        >
+          <Menu className="h-5 w-5 md:h-6 md:w-6" />
+        </Button>
         <div>
           <h1 className="text-xl md:text-2xl font-semibold text-foreground tracking-tight">{title}</h1>
           <p className="text-xs md:text-sm text-muted-foreground font-medium">{subtitle || today}</p>

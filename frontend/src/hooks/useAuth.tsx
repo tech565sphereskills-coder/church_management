@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log('Attempting sign-in for:', email);
       const response = await api.post('/token/', { 
-        email, 
+        username: email, 
         password,
         two_factor_token: twoFactorToken 
       });

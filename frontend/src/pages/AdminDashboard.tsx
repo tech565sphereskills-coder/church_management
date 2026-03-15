@@ -138,7 +138,7 @@ export default function AdminDashboard() {
         <WelcomeCard />
         
         {/* Stats Grid — 5 cards */}
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
           <StatCard title="Total Members" value={stats.totalMembers} icon={Users} delay={0} />
           <StatCard title="Active Members" value={stats.activeMembers} icon={UserCheck} variant="primary" delay={0.1} />
           <StatCard title="Today's Attendance" value={stats.todayAttendance} icon={TrendingUp} delay={0.2} />

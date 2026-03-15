@@ -1,4 +1,4 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useOutletContext } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 
 interface ProtectedRouteProps {
@@ -15,6 +15,7 @@ export function ProtectedRoute({
   requireAnyRole = true 
 }: ProtectedRouteProps) {
   const auth = useAuth();
+  const context = useOutletContext();
   const { user, role, loading } = auth;
 
   if (loading) {
@@ -93,5 +94,5 @@ export function ProtectedRoute({
     );
   }
 
-  return <Outlet />;
+  return <Outlet context={context} />;
 }

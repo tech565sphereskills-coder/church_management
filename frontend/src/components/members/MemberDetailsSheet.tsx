@@ -134,26 +134,84 @@ export function MemberDetailsSheet({
             </div>
           </section>
 
-          {/* Church Details */}
+          {/* Family & Marital Status */}
           <section>
             <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
-              <ShieldCheck className="h-3 w-3" /> Church Information
+              <Users className="h-3 w-3" /> Family & Marital Status
+            </h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 rounded-xl border border-slate-100 bg-white shadow-sm col-span-1">
+                <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Marital Status</p>
+                <Badge variant="outline" className="capitalize">{member.marital_status}</Badge>
+              </div>
+              <div className="p-4 rounded-xl border border-slate-100 bg-white shadow-sm col-span-1">
+                <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Family</p>
+                <p className="text-sm font-bold text-slate-800">{member.family_name || 'None'}</p>
+              </div>
+              
+              {member.marital_status === 'married' && (
+                <>
+                  <div className="p-4 rounded-xl border border-slate-100 bg-primary/5 shadow-sm col-span-2">
+                    <p className="text-[10px] text-primary font-bold uppercase mb-1 text-center">Spouse Details</p>
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      <div>
+                        <p className="text-[9px] text-slate-400 uppercase">Spouse Name</p>
+                        <p className="text-sm font-bold text-slate-700">{member.spouse_full_name || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] text-slate-400 uppercase">Spouse Phone</p>
+                        <p className="text-sm font-bold text-slate-700">{member.spouse_phone_number || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </section>
+
+          {/* Church & Ordination Details */}
+          <section>
+            <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
+              <ShieldCheck className="h-3 w-3" /> Church & Ordination
             </h4>
             <div className="grid grid-cols-2 gap-4">
               <div className="p-4 rounded-xl border border-slate-100 bg-white shadow-sm">
-                <Users className="h-4 w-4 text-primary mb-2" />
-                <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Department</p>
-                <p className="text-sm font-black text-slate-800 uppercase tracking-tight">
-                  {member.department_name || 'General'}
-                </p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Membership</p>
+                <Badge className="capitalize bg-slate-100 text-slate-800 hover:bg-slate-200 border-none">{member.church_membership || 'Member'}</Badge>
               </div>
               <div className="p-4 rounded-xl border border-slate-100 bg-white shadow-sm">
-                <Calendar className="h-4 w-4 text-emerald-500 mb-2" />
-                <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Joined Date</p>
-                <p className="text-sm font-black text-slate-800 tracking-tight">
-                  {new Date(member.date_joined).toLocaleDateString('en-NG', { month: 'short', year: 'numeric' })}
-                </p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Year Joined</p>
+                <p className="text-sm font-black text-slate-800">{member.year_joined || 'N/A'}</p>
               </div>
+              
+              <div className="p-4 rounded-xl border border-slate-100 bg-white shadow-sm col-span-2">
+                <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Departments</p>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {member.department_names && member.department_names.length > 0 ? (
+                    member.department_names.map(name => (
+                      <Badge key={name} variant="secondary" className="bg-slate-100 text-slate-600 text-[10px]">{name}</Badge>
+                    ))
+                  ) : (
+                    <span className="text-xs text-slate-400 italic">No departments assigned</span>
+                  )}
+                </div>
+                {member.department_post && (
+                   <p className="text-xs mt-2 text-slate-600">Post: <span className="font-bold">{member.department_post}</span></p>
+                )}
+              </div>
+
+              {member.ordained_as && (
+                 <div className="p-4 rounded-xl border border-primary/20 bg-primary/5 shadow-sm col-span-2">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Award className="h-4 w-4 text-primary" />
+                      <p className="text-[10px] text-primary font-bold uppercase">Ordination Status</p>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <p className="text-sm font-black text-slate-800 uppercase tracking-tight">{member.ordained_as}</p>
+                      <p className="text-xs text-slate-500">Year: {member.year_ordination || 'N/A'}</p>
+                    </div>
+                 </div>
+              )}
             </div>
           </section>
 

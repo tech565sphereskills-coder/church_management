@@ -214,12 +214,12 @@ export default function Settings() {
         subtitle="Command center for your church management system." 
       />
 
-      <div className="p-6 lg:p-10">
+      <div className="p-4 md:p-6 lg:p-10">
         <Tabs defaultValue="general" className="space-y-8">
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Sidebar Tabs */}
             <div className="w-full lg:w-64 space-y-4">
-              <TabsList className="flex lg:flex-col h-auto bg-transparent border-none p-0 gap-1 overflow-x-auto">
+              <TabsList className="flex lg:flex-col h-auto bg-transparent border-none p-0 gap-1 overflow-x-auto no-scrollbar scroll-smooth">
                 {[
                   { id: 'general', label: 'General', icon: Church },
                   { id: 'profile', label: 'My Account', icon: User },
@@ -231,7 +231,7 @@ export default function Settings() {
                     key={tab.id}
                     value={tab.id}
                     className={cn(
-                      "flex items-center justify-start gap-3 px-4 py-3 w-full rounded-xl transition-all duration-200",
+                      "flex items-center justify-start gap-3 px-4 py-3 w-auto min-w-max lg:w-full rounded-xl transition-all duration-200",
                       "data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-primary data-[state=active]:ring-1 data-[state=active]:ring-slate-200",
                       "data-[state=inactive]:text-black font-bold data-[state=inactive]:hover:bg-slate-100"
                     )}

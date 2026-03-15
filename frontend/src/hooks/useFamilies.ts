@@ -8,6 +8,8 @@ export interface Family {
   name: string;
   head: string | null;
   head_name?: string;
+  spiritual_head: string | null;
+  spiritual_head_name?: string;
   member_count: number;
   created_at: string;
   updated_at: string;
@@ -27,9 +29,9 @@ export function useFamilies() {
     enabled: !!user,
   });
 
-  const createFamily = async (name: string, head?: string | null) => {
+  const createFamily = async (name: string, head?: string | null, spiritual_head?: string | null) => {
     try {
-      await api.post('/families/', { name, head });
+      await api.post('/families/', { name, head, spiritual_head });
       toast({ title: 'Success', description: 'Family created successfully.' });
       queryClient.invalidateQueries({ queryKey: ['families'] });
     } catch (error) {
@@ -37,9 +39,9 @@ export function useFamilies() {
     }
   };
 
-  const updateFamily = async (id: string, name: string, head?: string | null) => {
+  const updateFamily = async (id: string, name: string, head?: string | null, spiritual_head?: string | null) => {
     try {
-      await api.patch(`/families/${id}/`, { name, head });
+      await api.patch(`/families/${id}/`, { name, head, spiritual_head });
       toast({ title: 'Success', description: 'Family updated successfully.' });
       queryClient.invalidateQueries({ queryKey: ['families'] });
     } catch (error) {

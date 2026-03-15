@@ -19,6 +19,7 @@ export default function FamilyPage() {
   const [editingFamily, setEditingFamily] = useState<Family | null>(null);
   const [familyName, setFamilyName] = useState('');
   const [familyHead, setFamilyHead] = useState<string | null>(null);
+  const [spiritualHead, setSpiritualHead] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   const familyMembers = useMemo(() => {
@@ -38,14 +39,24 @@ export default function FamilyPage() {
 
   const handleSubmit = async () => {
     if (editingFamily) {
-      await updateFamily(editingFamily.id, familyName, familyHead === 'none' ? null : familyHead);
+      await updateFamily(
+        editingFamily.id, 
+        familyName, 
+        familyHead === 'none' ? null : familyHead,
+        spiritualHead === 'none' ? null : spiritualHead
+      );
     } else {
-      await createFamily(familyName, familyHead === 'none' ? null : familyHead);
+      await createFamily(
+        familyName, 
+        familyHead === 'none' ? null : familyHead,
+        spiritualHead === 'none' ? null : spiritualHead
+      );
     }
     setIsDialogOpen(false);
     setEditingFamily(null);
     setFamilyName('');
     setFamilyHead(null);
+    setSpiritualHead(null);
   };
 
   if (isLoading || membersLoading) {
@@ -63,8 +74,8 @@ export default function FamilyPage() {
     <div className="min-h-screen pb-20">
       <Header title="Church Families" subtitle="Building strong bonds within our church community through family units." />
       
-      <div className="p-6 space-y-8">
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white/50 backdrop-blur-xl p-4 rounded-[2.5rem] border border-white shadow-xl shadow-slate-200/50">
+      <div className="p-4 md:p-6 space-y-6 md:space-y-8">
+        <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white/50 backdrop-blur-xl p-4 rounded-3xl md:rounded-[2.5rem] border border-white shadow-xl shadow-slate-200/50">
           <div className="relative w-full md:w-96">
             <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <Input 
@@ -79,6 +90,7 @@ export default function FamilyPage() {
             setEditingFamily(null);
             setFamilyName('');
             setFamilyHead(null);
+            setSpiritualHead(null);
             setIsDialogOpen(true);
           }} className="w-full md:w-auto btn-gold rounded-2xl h-12 px-6 shadow-lg shadow-primary/20">
             <Plus className="mr-2 h-5 w-5" />
@@ -97,8 +109,8 @@ export default function FamilyPage() {
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.3, delay: index * 0.1 }}
               >
-                <Card className="rounded-[3rem] border-none shadow-2xl shadow-slate-100 bg-white overflow-hidden group">
-                  <CardHeader className="bg-slate-50 p-10 border-b border-slate-100/50">
+                <Card className="rounded-3xl md:rounded-[3rem] border-none shadow-2xl shadow-slate-100 bg-white overflow-hidden group">
+                  <CardHeader className="bg-slate-50 p-6 md:p-10 border-b border-slate-100/50">
                     <div className="flex justify-between items-start">
                       <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:rotate-12 transition-transform duration-500">
                         <Users className="h-9 w-9" />
@@ -107,12 +119,13 @@ export default function FamilyPage() {
                         setEditingFamily(family);
                         setFamilyName(family.name);
                         setFamilyHead(family.head);
+                        setSpiritualHead(family.spiritual_head);
                         setIsDialogOpen(true);
                       }}>
                         <Settings2 className="h-6 w-6" />
                       </Button>
                     </div>
-                    <CardTitle className="text-4xl font-black text-slate-900 tracking-tight mt-6">{family.name}</CardTitle>
+                    <CardTitle className="text-2xl md:text-4xl font-black text-slate-900 tracking-tight mt-6">{family.name}</CardTitle>
                     <div className="flex items-center gap-3 mt-4">
                       <Badge className="bg-primary/10 text-primary border-none text-[10px] uppercase tracking-widest font-black px-3 py-1.5 rounded-full">
                         {family.member_count} {family.member_count === 1 ? 'Member' : 'Members'}
@@ -121,9 +134,13 @@ export default function FamilyPage() {
                         <Crown className="h-3 w-3" />
                         Family Head: {family.head_name || 'TBD'}
                       </Badge>
+                      <Badge className="bg-indigo-100 text-indigo-700 border-none text-[10px] uppercase tracking-widest font-black px-3 py-1.5 rounded-full flex items-center gap-1">
+                        <ShieldCheck className="h-3 w-3" />
+                        Spiritual Head: {family.spiritual_head_name || 'TBD'}
+                      </Badge>
                     </div>
                   </CardHeader>
-                  <CardContent className="p-10">
+                  <CardContent className="p-6 md:p-10">
                     <div className="space-y-6">
                       <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Family Members</h4>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -211,8 +228,27 @@ export default function FamilyPage() {
                 Tip: Only registered members can be designated as heads.
               </p>
             </div>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 ml-1">
+                <ShieldCheck className="h-3 w-3 text-indigo-500" />
+                <label className="text-xs font-black text-slate-800 uppercase tracking-widest">Appoint Spiritual Head</label>
+              </div>
+              <Select onValueChange={setSpiritualHead} value={spiritualHead || 'none'}>
+                <SelectTrigger className="rounded-2xl h-16 bg-slate-50 border-none px-6 text-lg font-bold shadow-sm">
+                  <SelectValue placeholder="Pick a spiritual leader" />
+                </SelectTrigger>
+                <SelectContent className="rounded-2xl border-none shadow-2xl p-2 bg-white/95 backdrop-blur-xl max-h-[300px]">
+                  <SelectItem value="none" className="rounded-xl py-4 italic text-slate-400">-- No Spiritual Head --</SelectItem>
+                  {members.map((m) => (
+                    <SelectItem key={m.id} value={m.id} className="rounded-xl py-4 font-bold hover:bg-indigo-50/50 focus:bg-indigo-50/50">
+                      {m.full_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          <DialogFooter className="mt-12 relative z-10">
+          <DialogFooter className="mt-10 relative z-10">
             <Button onClick={handleSubmit} className="btn-gold w-full h-16 rounded-[1.5rem] font-black text-xl shadow-2xl shadow-primary/20 hover:scale-[1.02] transition-all">
               {editingFamily ? 'Save Family Updates' : 'Establish Family'}
             </Button>

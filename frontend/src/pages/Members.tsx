@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Search, Plus, MoreVertical, Phone, Calendar,
+  Search, Plus, MoreVertical, Phone, Calendar, Trash2,
   Users as UsersIcon, QrCode, ChevronLeft, ChevronRight, Pencil, MessageSquare,
   FileUp, FileDown, PieChart, TrendingUp, ChevronDown, ChevronUp, LayoutGrid, List
 } from 'lucide-react';
@@ -212,7 +212,11 @@ export default function Members() {
 
       <div className="p-6">
         {/* Stats Bar */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-6 grid gap-4 sm:grid-cols-3">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          className="mb-6 grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+        >
           <div className="flex items-center gap-4 rounded-xl border border-border bg-card p-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
               <UsersIcon className="h-6 w-6 text-primary" />
@@ -231,7 +235,7 @@ export default function Members() {
               <p className="text-sm text-muted-foreground">Active</p>
             </div>
           </div>
-          <div className="flex items-center gap-4 rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center gap-4 rounded-xl border border-border bg-card p-4 sm:col-span-2 lg:col-span-1">
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-accent/10">
               <UsersIcon className="h-6 w-6 text-accent" />
             </div>
@@ -312,47 +316,54 @@ export default function Members() {
         />
 
         {/* Filters */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-1 items-center gap-3">
-            <div className="relative flex-1 sm:max-w-xs">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          transition={{ delay: 0.1 }} 
+          className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+        >
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input type="text" placeholder="Search members..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10" />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-36"><SelectValue placeholder="Status" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-                <SelectItem value="first_timer">First Timer</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-               <SelectTrigger className="w-40"><SelectValue placeholder="Department" /></SelectTrigger>
-               <SelectContent>
-                  <SelectItem value="all">All Departments</SelectItem>
-                  {departments.map((dept) => <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>)}
+            <div className="flex flex-wrap gap-2">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[130px]"><SelectValue placeholder="Status" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="first_timer">First Timer</SelectItem>
                 </SelectContent>
-             </Select>
-             <Select value={genderFilter} onValueChange={setGenderFilter}>
-               <SelectTrigger className="w-32"><SelectValue placeholder="Gender" /></SelectTrigger>
-               <SelectContent>
-                 <SelectItem value="all">All Genders</SelectItem>
-                 <SelectItem value="male">Male</SelectItem>
-                 <SelectItem value="female">Female</SelectItem>
-               </SelectContent>
-             </Select>
-             <Select value={dateJoinedFilter} onValueChange={setDateJoinedFilter}>
-               <SelectTrigger className="w-44"><SelectValue placeholder="Joined" /></SelectTrigger>
-               <SelectContent>
-                 <SelectItem value="all">Any Time</SelectItem>
-                 <SelectItem value="last_30_days">Last 30 Days</SelectItem>
-                 <SelectItem value="this_year">This Year</SelectItem>
-               </SelectContent>
-             </Select>
+              </Select>
+              <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                 <SelectTrigger className="w-[150px]"><SelectValue placeholder="Department" /></SelectTrigger>
+                 <SelectContent>
+                    <SelectItem value="all">All Departments</SelectItem>
+                    {departments.map((dept) => <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>)}
+                  </SelectContent>
+               </Select>
+               <Select value={genderFilter} onValueChange={setGenderFilter}>
+                 <SelectTrigger className="w-[120px]"><SelectValue placeholder="Gender" /></SelectTrigger>
+                 <SelectContent>
+                   <SelectItem value="all">All Genders</SelectItem>
+                   <SelectItem value="male">Male</SelectItem>
+                   <SelectItem value="female">Female</SelectItem>
+                 </SelectContent>
+               </Select>
+               <Select value={dateJoinedFilter} onValueChange={setDateJoinedFilter}>
+                 <SelectTrigger className="w-[150px]"><SelectValue placeholder="Joined" /></SelectTrigger>
+                 <SelectContent>
+                   <SelectItem value="all">Any Time</SelectItem>
+                   <SelectItem value="last_30_days">Last 30 Days</SelectItem>
+                   <SelectItem value="this_year">This Year</SelectItem>
+                 </SelectContent>
+               </Select>
+            </div>
            </div>
-          <div className="flex gap-2">
-            <div className="flex border rounded-lg overflow-hidden bg-background mr-2">
+          <div className="flex flex-wrap gap-2">
+            <div className="flex border rounded-lg overflow-hidden bg-background">
               <Button 
                 variant={viewMode === 'table' ? 'secondary' : 'ghost'} 
                 size="icon" 
@@ -376,17 +387,17 @@ export default function Members() {
               </Button>
             )}
             {canManageAttendance && (
-              <>
-                <Button variant="outline" onClick={() => setIsImportOpen(true)}>
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                <Button variant="outline" onClick={() => setIsImportOpen(true)} className="flex-1 sm:flex-none">
                   <FileUp className="mr-2 h-4 w-4" /> Import
                 </Button>
-                <Button variant="outline" onClick={handleExport}>
+                <Button variant="outline" onClick={handleExport} className="flex-1 sm:flex-none">
                   <FileDown className="mr-2 h-4 w-4" /> Export
                 </Button>
-                <Button onClick={() => setIsNewMemberOpen(true)} className="btn-gold">
+                <Button onClick={() => setIsNewMemberOpen(true)} className="btn-gold flex-1 sm:flex-none">
                   <Plus className="mr-2 h-4 w-4" /> Add Member
                 </Button>
-              </>
+              </div>
             )}
           </div>
         </motion.div>
@@ -404,12 +415,19 @@ export default function Members() {
                         onCheckedChange={toggleSelectAll}
                       />
                     </TableHead>
-                    <TableHead>Member</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Department</TableHead>
-                    <TableHead>Joined</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="w-12">QR</TableHead>
+                    <TableHead className="whitespace-nowrap">Surname</TableHead>
+                    <TableHead className="whitespace-nowrap">First Name</TableHead>
+                    <TableHead className="whitespace-nowrap">Other Name</TableHead>
+                    <TableHead className="whitespace-nowrap">Phone</TableHead>
+                    <TableHead className="whitespace-nowrap">Email</TableHead>
+                    <TableHead className="whitespace-nowrap">Gender</TableHead>
+                    <TableHead className="whitespace-nowrap">Marital Status</TableHead>
+                    <TableHead className="whitespace-nowrap">Membership</TableHead>
+                    <TableHead className="whitespace-nowrap">Dept & Post</TableHead>
+                    <TableHead className="whitespace-nowrap">Year Joined</TableHead>
+                    <TableHead className="whitespace-nowrap">Ordination</TableHead>
+                    <TableHead className="whitespace-nowrap">Status</TableHead>
+                    <TableHead className="w-12 text-center">QR</TableHead>
                     <TableHead className="w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -422,46 +440,61 @@ export default function Members() {
                           onCheckedChange={() => toggleSelect(member.id)}
                         />
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar><AvatarFallback className="bg-primary/10 text-primary">{getInitials(member.full_name)}</AvatarFallback></Avatar>
-                          <div>
-                            <button onClick={() => setViewingMember(member)} className="font-bold hover:text-primary transition-colors text-left">{member.full_name}</button>
-                            <p className="text-xs text-muted-foreground capitalize">{member.gender}</p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell><div className="flex items-center gap-2"><Phone className="h-3 w-3 text-muted-foreground" />{member.phone}</div></TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {member.department_names?.length ? (
-                            member.department_names.map(name => (
-                              <Badge key={name} variant="secondary" className="text-[10px] py-0 px-1.5 h-5 bg-slate-100 text-slate-600 font-medium">
-                                {name}
-                              </Badge>
-                            ))
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )}
-                          {departments.some(d => d.head_of_department === member.id) && (
-                            <Badge variant="outline" className="text-[9px] font-black uppercase tracking-tighter h-5 bg-indigo-50 text-indigo-700 border-indigo-100">
-                              HOD
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
+                      <TableCell className="font-bold whitespace-nowrap">{member.surname}</TableCell>
+                      <TableCell className="font-bold whitespace-nowrap">{member.firstname}</TableCell>
+                      <TableCell className="text-muted-foreground whitespace-nowrap">{member.other_name || '-'}</TableCell>
+                      <TableCell className="whitespace-nowrap">
                         <div className="flex items-center gap-2">
-                          <Calendar className="h-3 w-3 text-muted-foreground" />
-                          {new Date(member.date_joined).toLocaleDateString('en-NG', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          <Phone className="h-3 w-3 text-muted-foreground" />
+                          {member.phone}
                         </div>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">{member.email || '-'}</TableCell>
+                      <TableCell className="capitalize whitespace-nowrap">{member.gender}</TableCell>
+                      <TableCell className="capitalize whitespace-nowrap">{member.marital_status}</TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {member.church_membership ? (
+                          <Badge variant="outline" className="text-[10px] h-5 bg-blue-50 text-blue-700 border-blue-100 capitalize">
+                            {member.church_membership}
+                          </Badge>
+                        ) : '-'}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1 min-w-[120px]">
+                          <div className="flex flex-wrap gap-1">
+                            {member.department_names?.length ? (
+                              member.department_names.map(name => (
+                                <Badge key={name} variant="secondary" className="text-[9px] py-0 px-1 inline-flex items-center bg-slate-100 text-slate-600 font-medium">
+                                  {name}
+                                </Badge>
+                              ))
+                            ) : null}
+                            {departments.some(d => d.head_of_department === member.id) && (
+                              <Badge variant="outline" className="text-[9px] font-black uppercase tracking-tighter h-4 bg-indigo-50 text-indigo-700 border-indigo-100">
+                                HOD
+                              </Badge>
+                            )}
+                          </div>
+                          {member.department_post && (
+                            <p className="text-[10px] text-muted-foreground truncate italic">{member.department_post}</p>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-center">{member.year_joined || '-'}</TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {member.ordained_as ? (
+                          <div className="text-[11px]">
+                            <p className="font-bold text-indigo-600 capitalize">{member.ordained_as.replace('_', ' ')}</p>
+                            {member.year_ordination && <p className="text-[9px] text-muted-foreground">{member.year_ordination}</p>}
+                          </div>
+                        ) : '-'}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className={member.status === 'active' ? 'badge-active' : member.status === 'first_timer' ? 'badge-first-timer' : 'badge-inactive'}>
                           {member.status === 'first_timer' ? 'First Timer' : member.status}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-center">
                         <Button variant="ghost" size="icon" onClick={() => setSelectedMemberQR({ name: member.full_name, qrCode: member.qr_code || '' })}>
                           <QrCode className="h-4 w-4" />
                         </Button>
@@ -473,6 +506,9 @@ export default function Members() {
                               <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100"><MoreVertical className="h-4 w-4" /></Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => setViewingMember(member)}>
+                                <Search className="h-4 w-4 mr-2" /> View Details
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => setEditTarget(member)}>
                                 <Pencil className="h-4 w-4 mr-2" /> Edit Member
                               </DropdownMenuItem>
@@ -483,7 +519,7 @@ export default function Members() {
                               <DropdownMenuItem onClick={() => handleStatusChange(member.id, 'inactive')}>Mark Inactive</DropdownMenuItem>
                               {isAdmin && (
                                 <DropdownMenuItem className="text-destructive" onClick={() => setDeleteTarget({ id: member.id, name: member.full_name })}>
-                                  Delete Member
+                                  <Trash2 className="h-4 w-4 mr-2" /> Delete Member
                                 </DropdownMenuItem>
                               )}
                             </DropdownMenuContent>

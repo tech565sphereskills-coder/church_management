@@ -30,27 +30,14 @@ import { UserPlus, Loader2, Image as ImageIcon, Camera, Plus } from 'lucide-reac
 import { Checkbox } from '@/components/ui/checkbox';
 import { useDepartments } from '@/hooks/useDepartments';
 import { useFamilies, Family } from '@/hooks/useFamilies';
-import { MemberStatus } from '@/hooks/useMembers';
-
-export type Gender = 'male' | 'female';
-
-export interface NewMemberData {
-  full_name: string;
-  phone: string;
-  gender: Gender;
-  invited_by?: string;
-  email?: string;
-  address?: string;
-  date_of_birth?: string;
-  status: MemberStatus;
-  departments?: string[];
-  family?: string;
-}
+import { MemberStatus, NewMemberData, Gender } from '@/hooks/useMembers';
 
 // Departments constant removed to use dynamic data
 
 const formSchema = z.object({
-  full_name: z.string().min(2, 'Name must be at least 2 characters'),
+  surname: z.string().min(2, 'Surname must be at least 2 characters'),
+  firstname: z.string().min(2, 'Firstname must be at least 2 characters'),
+  other_name: z.string().optional(),
   phone: z.string().min(10, 'Please enter a valid phone number'),
   gender: z.enum(['male', 'female']),
   date_of_birth: z.string().optional(),
@@ -59,6 +46,14 @@ const formSchema = z.object({
   email: z.string().email('Invalid email').optional().or(z.literal('')),
   invited_by: z.string().optional(),
   family: z.string().optional(),
+  marital_status: z.enum(['single', 'married', 'widowed', 'divorced']),
+  spouse_full_name: z.string().optional(),
+  spouse_phone_number: z.string().optional(),
+  church_membership: z.enum(['worker', 'minister']).optional().or(z.literal('')),
+  department_post: z.string().optional(),
+  year_joined: z.string().optional(),
+  ordained_as: z.enum(['deacon', 'deaconess', 'full_pastor']).optional().or(z.literal('')),
+  year_ordination: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -84,7 +79,9 @@ export function NewMemberDialog({
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      full_name: initialName,
+      surname: initialName.split(' ')[0] || '',
+      firstname: initialName.split(' ')[1] || '',
+      other_name: initialName.split(' ').slice(2).join(' ') || '',
       phone: '',
       gender: 'male',
       date_of_birth: '',
@@ -93,13 +90,26 @@ export function NewMemberDialog({
       email: '',
       invited_by: '',
       family: '',
+      marital_status: 'single',
+      spouse_full_name: '',
+      spouse_phone_number: '',
+      church_membership: '',
+      department_post: '',
+      year_joined: '',
+      ordained_as: '',
+      year_ordination: '',
     },
   });
+
+  const maritalStatus = form.watch('marital_status');
 
   // Update form when initialName changes
   useEffect(() => {
     if (initialName) {
-      form.setValue('full_name', initialName);
+      const names = initialName.split(' ');
+      form.setValue('surname', names[0] || '');
+      form.setValue('firstname', names[1] || '');
+      form.setValue('other_name', names.slice(2).join(' ') || '');
     }
   }, [initialName, form]);
 
@@ -107,7 +117,9 @@ export function NewMemberDialog({
     setIsLoading(true);
 
     const newMember: NewMemberData = {
-      full_name: data.full_name,
+      surname: data.surname,
+      firstname: data.firstname,
+      other_name: data.other_name || undefined,
       phone: data.phone,
       gender: data.gender as Gender,
       email: data.email || undefined,
@@ -116,6 +128,14 @@ export function NewMemberDialog({
       departments: data.departments || [],
       invited_by: data.invited_by || undefined,
       family: data.family || undefined,
+      marital_status: data.marital_status,
+      spouse_full_name: data.spouse_full_name || undefined,
+      spouse_phone_number: data.spouse_phone_number || undefined,
+      church_membership: data.church_membership || undefined,
+      department_post: data.department_post || undefined,
+      year_joined: data.year_joined ? parseInt(data.year_joined) : undefined,
+      ordained_as: data.ordained_as || undefined,
+      year_ordination: data.year_ordination ? parseInt(data.year_ordination) : undefined,
     };
 
     await onMemberCreated(newMember);
@@ -125,15 +145,14 @@ export function NewMemberDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="h-5 w-5 text-primary" />
             Register New Member
           </DialogTitle>
           <DialogDescription>
-            Quick registration for first-time visitors. They'll be automatically
-            marked present after registration.
+            Comprehensive registration for new members and visitors.
           </DialogDescription>
         </DialogHeader>
 
@@ -171,63 +190,264 @@ export function NewMemberDialog({
         </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField
-                control={form.control}
-                name="full_name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Full Name *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter full name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone Number *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="08012345678" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="gender"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Gender *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            {/* Personal Information */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 border-b pb-2">Personal Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name="surname"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Surname *</FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select gender" />
-                        </SelectTrigger>
+                        <Input placeholder="Surname" {...field} />
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="male">Male</SelectItem>
-                        <SelectItem value="female">Female</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="firstname"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>First Name *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="First Name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="other_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Other Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Other Name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone Number *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="08012345678" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="gender"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Gender *</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select gender" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="male">Male</SelectItem>
+                          <SelectItem value="female">Female</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email (Optional)</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="email@example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="date_of_birth"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Date of Birth</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Family & Marital Status */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 border-b pb-2">Family & Marital Status</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="marital_status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Marital Status *</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="single">Single</SelectItem>
+                          <SelectItem value="married">Married</SelectItem>
+                          <SelectItem value="widowed">Widowed</SelectItem>
+                          <SelectItem value="divorced">Divorced</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="family"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Family (Optional)</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a family" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="none">-- None --</SelectItem>
+                          {families.map((f: Family) => (
+                            <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {maritalStatus === 'married' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-xl bg-primary/5 border border-primary/10 animate-in fade-in slide-in-from-top-2">
+                  <FormField
+                    control={form.control}
+                    name="spouse_full_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Spouse Full Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter spouse name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="spouse_phone_number"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Spouse Phone Number</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter spouse phone" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Church Membership */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 border-b pb-2">Church Membership</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name="church_membership"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Membership Category</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="worker">Worker</SelectItem>
+                          <SelectItem value="minister">Minister</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="department_post"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Post in Department</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g. Leader, Assistant" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="year_joined"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Year Joined</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="YYYY" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <FormField
                 control={form.control}
                 name="departments"
                 render={({ field }) => (
-                  <FormItem className="md:col-span-2">
+                  <FormItem>
                     <FormLabel>Departments (Select multiple)</FormLabel>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-4 rounded-xl border bg-slate-50/50">
                       {departments.map((dept) => (
@@ -246,7 +466,7 @@ export function NewMemberDialog({
                           />
                           <label
                             htmlFor={`dept-${dept.id}`}
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                            className="text-sm font-medium leading-none cursor-pointer"
                           >
                             {dept.name}
                           </label>
@@ -257,99 +477,96 @@ export function NewMemberDialog({
                   </FormItem>
                 )}
               />
+            </div>
 
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email (Optional)</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="email@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            {/* Ordination Details */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 border-b pb-2">Ordination Details</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="ordained_as"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Currently Ordained As</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select ordination" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="deacon">Deacon</SelectItem>
+                          <SelectItem value="deaconess">Deaconess</SelectItem>
+                          <SelectItem value="full_pastor">Full Pastor</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="date_of_birth"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Date of Birth (Optional)</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="family"
-                render={({ field }) => (
-                  <FormItem className="md:col-span-2">
-                    <FormLabel>Family (Optional)</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormField
+                  control={form.control}
+                  name="year_ordination"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Year of Ordination</FormLabel>
                       <FormControl>
-                        <SelectTrigger className="h-12 rounded-2xl">
-                          <SelectValue placeholder="Select a family" />
-                        </SelectTrigger>
+                        <Input type="number" placeholder="YYYY" {...field} />
                       </FormControl>
-                      <SelectContent className="rounded-2xl">
-                        <SelectItem value="none">-- None --</SelectItem>
-                        {families.map((f: Family) => (
-                          <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="invited_by"
-                render={({ field }) => (
-                  <FormItem className="md:col-span-2">
-                    <FormLabel>Invited By (Optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Who invited them?" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
 
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem className="md:col-span-2 flex flex-row items-start space-x-3 space-y-0 rounded-xl border p-4 bg-primary/5 border-primary/20">
-                    <FormControl>
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary mt-1"
-                        checked={field.value === 'first_timer'}
-                        onChange={(e) => {
-                          field.onChange(e.target.checked ? 'first_timer' : 'active');
-                        }}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel className="text-sm font-bold text-primary">
-                        Mark as First Timer
-                      </FormLabel>
-                      <p className="text-xs text-muted-foreground">
-                        This will track them as a visitor for this month's statistics.
-                      </p>
-                    </div>
-                  </FormItem>
-                )}
-              />
+            {/* Additional Info */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 border-b pb-2">Additional Info</h3>
+              <div className="grid grid-cols-1 gap-4">
+                <FormField
+                  control={form.control}
+                  name="invited_by"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Invited By</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Who invited them?" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-xl border p-4 bg-primary/5 border-primary/20">
+                      <FormControl>
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary mt-1"
+                          checked={field.value === 'first_timer'}
+                          onChange={(e) => {
+                            field.onChange(e.target.checked ? 'first_timer' : 'active');
+                          }}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel className="text-sm font-bold text-primary">
+                          Mark as First Timer
+                        </FormLabel>
+                        <p className="text-xs text-muted-foreground">
+                          This will track them as a visitor for this month's statistics.
+                        </p>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
             <div className="flex gap-3 pt-4">
@@ -370,7 +587,7 @@ export function NewMemberDialog({
                 ) : (
                   <>
                     <UserPlus className="mr-2 h-4 w-4" />
-                    Register & Mark Present
+                    Register Member
                   </>
                 )}
               </Button>

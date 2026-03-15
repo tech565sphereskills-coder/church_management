@@ -83,7 +83,7 @@ export default function Inventory() {
         subtitle="Manage and track church assets, equipment, and resources." 
       />
 
-      <div className="p-6 space-y-8">
+      <div className="p-4 md:p-6 space-y-6 md:space-y-8">
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
           <div className="relative w-full md:w-96">
             <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -119,8 +119,8 @@ export default function Inventory() {
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.2, delay: index * 0.05 }}
               >
-                <Card className="rounded-[2.5rem] border-none shadow-xl shadow-slate-200/50 bg-white overflow-hidden group hover:shadow-2xl transition-all duration-500">
-                  <CardHeader className="p-8 pb-4">
+                <Card className="rounded-3xl md:rounded-[2.5rem] border-none shadow-xl shadow-slate-200/50 bg-white overflow-hidden group hover:shadow-2xl transition-all duration-500">
+                  <CardHeader className="p-6 md:p-8 md:pb-4">
                     <div className="flex justify-between items-start">
                       <div className="h-14 w-14 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform duration-500">
                         <Package className="h-7 w-7" />
@@ -139,7 +139,7 @@ export default function Inventory() {
                       {item.category || 'Uncategorized'}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="p-8 pt-4 space-y-6">
+                  <CardContent className="p-6 md:p-8 md:pt-4 space-y-6">
                     <p className="text-slate-500 text-sm line-clamp-2 min-h-[2.5rem] leading-relaxed">
                       {item.description || 'No description provided.'}
                     </p>

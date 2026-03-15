@@ -25,6 +25,21 @@ class ServiceType(models.TextChoices):
     MIDWEEK_SERVICE = 'midweek_service', 'Midweek Service'
     SPECIAL_PROGRAM = 'special_program', 'Special Program'
 
+class MaritalStatus(models.TextChoices):
+    SINGLE = 'single', 'Single'
+    MARRIED = 'married', 'Married'
+    WIDOWED = 'widowed', 'Widowed'
+    DIVORCED = 'divorced', 'Divorced'
+
+class ChurchMembership(models.TextChoices):
+    WORKER = 'worker', 'Worker'
+    MINISTER = 'minister', 'Minister'
+
+class OrdinationRole(models.TextChoices):
+    DEACON = 'deacon', 'Deacon'
+    DEACONESS = 'deaconess', 'Deaconess'
+    FULL_PASTOR = 'full_pastor', 'Full Pastor'
+
 class ContributionType(models.TextChoices):
     TITHE = 'tithe', 'Tithe'
     OFFERING = 'offering', 'Offering'
@@ -108,6 +123,7 @@ class Family(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255, unique=True)
     head = models.ForeignKey('Member', on_delete=models.SET_NULL, null=True, blank=True, related_name='headed_family')
+    spiritual_head = models.ForeignKey('Member', on_delete=models.SET_NULL, null=True, blank=True, related_name='spiritual_headed_families')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -116,17 +132,32 @@ class Family(models.Model):
 
 class Member(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    full_name = models.CharField(max_length=255)
+    surname = models.CharField(max_length=100)
+    firstname = models.CharField(max_length=100)
+    other_name = models.CharField(max_length=100, blank=True, null=True)
     phone = models.CharField(max_length=20)
     gender = models.CharField(max_length=10, choices=Gender.choices)
-    departments = models.ManyToManyField('Department', blank=True, related_name='members')
-    family = models.ForeignKey(Family, on_delete=models.SET_NULL, null=True, blank=True, related_name='members')
-    date_of_birth = models.DateField(blank=True, null=True)
-    date_joined = models.DateField(auto_now_add=True)
-    status = models.CharField(max_length=20, choices=MemberStatus.choices, default=MemberStatus.FIRST_TIMER)
-    invited_by = models.CharField(max_length=255, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
     address = models.TextField(blank=True, null=True)
+    date_of_birth = models.DateField(blank=True, null=True)
+    
+    marital_status = models.CharField(max_length=20, choices=MaritalStatus.choices, default=MaritalStatus.SINGLE)
+    spouse_full_name = models.CharField(max_length=255, blank=True, null=True)
+    spouse_phone_number = models.CharField(max_length=20, blank=True, null=True)
+    
+    church_membership = models.CharField(max_length=20, choices=ChurchMembership.choices, blank=True, null=True)
+    departments = models.ManyToManyField('Department', blank=True, related_name='members')
+    department_post = models.CharField(max_length=255, blank=True, null=True)
+    family = models.ForeignKey(Family, on_delete=models.SET_NULL, null=True, blank=True, related_name='members')
+    
+    year_joined = models.IntegerField(blank=True, null=True)
+    date_joined = models.DateField(auto_now_add=True)
+    
+    ordained_as = models.CharField(max_length=20, choices=OrdinationRole.choices, blank=True, null=True)
+    year_ordination = models.IntegerField(blank=True, null=True)
+    
+    status = models.CharField(max_length=20, choices=MemberStatus.choices, default=MemberStatus.FIRST_TIMER)
+    invited_by = models.CharField(max_length=255, blank=True, null=True)
     qr_code = models.CharField(max_length=50, unique=True, blank=True, null=True)
     photo_url = models.URLField(max_length=500, blank=True, null=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_members')
@@ -135,11 +166,17 @@ class Member(models.Model):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['full_name', 'phone'], name='unique_member_name_phone')
+            models.UniqueConstraint(fields=['surname', 'firstname', 'phone'], name='unique_member_fields')
         ]
 
     def __str__(self):
-        return self.full_name
+        return f"{self.surname} {self.firstname}"
+
+    @property
+    def full_name(self):
+        if self.other_name:
+            return f"{self.surname} {self.firstname} {self.other_name}"
+        return f"{self.surname} {self.firstname}"
 
     def save(self, *args, **kwargs):
         if not self.qr_code:

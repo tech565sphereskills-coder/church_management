@@ -15,7 +15,8 @@ import {
   ShieldCheck,
   Building2,
   Clock,
-  UserPlus
+  UserPlus,
+  Award
 } from 'lucide-react';
 import { Member } from '@/hooks/useMembers';
 import { motion } from 'framer-motion';
@@ -99,18 +100,45 @@ export function MemberDetailsDialog({ open, onOpenChange, member, leadingDeptNam
                   </div>
                 </div>
               </div>
+
+              <div className="space-y-4">
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Marital & Family</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4 group">
+                    <div className="h-10 w-10 rounded-2xl bg-slate-50 flex items-center justify-center">
+                      <Users className="h-5 w-5 text-slate-400" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase leading-none">Marital Status</p>
+                      <p className="font-bold text-slate-700 capitalize">{member.marital_status}</p>
+                    </div>
+                  </div>
+                  {member.marital_status === 'married' && (
+                    <div className="ml-14 space-y-2 p-3 rounded-2xl bg-primary/5 border border-primary/10">
+                      <div>
+                        <p className="text-[9px] font-bold text-primary/60 uppercase">Spouse Name</p>
+                        <p className="text-xs font-bold text-slate-700">{member.spouse_full_name || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] font-bold text-primary/60 uppercase">Spouse Phone</p>
+                        <p className="text-xs font-bold text-slate-700">{member.spouse_phone_number || 'N/A'}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="space-y-6">
               <div className="space-y-4">
-                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Ministry Roles</h3>
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Church & Ministry</h3>
                 <div className="space-y-4">
                   <div className="flex items-start gap-4 group">
                     <div className="h-10 w-10 rounded-2xl bg-slate-50 flex items-center justify-center group-hover:bg-indigo-100 transition-colors shrink-0">
                       <Building2 className="h-5 w-5 text-slate-400 group-hover:text-indigo-600" />
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase leading-none mb-2">Member of</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase leading-none mb-2">Departments</p>
                       <div className="flex flex-wrap gap-1">
                         {member.department_names && member.department_names.length > 0 ? (
                           member.department_names.map(name => (
@@ -126,8 +154,35 @@ export function MemberDetailsDialog({ open, onOpenChange, member, leadingDeptNam
                   </div>
 
                   <div className="flex items-center gap-4 group">
-                    <div className="h-10 w-10 rounded-2xl bg-slate-50 flex items-center justify-center group-hover:bg-amber-100 transition-colors">
-                      <Calendar className="h-5 w-5 text-slate-400 group-hover:text-amber-600" />
+                    <div className="h-10 w-10 rounded-2xl bg-slate-50 flex items-center justify-center">
+                      <ShieldCheck className="h-5 w-5 text-slate-400" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase leading-none">Membership</p>
+                      <p className="font-bold text-slate-700 capitalize">{member.church_membership || 'Member'}</p>
+                    </div>
+                  </div>
+
+                  {member.ordained_as && (
+                    <div className="flex items-center gap-4 group">
+                      <div className="h-10 w-10 rounded-2xl bg-amber-50 flex items-center justify-center">
+                        <Award className="h-5 w-5 text-amber-500" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-amber-500 uppercase leading-none">Ordination</p>
+                        <p className="font-bold text-slate-700 capitalize">{member.ordained_as} ({member.year_ordination || 'N/A'})</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Key Dates</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4 group">
+                    <div className="h-10 w-10 rounded-2xl bg-slate-50 flex items-center justify-center">
+                      <Calendar className="h-5 w-5 text-slate-400" />
                     </div>
                     <div>
                       <p className="text-[10px] font-bold text-slate-400 uppercase leading-none">Birthday</p>
@@ -136,19 +191,13 @@ export function MemberDetailsDialog({ open, onOpenChange, member, leadingDeptNam
                       </p>
                     </div>
                   </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">History</h3>
-                <div className="space-y-4">
                   <div className="flex items-center gap-4 group">
                     <div className="h-10 w-10 rounded-2xl bg-slate-50 flex items-center justify-center">
                       <UserPlus className="h-5 w-5 text-slate-400" />
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase leading-none">Date Joined</p>
-                      <p className="font-bold text-slate-700">{new Date(member.date_joined).toLocaleDateString()}</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase leading-none">Joined Church</p>
+                      <p className="font-bold text-slate-700">{member.year_joined || new Date(member.date_joined).getFullYear()}</p>
                     </div>
                   </div>
                 </div>

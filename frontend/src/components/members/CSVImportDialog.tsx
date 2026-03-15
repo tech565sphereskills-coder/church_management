@@ -103,33 +103,50 @@ export function CSVImportDialog({ open, onOpenChange, onImportComplete }: CSVImp
       complete: (results) => {
         const rows: ImportRow[] = results.data.map((row: Record<string, string>, index) => {
           const errors: string[] = [];
-          const fullName = row['Full Name'] || row['full_name'] || row['Name'] || '';
-          const phone = (row['Phone'] || row['phone'] || row['Mobile'] || '').toString().replace(/\D/g, '');
-          const genderInput = (row['Gender'] || row['gender'] || 'male').toLowerCase();
-          const email = row['Email'] || row['email'] || '';
-          const department = row['Department'] || row['department'] || '';
-          const address = row['Address'] || row['address'] || '';
-          const invitedBy = row['Invited By'] || row['invited_by'] || '';
+          
+          // Name extraction
+          const surname = row['Surname'] || row['surname'] || '';
+          const firstname = row['First Name'] || row['firstname'] || row['Firstname'] || '';
+          const otherName = row['Other Name'] || row['other_name'] || '';
+          const fullNameField = row['Full Name'] || row['full_name'] || row['Name'] || '';
+          
+          let finalSurname = surname;
+          let finalFirstname = firstname;
+          let finalOtherName = otherName;
 
+          if ((!surname || !firstname) && fullNameField) {
+            const names = fullNameField.trim().split(' ');
+            finalSurname = names[0] || '';
+            finalFirstname = names[1] || '';
+            finalOtherName = names.slice(2).join(' ');
+          }
+
+          const phone = (row['Phone'] || row['phone'] || row['Mobile'] || '').toString().replace(/\D/g, '');
+          const email = row['Email'] || row['email'] || '';
+          const genderInput = (row['Gender'] || row['gender'] || 'male').toLowerCase();
+          const maritalStatus = row['Marital Status'] || row['marital_status'] || 'single';
+          const departmentPost = row['Department Post'] || row['department_post'] || '';
+          const address = row['Address'] || row['address'] || '';
+          
           // Validation
-          if (!fullName || fullName.length < 2) errors.push('Name is required (min 2 chars)');
+          if (!finalSurname || !finalFirstname) errors.push('Name is required (Surname & First Name)');
           if (!phone || phone.length < 10) errors.push('Valid phone number is required');
           
           let gender: Gender = 'male';
           if (genderInput === 'female' || genderInput === 'f') {
             gender = 'female';
-          } else if (genderInput !== 'male' && genderInput !== 'm') {
-            errors.push('Gender must be Male or Female');
           }
 
           const memberData: NewMemberData = {
-            full_name: fullName,
+            surname: finalSurname,
+            firstname: finalFirstname,
+            other_name: finalOtherName || undefined,
             phone,
             gender,
             email: email || undefined,
-            department: department || undefined,
+            marital_status: maritalStatus,
+            department_post: departmentPost || undefined,
             address: address || undefined,
-            invited_by: invitedBy || undefined,
           };
 
           // Check for duplicates in current member list
@@ -210,12 +227,11 @@ export function CSVImportDialog({ open, onOpenChange, onImportComplete }: CSVImp
         description: response.data.status,
       });
       
-      setSummary({
-        total: 100, // Partial placeholder
-        success: 100,
-        failed: 0,
-        skipped: 0
-      });
+      if (response.data.summary) {
+        setSummary(response.data.summary);
+      }
+      
+      console.log('Import Debug Info:', response.data.debug_info);
       
       if (onImportComplete) onImportComplete();
     } catch (error: any) {
@@ -239,7 +255,20 @@ export function CSVImportDialog({ open, onOpenChange, onImportComplete }: CSVImp
   };
 
   const downloadTemplate = () => {
-    const csvContent = "Full Name,Phone,Gender,Department,Email,Address,Invited By\nJohn Doe,08012345678,Male,Member,john@example.com,,Jane Smith";
+    const headers = [
+      'Surname', 'First Name', 'Other Name', 'Phone', 'Email', 'Gender', 
+      'Marital Status', 'Spouse Full Name', 'Spouse Phone Number',
+      'Address', 'Church Membership', 'Department Post', 'Year Joined',
+      'Ordained As', 'Year Ordination'
+    ];
+    const sampleData = [
+      'Doe', 'John', 'Quincy', '08012345678', 'john@example.com', 'Male',
+      'Married', 'Jane Doe', '08087654321',
+      '123 Sanctuary Way', 'Worker', 'Usher', '2020',
+      'Deacon', '2022'
+    ];
+    
+    const csvContent = headers.join(',') + '\n' + sampleData.join(',');
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -350,25 +379,25 @@ export function CSVImportDialog({ open, onOpenChange, onImportComplete }: CSVImp
                       <TableHeader className="sticky top-0 bg-background z-10">
                         <TableRow>
                           <TableHead>Row</TableHead>
-                          <TableHead>Full Name</TableHead>
+                          <TableHead>Surname</TableHead>
+                          <TableHead>First Name</TableHead>
                           <TableHead>Phone</TableHead>
-                          <TableHead>Gender</TableHead>
                           <TableHead>Status</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {importRows.map((row) => (
                           <TableRow key={row.index}>
-                            <TableCell className="text-xs">{row.index + 1}</TableCell>
-                            <TableCell className="font-medium text-sm">{row.data.full_name}</TableCell>
-                            <TableCell className="text-xs">{row.data.phone}</TableCell>
-                            <TableCell className="text-xs capitalize">{row.data.gender}</TableCell>
+                           <TableCell className="text-xs">{row.index + 1}</TableCell>
+                            <TableCell className="font-bold text-sm">{row.data.surname}</TableCell>
+                            <TableCell className="font-medium text-sm">{row.data.firstname}</TableCell>
+                            <TableCell className="text-xs font-mono">{row.data.phone}</TableCell>
                             <TableCell>
-                              {row.status === 'valid' && <Badge variant="outline" className="text-success border-success/30 bg-success/10">Ready</Badge>}
+                              {row.status === 'valid' && <Badge variant="outline" className="text-success border-success/30 bg-success/10 font-bold uppercase text-[9px]">Ready</Badge>}
                               {row.status === 'invalid' && (
                                 <div className="flex flex-col gap-1">
-                                  <Badge variant="outline" className="text-destructive border-destructive/30 bg-destructive/10 w-fit">Error</Badge>
-                                  <span className="text-[10px] text-destructive">{row.errors.join(', ')}</span>
+                                  <Badge variant="outline" className="text-destructive border-destructive/30 bg-destructive/10 w-fit font-bold uppercase text-[9px]">Error</Badge>
+                                  <span className="text-[10px] text-destructive font-medium">{row.errors.join(', ')}</span>
                                 </div>
                               )}
                               {row.status === 'duplicate' && <Badge variant="outline" className="text-warning border-warning/30 bg-warning/10">Duplicate</Badge>}

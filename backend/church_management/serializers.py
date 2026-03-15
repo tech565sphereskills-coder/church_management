@@ -41,9 +41,16 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.profile.full_name = full_name
         
         # Create or update member profile
+        names = full_name.strip().split(' ')
+        surname = names[0] if names else 'TBD'
+        firstname = names[1] if len(names) > 1 else 'TBD'
+        other_name = ' '.join(names[2:]) if len(names) > 2 else ''
+        
         member, _ = Member.objects.get_or_create(
-            full_name=full_name,
-            defaults={'phone': 'TBD', 'gender': 'male'} # Default values, can be updated later
+            surname=surname,
+            firstname=firstname,
+            phone='TBD', # Default value, can be updated later
+            defaults={'gender': 'male', 'other_name': other_name}
         )
         member.family = family
         member.email = user.email
@@ -76,6 +83,7 @@ class ProfileSerializer(serializers.ModelSerializer):
 
 class FamilySerializer(serializers.ModelSerializer):
     head_name = serializers.CharField(source='head.full_name', read_only=True)
+    spiritual_head_name = serializers.CharField(source='spiritual_head.full_name', read_only=True)
     member_count = serializers.IntegerField(source='members.count', read_only=True)
 
     class Meta:
@@ -90,6 +98,7 @@ class InventoryItemSerializer(serializers.ModelSerializer):
 class MemberSerializer(serializers.ModelSerializer):
     department_names = serializers.SerializerMethodField()
     family_name = serializers.CharField(source='family.name', read_only=True)
+    full_name = serializers.ReadOnlyField()
 
     class Meta:
         model = Member
@@ -97,7 +106,7 @@ class MemberSerializer(serializers.ModelSerializer):
         validators = [
             serializers.UniqueTogetherValidator(
                 queryset=Member.objects.all(),
-                fields=['full_name', 'phone'],
+                fields=['surname', 'firstname', 'phone'],
                 message="A member with this name and phone number is already registered."
             )
         ]
