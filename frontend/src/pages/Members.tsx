@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import {
   Search, Plus, MoreVertical, Phone, Calendar, Trash2,
   Users as UsersIcon, QrCode, ChevronLeft, ChevronRight, Pencil, MessageSquare,
-  FileUp, FileDown, PieChart, TrendingUp, ChevronDown, ChevronUp, LayoutGrid, List
+  FileUp, FileDown, PieChart, TrendingUp, ChevronDown, ChevronUp, LayoutGrid, List, SearchX
 } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 import api from '@/lib/api';
@@ -532,7 +532,27 @@ export default function Members() {
               </Table>
             </div>
             {filteredMembers.length === 0 && (
-              <div className="py-12 text-center"><p className="text-muted-foreground">No members found</p></div>
+              <div className="py-16 text-center flex flex-col items-center justify-center space-y-4">
+                <div className="h-20 w-20 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center mb-2 shadow-sm">
+                   <SearchX className="h-10 w-10 text-slate-300" />
+                </div>
+                <div>
+                   <h3 className="text-lg font-black tracking-tight text-slate-800">No Members Found</h3>
+                   <p className="text-sm text-slate-500 max-w-sm mx-auto mt-1">We couldn't find any members matching your current filters. Try adjusting your search or clearing your filters.</p>
+                </div>
+                <div className="flex gap-2 mt-2">
+                   <Button variant="outline" onClick={() => {
+                        setSearchQuery(''); setStatusFilter('all'); setDepartmentFilter('all'); setGenderFilter('all'); setDateJoinedFilter('all');
+                   }}>
+                      Clear Filters
+                   </Button>
+                   {canManageAttendance && (
+                     <Button className="btn-gold" onClick={() => setIsNewMemberOpen(true)}>
+                       <Plus className="mr-2 h-4 w-4" /> Add Member
+                     </Button>
+                   )}
+                </div>
+              </div>
             )}
             {/* Pagination for Table */}
             {filteredMembers.length > 0 && (
@@ -617,6 +637,18 @@ export default function Members() {
                 );
               })}
             </div>
+
+            {filteredMembers.length === 0 && (
+              <div className="py-24 text-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 flex flex-col items-center justify-center space-y-4">
+                <div className="h-20 w-20 bg-white border border-slate-100 rounded-full flex items-center justify-center mb-2 shadow-sm">
+                   <UsersIcon className="h-10 w-10 text-slate-300" />
+                </div>
+                <div>
+                   <h3 className="text-lg font-black tracking-tight text-slate-800">Your Sanctuary is Empty</h3>
+                   <p className="text-sm text-slate-500 max-w-sm mx-auto mt-1">There are no member records available to display in this view format.</p>
+                </div>
+              </div>
+            )}
 
             {/* Pagination for Grid */}
             {filteredMembers.length > 0 && (

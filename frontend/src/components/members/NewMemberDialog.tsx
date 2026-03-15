@@ -598,3 +598,5 @@ export function NewMemberDialog({
     </Dialog>
   );
 }
+
+export type { NewMemberData };

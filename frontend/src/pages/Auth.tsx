@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import api from '@/lib/api';
 import { z } from 'zod';
 
 const RCCG_LOGO_URL = 'https://res.cloudinary.com/dnglp9qfd/image/upload/v1770460225/Rccg_logo_ttgxko.png';
@@ -351,11 +352,24 @@ export default function Auth() {
             onSubmit={async (e) => {
               e.preventDefault();
               setForgotLoading(true);
-              toast({ 
-                title: 'Note', 
-                description: 'Password reset via email is not yet implemented internally.',
-              });
-              setForgotLoading(false);
+              try {
+                // Django-allauth standard path for password resets
+                await api.post('/auth/password/reset/', { email: forgotEmail });
+                toast({ 
+                  title: 'Email Sent', 
+                  description: 'If an account exists with that email, instructions have been sent.',
+                });
+                setForgotOpen(false);
+                setForgotEmail('');
+              } catch (error: unknown) {
+                 toast({ 
+                  title: 'Reset Failed', 
+                  description: 'Failed to initiate password reset. Please try again.',
+                  variant: 'destructive'
+                });
+              } finally {
+                setForgotLoading(false);
+              }
             }}
             className="space-y-6 pt-6 pb-4"
           >
