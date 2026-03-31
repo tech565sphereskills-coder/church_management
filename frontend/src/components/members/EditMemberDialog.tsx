@@ -37,6 +37,11 @@ const editSchema = z.object({
   church_membership: z.enum(['worker', 'minister']).optional().or(z.literal('')),
   department_post: z.string().optional(),
   year_joined: z.coerce.number().optional().or(z.literal(0)),
+<<<<<<< HEAD
+=======
+  year_joined_workforce: z.coerce.number().optional().or(z.literal(0)),
+  is_ordained: z.boolean().default(false),
+>>>>>>> e11383f (Added latest features)
   ordained_as: z.enum(['deacon', 'deaconess', 'full_pastor']).optional().or(z.literal('')),
   year_ordination: z.coerce.number().optional().or(z.literal(0)),
 });
@@ -68,6 +73,11 @@ export function EditMemberDialog({ open, onOpenChange, member, onSave }: EditMem
       church_membership: '',
       department_post: '',
       year_joined: undefined,
+<<<<<<< HEAD
+=======
+      year_joined_workforce: undefined,
+      is_ordained: false,
+>>>>>>> e11383f (Added latest features)
       ordained_as: '',
       year_ordination: undefined,
     },
@@ -95,6 +105,11 @@ export function EditMemberDialog({ open, onOpenChange, member, onSave }: EditMem
         church_membership: member.church_membership || '',
         department_post: member.department_post || '',
         year_joined: member.year_joined || undefined,
+<<<<<<< HEAD
+=======
+        year_joined_workforce: member.year_joined_workforce || undefined,
+        is_ordained: member.is_ordained || false,
+>>>>>>> e11383f (Added latest features)
         ordained_as: member.ordained_as || '',
         year_ordination: member.year_ordination || undefined,
       });
@@ -106,7 +121,11 @@ export function EditMemberDialog({ open, onOpenChange, member, onSave }: EditMem
     setIsLoading(true);
     
     // Create a typed updates object
+<<<<<<< HEAD
     const updates: any = { ...data };
+=======
+    const updates: Partial<EditFormData> & Record<string, unknown> = { ...data };
+>>>>>>> e11383f (Added latest features)
     
     if (!updates.email) updates.email = null;
     if (!updates.address) updates.address = null;
@@ -117,6 +136,10 @@ export function EditMemberDialog({ open, onOpenChange, member, onSave }: EditMem
     if (!updates.church_membership) updates.church_membership = null;
     if (!updates.department_post) updates.department_post = null;
     if (!updates.year_joined) updates.year_joined = null;
+<<<<<<< HEAD
+=======
+    if (!updates.year_joined_workforce) updates.year_joined_workforce = null;
+>>>>>>> e11383f (Added latest features)
     if (!updates.ordained_as) updates.ordained_as = null;
     if (!updates.year_ordination) updates.year_ordination = null;
 
@@ -254,7 +277,14 @@ export function EditMemberDialog({ open, onOpenChange, member, onSave }: EditMem
                   <FormItem><FormLabel>Post in Department</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control} name="year_joined" render={({ field }) => (
+<<<<<<< HEAD
                   <FormItem><FormLabel>Year Joined</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+=======
+                  <FormItem><FormLabel>Year Joined RCCG</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="year_joined_workforce" render={({ field }) => (
+                  <FormItem><FormLabel>Year Joined Workforce</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+>>>>>>> e11383f (Added latest features)
                 )} />
               </div>
 
@@ -291,6 +321,7 @@ export function EditMemberDialog({ open, onOpenChange, member, onSave }: EditMem
 
             {/* Ordination Details */}
             <div className="space-y-4">
+<<<<<<< HEAD
               <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 border-b pb-2">Ordination Details</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField control={form.control} name="ordained_as" render={({ field }) => (
@@ -311,6 +342,48 @@ export function EditMemberDialog({ open, onOpenChange, member, onSave }: EditMem
                   <FormItem><FormLabel>Year of Ordination</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
               </div>
+=======
+              <div className="flex items-center justify-between border-b pb-2">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">Ordination Details</h3>
+                <FormField
+                  control={form.control}
+                  name="is_ordained"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center space-x-2 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormLabel className="text-xs font-black uppercase text-indigo-600 cursor-pointer">Are you ordained?</FormLabel>
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {form.watch('is_ordained') && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
+                  <FormField control={form.control} name="ordained_as" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Currently Ordained As</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                        <SelectContent>
+                          <SelectItem value="deacon">Deacon</SelectItem>
+                          <SelectItem value="deaconess">Deaconess</SelectItem>
+                          <SelectItem value="full_pastor">Full Pastor</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="year_ordination" render={({ field }) => (
+                    <FormItem><FormLabel>Year of Ordination</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                </div>
+              )}
+>>>>>>> e11383f (Added latest features)
             </div>
 
             <FormField control={form.control} name="status" render={({ field }) => (

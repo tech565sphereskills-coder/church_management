@@ -38,6 +38,7 @@ const queryClient = new QueryClient();
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 
+<<<<<<< HEAD
 const App = () => (
   <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
     <QueryClientProvider client={queryClient}>
@@ -120,6 +121,94 @@ const App = () => (
       </TooltipProvider>
     </QueryClientProvider>
   </GoogleOAuthProvider>
+=======
+import { ErrorBoundary } from "./components/common/ErrorBoundary";
+
+const App = () => (
+  <ErrorBoundary>
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AuthProvider>
+              <Routes>
+                {/* Public route */}
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/submit-prayer" element={<SubmitPrayer />} />
+                <Route path="/check-in" element={<CheckIn />} />
+                
+                {/* Protected routes */}
+                <Route element={<ProtectedRoute />}>
+                  <Route element={<MainLayout />}>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/calendar" element={<ProtectedRoute requiredPermission="canManageCalendar" />}>
+                      <Route index element={<Calendar />} />
+                    </Route>
+                    <Route path="/attendance" element={<ProtectedRoute requiredPermission="canManageAttendance" />}>
+                      <Route index element={<Attendance />} />
+                    </Route>
+                    <Route path="/members" element={<ProtectedRoute requiredPermission="canManageMembers" />}>
+                      <Route index element={<Members />} />
+                    </Route>
+                    <Route path="/members/:memberId" element={<ProtectedRoute requiredPermission="canManageMembers" />}>
+                      <Route index element={<MemberProfile />} />
+                    </Route>
+                    <Route path="/history" element={<ProtectedRoute requiredPermission="canManageAttendance" />}>
+                      <Route index element={<History />} />
+                    </Route>
+                    <Route path="/reports" element={<ProtectedRoute requiredPermission="canViewReports" />}>
+                      <Route index element={<Reports />} />
+                    </Route>
+                    <Route path="/settings" element={<ProtectedRoute requiredPermission="canManageSettings" />}>
+                      <Route index element={<Settings />} />
+                    </Route>
+                    <Route path="/audit-logs" element={<ProtectedRoute requiredRole="admin" />}>
+                      <Route index element={<AuditLogs />} />
+                    </Route>
+                    <Route path="/user-management" element={<ProtectedRoute requiredRole="admin" />}>
+                      <Route index element={<UserManagement />} />
+                    </Route>
+                    <Route path="/follow-up" element={<ProtectedRoute requiredPermission="canManageMembers" />}>
+                      <Route index element={<FollowUp />} />
+                    </Route>
+                    <Route path="/messaging" element={<ProtectedRoute requiredPermission="canManageMembers" />}>
+                      <Route index element={<Messaging />} />
+                    </Route>
+                    <Route path="/financials" element={<ProtectedRoute requiredPermission="canManageFinances" />}>
+                      <Route index element={<Financials />} />
+                    </Route>
+                    <Route path="/departments" element={<Departments />} />
+                    <Route path="/departments/reports" element={<ProtectedRoute requiredPermission="canViewReports" />}>
+                      <Route index element={<DepartmentReports />} />
+                    </Route>
+                    <Route path="/ministers" element={<ProtectedRoute requiredPermission="canManageDepartments" />}>
+                      <Route index element={<Ministers />} />
+                    </Route>
+                    <Route path="/family" element={<Family />} />
+                    <Route path="/inventory" element={<Inventory />} />
+                    <Route path="/children" element={<ProtectedRoute requiredPermission="canManageChildren" />}>
+                      <Route index element={<Children />} />
+                    </Route>
+                    <Route path="/prayer-requests" element={<ProtectedRoute requiredPermission="canManagePrayer" />}>
+                      <Route index element={<PrayerRequests />} />
+                    </Route>
+                    <Route path="/notifications" element={<Notifications />} />
+                  </Route>
+                </Route>
+                
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </AuthProvider>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </GoogleOAuthProvider>
+  </ErrorBoundary>
+>>>>>>> e11383f (Added latest features)
 );
 
 export default App;

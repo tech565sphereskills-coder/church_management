@@ -34,7 +34,11 @@ SECRET_KEY = env('SECRET_KEY', default='unsafe-secret-key')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env('DEBUG')
 
+<<<<<<< HEAD
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
+=======
+ALLOWED_HOSTS = ['*']
+>>>>>>> e11383f (Added latest features)
 
 
 # Application definition
@@ -148,6 +152,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+<<<<<<< HEAD
+=======
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+>>>>>>> e11383f (Added latest features)
 ])
 CORS_ALLOW_CREDENTIALS = True
 
@@ -155,6 +164,11 @@ CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+<<<<<<< HEAD
+=======
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+>>>>>>> e11383f (Added latest features)
 ])
 CSRF_COOKIE_HTTPONLY = False  # Allow frontend to read CSRF token
 CSRF_COOKIE_SAMESITE = 'Lax'

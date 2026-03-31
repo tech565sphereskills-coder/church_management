@@ -35,6 +35,7 @@ import api from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 
+<<<<<<< HEAD
 interface AuditLog {
   id: string;
   user_name: string;
@@ -78,6 +79,33 @@ export default function AuditLogs() {
     
     return matchesSearch && matchesAction;
   });
+=======
+import { useAuditLogs, AuditLog } from '@/hooks/useAuditLogs';
+import { useDebounce } from '@/hooks/useDebounce';
+import { FunctionalPagination } from '@/components/common/FunctionalPagination';
+
+export default function AuditLogs() {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 500);
+  const [actionFilter, setActionFilter] = useState('all');
+
+  const { data: logData, isLoading: loading, refetch } = useAuditLogs(currentPage, debouncedSearch, actionFilter);
+
+  const logs = logData?.results || [];
+  const totalCount = logData?.count || 0;
+  const totalPages = Math.ceil(totalCount / 20); // 20 is PAGE_SIZE for audit logs
+
+  useEffect(() => {
+    document.title = 'Administrative Audit Logs | RCCG Emmanuel Sanctuary';
+  }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch, actionFilter]);
+
+  const filteredLogs = logs; // Server returns filtered logs
+>>>>>>> e11383f (Added latest features)
 
   const getActionBadge = (action: AuditLog['action']) => {
     switch (action) {
@@ -173,14 +201,22 @@ export default function AuditLogs() {
                     </SelectContent>
                   </Select>
 
+<<<<<<< HEAD
                   <Button variant="outline" size="icon" onClick={fetchLogs} className="h-11 w-11 rounded-xl border-slate-200">
+=======
+                  <Button variant="outline" size="icon" onClick={() => refetch()} className="h-11 w-11 rounded-xl border-slate-200">
+>>>>>>> e11383f (Added latest features)
                     <RefreshCcw className={cn("h-4 w-4", loading && "animate-spin")} />
                   </Button>
                 </div>
               </div>
 
               <div className="px-6 py-2">
+<<<<<<< HEAD
                 <div className="overflow-x-auto">
+=======
+                <div className="hidden md:block overflow-x-auto px-6 py-2">
+>>>>>>> e11383f (Added latest features)
                   <Table>
                     <TableHeader>
                         <TableRow className="hover:bg-transparent border-slate-50">
@@ -198,15 +234,24 @@ export default function AuditLogs() {
                                     <TableCell colSpan={5} className="h-16 bg-slate-50/50 rounded-lg" />
                                 </TableRow>
                             ))
+<<<<<<< HEAD
                         ) : filteredLogs.length > 0 ? (
                             filteredLogs.map((log) => (
+=======
+                        ) : logs.length > 0 ? (
+                            logs.map((log) => (
+>>>>>>> e11383f (Added latest features)
                                 <TableRow key={log.id} className="group hover:bg-slate-50/50 transition-colors border-slate-50">
                                     <TableCell>
                                         <div className="flex flex-col">
                                             <span className="text-sm font-bold text-slate-900 dark:text-white">
                                                 {format(parseISO(log.timestamp), 'h:mm a')}
                                             </span>
+<<<<<<< HEAD
                                             <span className="text-[10px] text-slate-400 font-medium">
+=======
+                                            <span className="text-[10px] text-slate-400 font-medium whitespace-nowrap">
+>>>>>>> e11383f (Added latest features)
                                                 {format(parseISO(log.timestamp), 'dd MMM yyyy')}
                                             </span>
                                         </div>
@@ -227,7 +272,11 @@ export default function AuditLogs() {
                                                     {log.model_name}
                                                 </Badge>
                                                 <ArrowRight className="h-3 w-3 text-slate-300" />
+<<<<<<< HEAD
                                                 <span className="text-sm font-bold text-slate-900 dark:text-white">{log.object_name || 'N/A'}</span>
+=======
+                                                <span className="text-sm font-bold text-slate-900 dark:text-white truncate max-w-[200px]">{log.object_name || 'N/A'}</span>
+>>>>>>> e11383f (Added latest features)
                                             </div>
                                         </div>
                                     </TableCell>
@@ -251,6 +300,60 @@ export default function AuditLogs() {
                     </TableBody>
                   </Table>
                 </div>
+<<<<<<< HEAD
+=======
+
+                {/* Mobile View: Cards */}
+                <div className="md:hidden space-y-4 px-6 pb-6">
+                    {loading ? (
+                        Array.from({ length: 3 }).map((_, i) => (
+                            <div key={i} className="h-24 w-full bg-slate-50 animate-pulse rounded-xl" />
+                        ))
+                    ) : logs.length > 0 ? (
+                        logs.map((log) => (
+                            <div key={log.id} className="p-4 rounded-2xl border border-slate-100 bg-white shadow-sm space-y-3">
+                                <div className="flex justify-between items-start">
+                                    <div className="flex items-center gap-2">
+                                        <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center">
+                                            <UserIcon className="h-4 w-4 text-slate-400" />
+                                        </div>
+                                        <span className="text-sm font-black text-slate-700">{log.user_name}</span>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[10px] font-bold text-slate-400">{format(parseISO(log.timestamp), 'dd MMM, HH:mm')}</p>
+                                        <div className="mt-1">{getActionBadge(log.action)}</div>
+                                    </div>
+                                </div>
+                                <div className="p-3 bg-slate-50/50 rounded-xl flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Badge variant="outline" className="text-[8px] font-black uppercase tracking-tighter h-4 bg-white">
+                                            {log.model_name}
+                                        </Badge>
+                                        <span className="text-xs font-bold text-slate-900 truncate max-w-[120px]">{log.object_name || 'N/A'}</span>
+                                    </div>
+                                    <code className="text-[9px] font-mono text-slate-400">
+                                        {log.object_id ? `#${log.object_id.slice(0, 8)}` : 'SYS'}
+                                    </code>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="py-10 text-center">
+                            <Info className="h-10 w-10 text-slate-100 mx-auto mb-2" />
+                            <p className="text-slate-400 text-sm font-bold">No results found.</p>
+                        </div>
+                    )}
+                </div>
+                
+                <div className="p-4 border-t">
+                  <FunctionalPagination 
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                    isLoading={loading}
+                  />
+                </div>
+>>>>>>> e11383f (Added latest features)
               </div>
             </CardContent>
           </Card>

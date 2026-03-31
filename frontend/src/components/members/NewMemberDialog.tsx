@@ -52,6 +52,11 @@ const formSchema = z.object({
   church_membership: z.enum(['worker', 'minister']).optional().or(z.literal('')),
   department_post: z.string().optional(),
   year_joined: z.string().optional(),
+<<<<<<< HEAD
+=======
+  year_joined_workforce: z.string().optional(),
+  is_ordained: z.boolean().default(false),
+>>>>>>> e11383f (Added latest features)
   ordained_as: z.enum(['deacon', 'deaconess', 'full_pastor']).optional().or(z.literal('')),
   year_ordination: z.string().optional(),
 });
@@ -96,6 +101,11 @@ export function NewMemberDialog({
       church_membership: '',
       department_post: '',
       year_joined: '',
+<<<<<<< HEAD
+=======
+      year_joined_workforce: '',
+      is_ordained: false,
+>>>>>>> e11383f (Added latest features)
       ordained_as: '',
       year_ordination: '',
     },
@@ -134,6 +144,11 @@ export function NewMemberDialog({
       church_membership: data.church_membership || undefined,
       department_post: data.department_post || undefined,
       year_joined: data.year_joined ? parseInt(data.year_joined) : undefined,
+<<<<<<< HEAD
+=======
+      year_joined_workforce: data.year_joined_workforce ? parseInt(data.year_joined_workforce) : undefined,
+      is_ordained: data.is_ordained,
+>>>>>>> e11383f (Added latest features)
       ordained_as: data.ordained_as || undefined,
       year_ordination: data.year_ordination ? parseInt(data.year_ordination) : undefined,
     };
@@ -433,7 +448,24 @@ export function NewMemberDialog({
                   name="year_joined"
                   render={({ field }) => (
                     <FormItem>
+<<<<<<< HEAD
                       <FormLabel>Year Joined</FormLabel>
+=======
+                      <FormLabel>Year Joined RCCG</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="YYYY" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="year_joined_workforce"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Year Joined Workforce</FormLabel>
+>>>>>>> e11383f (Added latest features)
                       <FormControl>
                         <Input type="number" placeholder="YYYY" {...field} />
                       </FormControl>
@@ -481,6 +513,7 @@ export function NewMemberDialog({
 
             {/* Ordination Details */}
             <div className="space-y-4">
+<<<<<<< HEAD
               <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 border-b pb-2">Ordination Details</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
@@ -516,10 +549,70 @@ export function NewMemberDialog({
                         <Input type="number" placeholder="YYYY" {...field} />
                       </FormControl>
                       <FormMessage />
+=======
+              <div className="flex items-center justify-between border-b pb-2">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">Ordination Details</h3>
+                <FormField
+                  control={form.control}
+                  name="is_ordained"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center space-x-2 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormLabel className="text-xs font-black uppercase text-indigo-600 cursor-pointer">Are you ordained?</FormLabel>
+>>>>>>> e11383f (Added latest features)
                     </FormItem>
                   )}
                 />
               </div>
+<<<<<<< HEAD
+=======
+              
+              {form.watch('is_ordained') && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
+                  <FormField
+                    control={form.control}
+                    name="ordained_as"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Currently Ordained As</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select ordination" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="deacon">Deacon</SelectItem>
+                            <SelectItem value="deaconess">Deaconess</SelectItem>
+                            <SelectItem value="full_pastor">Full Pastor</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="year_ordination"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Year of Ordination</FormLabel>
+                        <FormControl>
+                          <Input type="number" placeholder="YYYY" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
+>>>>>>> e11383f (Added latest features)
             </div>
 
             {/* Additional Info */}

@@ -107,6 +107,13 @@ export default function Attendance() {
     setOfflineMarkedIds(offlineIds);
   }, [pendingRecords]);
 
+<<<<<<< HEAD
+=======
+  useEffect(() => {
+    document.title = 'Attendance Tracking | RCCG Emmanuel Sanctuary';
+  }, []);
+
+>>>>>>> e11383f (Added latest features)
   const today = new Date().toLocaleDateString('en-NG', {
     weekday: 'long',
     year: 'numeric',

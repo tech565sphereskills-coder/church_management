@@ -124,7 +124,11 @@ export default function Auth() {
                     <img src={RCCG_LOGO_URL} alt="RCCG" className="w-full h-full object-contain" />
                 </div>
                 <div className="h-8 w-px bg-white/20" />
+<<<<<<< HEAD
                 <span className="text-white text-sm font-bold tracking-[0.3em] uppercase">Sanctuary Portal</span>
+=======
+                <span className="text-white text-sm font-bold tracking-[0.3em] uppercase">E-Sanctuary Portal</span>
+>>>>>>> e11383f (Added latest features)
             </motion.div>
 
             <div className="max-w-xl">

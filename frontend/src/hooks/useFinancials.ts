@@ -65,6 +65,7 @@ export interface Pledge {
   notes?: string;
 }
 
+<<<<<<< HEAD
 export function useFinancials() {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -76,24 +77,89 @@ export function useFinancials() {
     queryFn: async () => {
       const response = await api.get('/contributions/');
       return response.data as Contribution[];
+=======
+export interface PaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
+export interface FinancialsParams {
+  page?: number;
+  search?: string;
+  type?: string;
+  start_date?: string;
+  end_date?: string;
+}
+
+export function useFinancials(params: FinancialsParams = {}) {
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { page = 1, search = '', type = 'all', start_date, end_date } = params;
+
+  // Contributions Query
+  const { data: contributionsData, isLoading: contributionsLoading } = useQuery({
+    queryKey: ['contributions', page, search, type, start_date, end_date],
+    queryFn: async () => {
+      const queryParams: Record<string, string | number> = { page };
+      if (search) queryParams.search = search;
+      if (type && type !== 'all') queryParams.contribution_type = type;
+      if (start_date) queryParams.start_date = start_date;
+      if (end_date) queryParams.end_date = end_date;
+      
+      const response = await api.get<PaginatedResponse<Contribution>>('/contributions/', { params: queryParams });
+      return response.data;
+>>>>>>> e11383f (Added latest features)
     },
     enabled: !!user,
   });
 
+<<<<<<< HEAD
   const { data: expenses = [], isLoading: expensesLoading } = useQuery({
     queryKey: ['expenses'],
     queryFn: async () => {
       const response = await api.get('/expenses/');
       return response.data as Expense[];
+=======
+  // Expenses Query (Also paginated for professional feel)
+  const { data: expensesData, isLoading: expensesLoading } = useQuery({
+    queryKey: ['expenses', page, search, type, start_date, end_date],
+    queryFn: async () => {
+      const queryParams: Record<string, string | number> = { page };
+      if (search) queryParams.search = search;
+      if (type && type !== 'all') queryParams.category = type;
+      if (start_date) queryParams.start_date = start_date;
+      if (end_date) queryParams.end_date = end_date;
+      
+      const response = await api.get<PaginatedResponse<Expense>>('/expenses/', { params: queryParams });
+      return response.data;
+>>>>>>> e11383f (Added latest features)
     },
     enabled: !!user,
   });
 
+<<<<<<< HEAD
+=======
+  const contributions = contributionsData?.results || [];
+  const contributionsCount = contributionsData?.count || 0;
+  const contributionsPages = Math.ceil(contributionsCount / 10);
+
+  const expenses = expensesData?.results || [];
+  const expensesCount = expensesData?.count || 0;
+  const expensesPages = Math.ceil(expensesCount / 10);
+
+>>>>>>> e11383f (Added latest features)
   const { data: budgets = [], isLoading: budgetsLoading } = useQuery({
     queryKey: ['budgets'],
     queryFn: async () => {
       const response = await api.get('/budgets/');
+<<<<<<< HEAD
       return response.data as Budget[];
+=======
+      return (response.data.results || response.data) as Budget[];
+>>>>>>> e11383f (Added latest features)
     },
     enabled: !!user,
   });
@@ -102,17 +168,33 @@ export function useFinancials() {
     queryKey: ['pledges'],
     queryFn: async () => {
       const response = await api.get('/pledges/');
+<<<<<<< HEAD
       return response.data as Pledge[];
+=======
+      return (response.data.results || response.data) as Pledge[];
+>>>>>>> e11383f (Added latest features)
     },
     enabled: !!user,
   });
 
   const { data: summaryData, isLoading: summaryLoading } = useQuery({
+<<<<<<< HEAD
     queryKey: ['financial-summary'],
     queryFn: async () => {
       const [contResp, expResp] = await Promise.all([
         api.get('/contributions/summary/'),
         api.get('/expenses/summary/')
+=======
+    queryKey: ['financial-summary', start_date, end_date],
+    queryFn: async () => {
+      const params: Record<string, string> = {};
+      if (start_date) params.start_date = start_date;
+      if (end_date) params.end_date = end_date;
+      
+      const [contResp, expResp] = await Promise.all([
+        api.get('/contributions/summary/', { params }),
+        api.get('/expenses/summary/', { params })
+>>>>>>> e11383f (Added latest features)
       ]);
       return {
         contributions: contResp.data as ContributionSummary[],
@@ -135,7 +217,10 @@ export function useFinancials() {
       queryClient.invalidateQueries({ queryKey: ['stats'] });
       return response.data;
     } catch (error) {
+<<<<<<< HEAD
       console.error('Error creating contribution:', error);
+=======
+>>>>>>> e11383f (Added latest features)
       toast({ title: 'Error', description: 'Failed to save record', variant: 'destructive' });
       return null;
     }
@@ -150,12 +235,16 @@ export function useFinancials() {
       queryClient.invalidateQueries({ queryKey: ['stats'] });
       return response.data;
     } catch (error) {
+<<<<<<< HEAD
       console.error('Error creating expense:', error);
+=======
+>>>>>>> e11383f (Added latest features)
       toast({ title: 'Error', description: 'Failed to save expense record', variant: 'destructive' });
       return null;
     }
   };
 
+<<<<<<< HEAD
   const createBudget = async (data: Partial<Budget>) => {
     try {
       const response = await api.post('/budgets/', data);
@@ -164,10 +253,22 @@ export function useFinancials() {
       return response.data;
     } catch (error) {
       toast({ title: 'Error', description: 'Failed to set budget', variant: 'destructive' });
+=======
+  const updateContribution = async (id: string, data: Partial<Contribution>) => {
+    try {
+      const response = await api.patch(`/contributions/${id}/`, data);
+      toast({ title: 'Record Updated', description: 'Contribution has been updated successfully.' });
+      queryClient.invalidateQueries({ queryKey: ['contributions'] });
+      queryClient.invalidateQueries({ queryKey: ['financial-summary'] });
+      return response.data;
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to update record', variant: 'destructive' });
+>>>>>>> e11383f (Added latest features)
       return null;
     }
   };
 
+<<<<<<< HEAD
   const createPledge = async (data: Partial<Pledge>) => {
     try {
       const response = await api.post('/pledges/', data);
@@ -176,10 +277,35 @@ export function useFinancials() {
       return response.data;
     } catch (error) {
       toast({ title: 'Error', description: 'Failed to save pledge', variant: 'destructive' });
+=======
+  const deleteContribution = async (id: string) => {
+    try {
+      await api.delete(`/contributions/${id}/`);
+      toast({ title: 'Record Deleted', description: 'Contribution has been deleted.' });
+      queryClient.invalidateQueries({ queryKey: ['contributions'] });
+      queryClient.invalidateQueries({ queryKey: ['financial-summary'] });
+      return true;
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to delete record', variant: 'destructive' });
+      return false;
+    }
+  };
+
+  const updateExpense = async (id: string, data: Partial<Expense>) => {
+    try {
+      const response = await api.patch(`/expenses/${id}/`, data);
+      toast({ title: 'Expense Updated', description: 'Record has been updated successfully.' });
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['financial-summary'] });
+      return response.data;
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to update expense', variant: 'destructive' });
+>>>>>>> e11383f (Added latest features)
       return null;
     }
   };
 
+<<<<<<< HEAD
   const updatePledge = async (id: string, data: Partial<Pledge>) => {
     try {
       const response = await api.patch(`/pledges/${id}/`, data);
@@ -189,6 +315,18 @@ export function useFinancials() {
     } catch (error) {
       toast({ title: 'Error', description: 'Failed to update pledge', variant: 'destructive' });
       return null;
+=======
+  const deleteExpense = async (id: string) => {
+    try {
+      await api.delete(`/expenses/${id}/`);
+      toast({ title: 'Expense Deleted', description: 'Record has been deleted.' });
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['financial-summary'] });
+      return true;
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to delete expense', variant: 'destructive' });
+      return false;
+>>>>>>> e11383f (Added latest features)
     }
   };
 
@@ -205,11 +343,15 @@ export function useFinancials() {
       link.click();
       link.remove();
     } catch (error) {
+<<<<<<< HEAD
       console.error('Error generating receipt:', error);
+=======
+>>>>>>> e11383f (Added latest features)
       toast({ title: 'Error', description: 'Failed to generate PDF receipt', variant: 'destructive' });
     }
   };
 
+<<<<<<< HEAD
   const fetchSummary = useCallback(async (month?: number, year?: number) => {
     const params: Record<string, number> = {};
     if (month) params.month = month;
@@ -285,6 +427,8 @@ export function useFinancials() {
     }
   };
 
+=======
+>>>>>>> e11383f (Added latest features)
   return {
     contributions,
     expenses,
@@ -293,16 +437,27 @@ export function useFinancials() {
     loading,
     summary,
     expenseSummary,
+<<<<<<< HEAD
     fetchSummary,
+=======
+>>>>>>> e11383f (Added latest features)
     createContribution,
     updateContribution,
     deleteContribution,
     createExpense,
     updateExpense,
     deleteExpense,
+<<<<<<< HEAD
     createBudget,
     createPledge,
     updatePledge,
     generateReceipt,
+=======
+    generateReceipt,
+    contributionsCount,
+    contributionsPages,
+    expensesCount,
+    expensesPages,
+>>>>>>> e11383f (Added latest features)
   };
 }

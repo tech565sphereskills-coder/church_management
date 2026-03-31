@@ -12,6 +12,10 @@ from django.http import HttpResponse
 from django.contrib.auth.models import User
 from rest_framework import viewsets, permissions, status, serializers
 from rest_framework.response import Response
+<<<<<<< HEAD
+=======
+from rest_framework.pagination import PageNumberPagination
+>>>>>>> e11383f (Added latest features)
 from rest_framework.decorators import action
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -40,6 +44,14 @@ from .permissions import (
     IsPrayerOfficerOrHigher
 )
 
+<<<<<<< HEAD
+=======
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 1000
+
+>>>>>>> e11383f (Added latest features)
 # Helper for auditing
 def log_activity(user, action, model_name, object_id, object_name, details=None):
     try:
@@ -230,8 +242,20 @@ class ProfileViewSet(viewsets.ModelViewSet):
         return super().get_permissions()
 
 class MemberViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
+<<<<<<< HEAD
     queryset = Member.objects.all()
     serializer_class = MemberSerializer
+=======
+    queryset = Member.objects.all().order_by('surname', 'firstname')
+    serializer_class = MemberSerializer
+    pagination_class = StandardResultsSetPagination
+    filter_backends = [permissions.IsAuthenticated, permissions.DjangoModelPermissionsOrAnonReadOnly] # This will be overridden below
+    from rest_framework.filters import SearchFilter, OrderingFilter
+    filter_backends = [SearchFilter, OrderingFilter]
+    search_fields = ['surname', 'firstname', 'phone', 'email', 'address']
+    ordering_fields = ['surname', 'firstname', 'date_joined', 'created_at']
+    ordering = ['surname', 'firstname']
+>>>>>>> e11383f (Added latest features)
     
     def get_queryset(self):
         user = self.request.user
@@ -314,6 +338,7 @@ class MemberViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
 
             for i, row in df.iterrows():
                 # Extract names - support user's specific headers
+<<<<<<< HEAD
                 surname = str(row.get('surname', row.get('last_name', ''))).strip() if pd.notna(row.get('surname')) or pd.notna(row.get('last_name')) else ''
                 
                 # Support "first_name_and_other_name"
@@ -322,6 +347,16 @@ class MemberViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
                 
                 other_name = str(row.get('other_name', '')).strip() if pd.notna(row.get('other_name')) else ''
                 full_name = str(row.get('full_name', row.get('name', ''))).strip() if pd.notna(row.get('full_name')) or pd.notna(row.get('name')) else ''
+=======
+                surname = str(row.get('surname', row.get('last_name', row.get('last name', '')))).strip() if pd.notna(row.get('surname')) or pd.notna(row.get('last_name')) or pd.notna(row.get('last name')) else ''
+                
+                # Support "first_name_and_other_name"
+                firstname_val = row.get('firstname', row.get('first_name', row.get('first name', row.get('first_name_and_other_name', ''))))
+                firstname = str(firstname_val).strip() if pd.notna(firstname_val) else ''
+                
+                other_name = str(row.get('other_name', row.get('other name', ''))).strip() if pd.notna(row.get('other_name')) or pd.notna(row.get('other name')) else ''
+                full_name = str(row.get('full_name', row.get('full name', row.get('name', '')))).strip() if pd.notna(row.get('full_name')) or pd.notna(row.get('full name')) or pd.notna(row.get('name')) else ''
+>>>>>>> e11383f (Added latest features)
 
                 # Specific handling for "first_name_and_other_name" splitting
                 if 'first_name_and_other_name' in row and pd.notna(row['first_name_and_other_name']):
@@ -331,6 +366,7 @@ class MemberViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
                     if len(parts) > 1 and not other_name:
                         other_name = parts[1]
 
+<<<<<<< HEAD
                 # If structured names are missing but full_name is present, split it
                 if (not surname or not firstname) and full_name:
                     names = full_name.split(' ')
@@ -338,12 +374,22 @@ class MemberViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
                         surname = names[0]
                         firstname = names[1]
                         other_name = ' '.join(names[2:]) if len(names) > 2 else other_name
+=======
+                # Special case for "Name" column which often contains full name
+                if not surname and not firstname and full_name:
+                    names = full_name.split(' ')
+                    if len(names) >= 2:
+                        surname = names[-1] # Assume last part is surname
+                        firstname = names[0]
+                        other_name = ' '.join(names[1:-1]) if len(names) > 2 else other_name
+>>>>>>> e11383f (Added latest features)
                     elif names:
                         surname = names[0]
                         firstname = 'TBD'
                 
                 if not surname or not firstname:
                     skipped_count += 1
+<<<<<<< HEAD
                     if i < 5: skip_reasons.append(f"Row {i+1}: Missing surname/firstname (Headers: {found_cols})")
                     continue
 
@@ -351,12 +397,24 @@ class MemberViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
                 phone_val = row.get('phone', row.get('phone_number', row.get('mobile', '')))
                 if pd.isna(phone_val):
                     phone = ''
+=======
+                    err_msg = f"Row {i+1}: Missing surname or firstname. (Found: surname='{surname}', firstname='{firstname}', full_name='{full_name}')"
+                    skip_reasons.append(err_msg)
+                    print(f"DEBUG IMPORT: {err_msg}")
+                    continue
+
+                # Phone number mapping
+                phone_val = row.get('phone', row.get('phone_number', row.get('phone no', row.get('mobile', ''))))
+                if pd.isna(phone_val) or str(phone_val).strip() == '':
+                    phone = '0000000000' # Default if missing
+>>>>>>> e11383f (Added latest features)
                 else:
                     phone = str(phone_val)
                     if phone.endswith('.0'):
                         phone = phone[:-2]
                     phone = ''.join(filter(str.isdigit, phone))
                 
+<<<<<<< HEAD
                 email = str(row.get('email', '')).strip() if pd.notna(row.get('email')) else None
                 if email and '@' not in email: email = None
                 
@@ -367,12 +425,26 @@ class MemberViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
                 if not member and phone:
                     member = Member.objects.filter(surname=surname, firstname=firstname, phone=phone).first() or \
                              Member.objects.filter(phone=phone).first()
+=======
+                email = str(row.get('email', row.get('email_address', row.get('email address', '')))).strip() if any(pd.notna(row.get(k)) for k in ['email', 'email_address', 'email address']) else None
+                if email and '@' not in email: email = None
+                
+                # Check for existing member to avoid duplicates
+                member = None
+                if email:
+                    member = Member.objects.filter(email=email).first()
+                if not member and phone and phone != '0000000000':
+                    member = Member.objects.filter(phone=phone).first()
+                if not member:
+                    member = Member.objects.filter(surname__iexact=surname, firstname__iexact=firstname).first()
+>>>>>>> e11383f (Added latest features)
                 
                 # Defaults for required fields
                 gender = str(row.get('gender', 'male')).lower() if pd.notna(row.get('gender')) else 'male'
                 if gender.startswith('f'): gender = 'female'
                 elif not gender.startswith('m'): gender = 'male'
 
+<<<<<<< HEAD
                 marital_status = str(row.get('marital_status', 'single')).lower() if pd.notna(row.get('marital_status')) else 'single'
                 if marital_status not in ['single', 'married', 'widowed', 'divorced']: marital_status = 'single'
 
@@ -408,17 +480,47 @@ class MemberViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
                     except:
                         return None
 
+=======
+                marital_status = str(row.get('marital_status', row.get('marital status', 'single'))).lower() if pd.notna(row.get('marital_status')) or pd.notna(row.get('marital status')) else 'single'
+                if marital_status not in ['single', 'married', 'widowed', 'divorced']: marital_status = 'single'
+
+                church_membership = str(row.get('church_membership', row.get('membership status', ''))).lower() if pd.notna(row.get('church_membership')) or pd.notna(row.get('membership status')) else None
+                if church_membership:
+                    if 'minister' in church_membership: church_membership = 'minister'
+                    elif 'worker' in church_membership: church_membership = 'worker'
+                    else: church_membership = 'member'
+                else:
+                    church_membership = 'member'
+
+                # Handle Date of Birth
+                dob = None
+                for dob_key in ['date_of_birth', 'dob', 'date of birth', 'birthday']:
+                    dv = row.get(dob_key)
+                    if pd.notna(dv):
+                        try:
+                            dob = pd.to_datetime(str(dv).strip()).date()
+                            break
+                        except:
+                            continue
+
+                # Data mapping dictionary
+>>>>>>> e11383f (Added latest features)
                 data = {
                     'surname': surname,
                     'firstname': firstname,
                     'other_name': other_name,
+<<<<<<< HEAD
                     'phone': phone or '0000000000',
+=======
+                    'phone': phone,
+>>>>>>> e11383f (Added latest features)
                     'email': email,
                     'gender': gender,
                     'address': str(row.get('address', '')).strip() if pd.notna(row.get('address')) else '',
                     'marital_status': marital_status,
                     'date_of_birth': dob,
                     'church_membership': church_membership,
+<<<<<<< HEAD
                     'department_post': str(row.get(dept_post_header, row.get('department_post', ''))).strip() if pd.notna(row.get(dept_post_header, row.get('department_post'))) else '',
                     'year_joined': safe_int(row.get(year_joined_header, row.get('year_joined'))),
                     'ordained_as': str(row.get(ordained_as_header, row.get('ordained_as', ''))).strip() if pd.notna(row.get(ordained_as_header, row.get('ordained_as'))) else None,
@@ -426,6 +528,36 @@ class MemberViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
                     'spouse_full_name': str(row.get(spouse_name_header, row.get('spouse_full_name', ''))).strip() if pd.notna(row.get(spouse_name_header, row.get('spouse_full_name'))) else '',
                     'spouse_phone_number': str(row.get(spouse_phone_header, row.get('spouse_phone_number', ''))).strip() if pd.notna(row.get(spouse_phone_header, row.get('spouse_phone_number'))) else '',
                 }
+=======
+                    'department_post': str(row.get('post_in_the_department', row.get('department_post', row.get('position', '')))).strip() if any(pd.notna(row.get(k)) for k in ['post_in_the_department', 'department_post', 'position']) else '',
+                    'year_joined': None, # Handle below
+                    'year_joined_workforce': None, # Handle below
+                    'is_ordained': False, # Handle below
+                    'ordained_as': str(row.get('currently_ordained_as:', row.get('ordained_as', row.get('ordination', '')))).strip() if any(pd.notna(row.get(k)) for k in ['currently_ordained_as:', 'ordained_as', 'ordination']) else None,
+                    'year_ordination': None, # Handle below
+                    'spouse_full_name': str(row.get("spouse's_full_name", row.get("spouse name", ""))).strip() if any(pd.notna(row.get(k)) for k in ["spouse's_full_name", "spouse's full name", "spouse name"]) else '',
+                    'spouse_phone_number': str(row.get("spouse's_phone_no", row.get("spouse phone", ""))).strip() if any(pd.notna(row.get(k)) for k in ["spouse's_phone_no", "spouse's phone no", "spouse phone"]) else '',
+                }
+
+                # Safe integer parsing for years
+                def parse_year(val):
+                    if pd.isna(val) or str(val).strip() == '': return None
+                    try:
+                        return int(float(val))
+                    except:
+                        return None
+
+                data['year_joined'] = parse_year(row.get('what_year_did_you_join_rccg?', row.get('year_joined', row.get('year joined'))))
+                data['year_joined_workforce'] = parse_year(row.get('which_year_did_you_join_the_workforce?', row.get('year_joined_workforce', row.get('workforce join year'))))
+                data['year_ordination'] = parse_year(row.get('year_of_ordination', row.get('year_ordination', row.get('ordination year'))))
+
+                # Handle is_ordained
+                ord_val = str(row.get('are_you_ordained?', row.get('is_ordained', ''))).lower()
+                if any(x in ord_val for x in ['yes', 'true', 'y', '1']):
+                    data['is_ordained'] = True
+                elif data['ordained_as']:
+                    data['is_ordained'] = True
+>>>>>>> e11383f (Added latest features)
                 
                 try:
                     if member:
@@ -438,11 +570,21 @@ class MemberViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
                         created_count += 1
                 except Exception as e:
                     skipped_count += 1
+<<<<<<< HEAD
                     if i < 5: skip_reasons.append(f"Row {i+1}: Save error - {str(e)}")
 
             status_msg = f"Import complete. Created: {created_count}, Updated: {updated_count}, Skipped: {skipped_count}."
             if skipped_count > 0:
                 status_msg += f" Reasons: {'; '.join(skip_reasons[:3])}"
+=======
+                    err_msg = f"Row {i+1}: Database error - {str(e)}"
+                    skip_reasons.append(err_msg)
+                    print(f"DEBUG IMPORT: {err_msg}")
+
+            status_msg = f"Import complete. Total: {len(df)}, Created: {created_count}, Updated: {updated_count}, Skipped: {skipped_count}."
+            if skipped_count > 0:
+                print(f"DEBUG IMPORT: Total skipped {skipped_count}. Reasons: {skip_reasons[:5]}")
+>>>>>>> e11383f (Added latest features)
             
             log_activity(request.user, AuditLog.Action.CREATE, 'Member', None, status_msg)
             
@@ -492,8 +634,17 @@ class MemberViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
                 'spouse_full_name': m.spouse_full_name,
                 'spouse_phone_number': m.spouse_phone_number,
                 'church_membership': m.church_membership,
+<<<<<<< HEAD
                 'department_post': m.department_post,
                 'year_joined': m.year_joined,
+=======
+                'family': m.family.name if m.family else '',
+                'departments': ", ".join(m.departments.values_list('name', flat=True)),
+                'department_post': m.department_post,
+                'year_joined_rccg': m.year_joined,
+                'year_joined_workforce': m.year_joined_workforce,
+                'is_ordained': 'Yes' if m.is_ordained else 'No',
+>>>>>>> e11383f (Added latest features)
                 'ordained_as': m.ordained_as,
                 'year_ordination': m.year_ordination,
                 'status': m.status,
@@ -518,8 +669,19 @@ class ServiceViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
     permission_classes = [IsAttendanceOfficerOrHigher]
 
 class AttendanceRecordViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
+<<<<<<< HEAD
     queryset = AttendanceRecord.objects.all()
     serializer_class = AttendanceRecordSerializer
+=======
+    queryset = AttendanceRecord.objects.all().order_by('-marked_at')
+    serializer_class = AttendanceRecordSerializer
+    pagination_class = StandardResultsSetPagination
+    from rest_framework.filters import SearchFilter, OrderingFilter
+    filter_backends = [SearchFilter, OrderingFilter]
+    search_fields = ['member__surname', 'member__firstname', 'service__name']
+    ordering_fields = ['marked_at']
+    ordering = ['-marked_at']
+>>>>>>> e11383f (Added latest features)
     
     def get_queryset(self):
         user = self.request.user
@@ -585,10 +747,70 @@ class AttendanceRecordViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet)
 
     @action(detail=False, methods=['get'])
     def history(self, request):
+<<<<<<< HEAD
         # Placeholder for complex filtering
         records = AttendanceRecord.objects.select_related('member', 'service').order_by('-marked_at')
         data = []
         for r in records:
+=======
+        queryset = self.get_queryset().select_related('member', 'service')
+        
+        # Apply SearchFilter manually or through filter_backends
+        queryset = self.filter_queryset(queryset)
+        
+        # Additional Filters
+        from_date = request.query_params.get('from_date')
+        to_date = request.query_params.get('to_date')
+        service_type = request.query_params.get('service_type')
+        
+        if from_date:
+            queryset = queryset.filter(service__service_date__gte=from_date)
+        if to_date:
+            queryset = queryset.filter(service__service_date__lte=to_date)
+        if service_type and service_type != 'all':
+            queryset = queryset.filter(service__service_type=service_type)
+            
+        # Stats based on filtered queryset
+        stats = {
+            'totalAttendance': queryset.count(),
+            'totalServices': queryset.values('service').distinct().count(),
+            'attendanceByType': dict(
+                queryset.values('service__service_type')
+                .annotate(count=Count('id'))
+                .values_list('service__service_type', 'count')
+            )
+        }
+        if stats['totalServices'] > 0:
+            stats['averageAttendance'] = round(stats['totalAttendance'] / stats['totalServices'])
+        else:
+            stats['averageAttendance'] = 0
+            
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            # We need to map the serialized data to the format the frontend expects
+            # or update the frontend to use the standard serializer output.
+            # For now, let's keep the custom format but paginated.
+            data = []
+            for r in page:
+                data.append({
+                    'id': str(r.id),
+                    'marked_at': r.marked_at,
+                    'member_id': str(r.member.id),
+                    'member_name': r.member.full_name,
+                    'service_date': r.service.service_date,
+                    'service_type': r.service.service_type,
+                    'service_name': r.service.name,
+                })
+            return self.get_paginated_response({
+                'records': data,
+                'stats': stats
+            })
+
+        # Fallback if no pagination
+        data = []
+        for r in queryset:
+>>>>>>> e11383f (Added latest features)
             data.append({
                 'id': str(r.id),
                 'marked_at': r.marked_at,
@@ -598,6 +820,7 @@ class AttendanceRecordViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet)
                 'service_type': r.service.service_type,
                 'service_name': r.service.name,
             })
+<<<<<<< HEAD
         
         total_services = Service.objects.count()
         total_attendance = AttendanceRecord.objects.count()
@@ -614,6 +837,9 @@ class AttendanceRecordViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet)
             )
         }
         
+=======
+            
+>>>>>>> e11383f (Added latest features)
         return Response({
             'records': data,
             'stats': stats
@@ -893,7 +1119,17 @@ class SettingsViewSet(viewsets.ViewSet):
 class ContributionViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
     queryset = Contribution.objects.all().order_by('-date', '-created_at')
     serializer_class = ContributionSerializer
+<<<<<<< HEAD
     permission_classes = [permissions.IsAuthenticated, IsAdmin | IsFinanceOfficer]
+=======
+    pagination_class = StandardResultsSetPagination
+    permission_classes = [permissions.IsAuthenticated, IsAdmin | IsFinanceOfficer]
+    from rest_framework.filters import SearchFilter, OrderingFilter
+    filter_backends = [SearchFilter, OrderingFilter]
+    search_fields = ['member__surname', 'member__firstname', 'notes', 'contribution_type']
+    ordering_fields = ['date', 'amount', 'created_at']
+    ordering = ['-date', '-created_at']
+>>>>>>> e11383f (Added latest features)
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -1119,6 +1355,10 @@ class InventoryItemViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
 class ExpenseViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
     queryset = Expense.objects.all().order_by('-date', '-created_at')
     serializer_class = ExpenseSerializer
+<<<<<<< HEAD
+=======
+    pagination_class = StandardResultsSetPagination
+>>>>>>> e11383f (Added latest features)
     permission_classes = [permissions.IsAuthenticated, IsAdmin | IsFinanceOfficer]
 
     def perform_create(self, serializer):
@@ -1219,8 +1459,18 @@ class CalendarEventViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
 class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = AuditLog.objects.all()
     serializer_class = AuditLogSerializer
+<<<<<<< HEAD
     permission_classes = [permissions.IsAuthenticated, IsAdmin]
     filterset_fields = ['user', 'action', 'model_name']
+=======
+    pagination_class = StandardResultsSetPagination
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+    from rest_framework.filters import SearchFilter, OrderingFilter
+    filter_backends = [SearchFilter, OrderingFilter]
+    search_fields = ['user__username', 'model_name', 'object_name', 'action']
+    ordering_fields = ['timestamp']
+    ordering = ['-timestamp']
+>>>>>>> e11383f (Added latest features)
 
     def get_queryset(self):
         return AuditLog.objects.all().order_by('-timestamp')
@@ -1237,6 +1487,10 @@ class DepartmentViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
 class ChildViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
     queryset = Child.objects.all().order_by('full_name')
     serializer_class = ChildSerializer
+<<<<<<< HEAD
+=======
+    pagination_class = StandardResultsSetPagination
+>>>>>>> e11383f (Added latest features)
     
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:

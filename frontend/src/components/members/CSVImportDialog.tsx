@@ -31,6 +31,10 @@ import {
 } from 'lucide-react';
 import { useMembers, NewMemberData, Member, Gender } from '@/hooks/useMembers';
 import { useToast } from '@/hooks/use-toast';
+<<<<<<< HEAD
+=======
+import { useQueryClient } from '@tanstack/react-query';
+>>>>>>> e11383f (Added latest features)
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import api from '@/lib/api';
@@ -51,6 +55,10 @@ interface ImportRow {
 export function CSVImportDialog({ open, onOpenChange, onImportComplete }: CSVImportDialogProps) {
   const { members, createMember } = useMembers();
   const { toast } = useToast();
+<<<<<<< HEAD
+=======
+  const queryClient = useQueryClient();
+>>>>>>> e11383f (Added latest features)
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [file, setFile] = useState<File | null>(null);
@@ -222,6 +230,7 @@ export function CSVImportDialog({ open, onOpenChange, onImportComplete }: CSVImp
         }
       });
       
+<<<<<<< HEAD
       toast({
         title: 'Migration Successful',
         description: response.data.status,
@@ -232,6 +241,29 @@ export function CSVImportDialog({ open, onOpenChange, onImportComplete }: CSVImp
       }
       
       console.log('Import Debug Info:', response.data.debug_info);
+=======
+      const { status: statusMsg, summary: importSummary, debug_info } = response.data;
+      
+      toast({
+        title: 'Migration Processed',
+        description: statusMsg,
+      });
+      
+      if (importSummary) {
+        setSummary({
+          total: importSummary.total_rows,
+          success: importSummary.created + importSummary.updated,
+          failed: importSummary.skipped,
+          skipped: importSummary.skipped,
+        });
+      }
+      
+      console.log('Import Debug Info:', debug_info);
+      
+      // Invalidate queries to refresh the list
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+>>>>>>> e11383f (Added latest features)
       
       if (onImportComplete) onImportComplete();
     } catch (error: any) {

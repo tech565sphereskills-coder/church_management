@@ -180,9 +180,19 @@ export function MemberDetailsSheet({
                 <Badge className="capitalize bg-slate-100 text-slate-800 hover:bg-slate-200 border-none">{member.church_membership || 'Member'}</Badge>
               </div>
               <div className="p-4 rounded-xl border border-slate-100 bg-white shadow-sm">
+<<<<<<< HEAD
                 <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Year Joined</p>
                 <p className="text-sm font-black text-slate-800">{member.year_joined || 'N/A'}</p>
               </div>
+=======
+                <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">RCCG Join Year</p>
+                <p className="text-sm font-black text-slate-800">{member.year_joined || 'N/A'}</p>
+              </div>
+              <div className="p-4 rounded-xl border border-slate-100 bg-white shadow-sm">
+                <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Workforce Join Year</p>
+                <p className="text-sm font-black text-slate-600">{member.year_joined_workforce || 'N/A'}</p>
+              </div>
+>>>>>>> e11383f (Added latest features)
               
               <div className="p-4 rounded-xl border border-slate-100 bg-white shadow-sm col-span-2">
                 <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Departments</p>
@@ -200,6 +210,7 @@ export function MemberDetailsSheet({
                 )}
               </div>
 
+<<<<<<< HEAD
               {member.ordained_as && (
                  <div className="p-4 rounded-xl border border-primary/20 bg-primary/5 shadow-sm col-span-2">
                     <div className="flex items-center gap-2 mb-2">
@@ -209,6 +220,23 @@ export function MemberDetailsSheet({
                     <div className="flex justify-between items-center">
                       <p className="text-sm font-black text-slate-800 uppercase tracking-tight">{member.ordained_as}</p>
                       <p className="text-xs text-slate-500">Year: {member.year_ordination || 'N/A'}</p>
+=======
+              {member.is_ordained && (
+                 <div className="p-4 rounded-xl border border-indigo-200 bg-indigo-50/30 shadow-sm col-span-2">
+                    <div className="flex items-center gap-2 mb-2">
+                      <ShieldCheck className="h-4 w-4 text-indigo-600" />
+                      <p className="text-[10px] text-indigo-600 font-bold uppercase tracking-widest">Ordained Minister</p>
+                    </div>
+                    <div className="flex justify-between items-center bg-white p-3 rounded-lg border border-indigo-50">
+                      <div>
+                        <p className="text-[9px] text-slate-400 uppercase font-black">Designation</p>
+                        <p className="text-sm font-black text-slate-800 uppercase tracking-tight">{member.ordained_as?.replace('_', ' ')}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[9px] text-slate-400 uppercase font-black">Year</p>
+                        <p className="text-sm font-black text-slate-800">{member.year_ordination || 'N/A'}</p>
+                      </div>
+>>>>>>> e11383f (Added latest features)
                     </div>
                  </div>
               )}

@@ -151,8 +151,15 @@ class Member(models.Model):
     family = models.ForeignKey(Family, on_delete=models.SET_NULL, null=True, blank=True, related_name='members')
     
     year_joined = models.IntegerField(blank=True, null=True)
+<<<<<<< HEAD
     date_joined = models.DateField(auto_now_add=True)
     
+=======
+    year_joined_workforce = models.IntegerField(blank=True, null=True)
+    date_joined = models.DateField(auto_now_add=True)
+    
+    is_ordained = models.BooleanField(default=False)
+>>>>>>> e11383f (Added latest features)
     ordained_as = models.CharField(max_length=20, choices=OrdinationRole.choices, blank=True, null=True)
     year_ordination = models.IntegerField(blank=True, null=True)
     

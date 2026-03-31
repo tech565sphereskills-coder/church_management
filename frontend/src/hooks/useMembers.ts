@@ -31,8 +31,15 @@ export interface Member {
   family_name?: string;
   
   year_joined: number | null;
+<<<<<<< HEAD
   date_joined: string;
   
+=======
+  year_joined_workforce: number | null;
+  date_joined: string;
+  
+  is_ordained: boolean;
+>>>>>>> e11383f (Added latest features)
   ordained_as: 'deacon' | 'deaconess' | 'full_pastor' | null;
   year_ordination: number | null;
   
@@ -65,6 +72,11 @@ export interface NewMemberData {
   family?: string;
   
   year_joined?: number;
+<<<<<<< HEAD
+=======
+  year_joined_workforce?: number;
+  is_ordained?: boolean;
+>>>>>>> e11383f (Added latest features)
   ordained_as?: string;
   year_ordination?: number;
   
@@ -72,20 +84,49 @@ export interface NewMemberData {
   invited_by?: string;
 }
 
+<<<<<<< HEAD
 export function useMembers() {
+=======
+export interface PaginatedMembers {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: Member[];
+}
+
+export function useMembers(page: number = 1, search: string = '', status: string = 'all') {
+>>>>>>> e11383f (Added latest features)
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
+<<<<<<< HEAD
   const { data: members = [], isLoading, refetch } = useQuery({
     queryKey: ['members'],
     queryFn: async () => {
       const response = await api.get('/members/');
+=======
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['members', page, search, status],
+    queryFn: async () => {
+      const params: Record<string, string | number> = { page };
+      if (search) params.search = search;
+      if (status && status !== 'all') params.status = status;
+      
+      const response = await api.get<PaginatedMembers>('/members/', { params });
+>>>>>>> e11383f (Added latest features)
       return response.data;
     },
     enabled: !!user,
   });
 
+<<<<<<< HEAD
+=======
+  const members = data?.results || [];
+  const totalCount = data?.count || 0;
+  const totalPages = Math.ceil(totalCount / 20); // 20 is the default PAGE_SIZE in settings.py
+
+>>>>>>> e11383f (Added latest features)
   const fetchMembers = useCallback(async () => {
     await refetch();
   }, [refetch]);
@@ -131,18 +172,32 @@ export function useMembers() {
       queryClient.invalidateQueries({ queryKey: ['members'] });
       queryClient.invalidateQueries({ queryKey: ['stats'] });
       return response.data;
+<<<<<<< HEAD
     } catch (error: any) {
       console.error('Error creating member:', error);
       if (error.response?.data?.phone) {
+=======
+    } catch (error: unknown) {
+      console.error('Error creating member:', error);
+      const err = error as { response?: { data?: { phone?: unknown, non_field_errors?: string[] } } };
+      if (err.response?.data?.phone) {
+>>>>>>> e11383f (Added latest features)
         toast({
           title: 'Duplicate Phone Number',
           description: 'A member with this phone number already exists.',
           variant: 'destructive',
         });
+<<<<<<< HEAD
       } else if (error.response?.data?.non_field_errors) {
         toast({
           title: 'Duplicate Registration',
           description: error.response.data.non_field_errors[0],
+=======
+      } else if (err.response?.data?.non_field_errors) {
+        toast({
+          title: 'Duplicate Registration',
+          description: err.response.data.non_field_errors[0],
+>>>>>>> e11383f (Added latest features)
           variant: 'destructive',
         });
       } else {
@@ -202,8 +257,71 @@ export function useMembers() {
     }
   };
 
+<<<<<<< HEAD
   return {
     members,
+=======
+  const exportMembers = async (): Promise<void> => {
+    try {
+      const response = await api.get('/members/export_excel/', {
+        responseType: 'blob'
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `members_export_${new Date().toISOString().split('T')[0]}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast({
+        title: 'Export Successful',
+        description: 'Members list has been exported to Excel.',
+      });
+    } catch (error) {
+      console.error('Error exporting members:', error);
+      toast({
+        title: 'Export Failed',
+        description: 'Could not export members list.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const importMembers = async (file: File): Promise<boolean> => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      await api.post('/members/import_members/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      toast({
+        title: 'Import Successful',
+        description: 'Member data has been updated from the file.',
+      });
+      return true;
+    } catch (error) {
+      console.error('Error importing members:', error);
+      toast({
+        title: 'Import Failed',
+        description: 'Please check your file format and try again.',
+        variant: 'destructive',
+      });
+      return false;
+    }
+  };
+
+  return {
+    members,
+    totalCount,
+    totalPages,
+>>>>>>> e11383f (Added latest features)
     loading,
     fetchMembers,
     searchMembers,
@@ -211,5 +329,10 @@ export function useMembers() {
     createMember,
     updateMember,
     deleteMember,
+<<<<<<< HEAD
+=======
+    exportMembers,
+    importMembers,
+>>>>>>> e11383f (Added latest features)
   };
 }

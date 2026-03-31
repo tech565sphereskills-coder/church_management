@@ -82,6 +82,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: null };
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
+<<<<<<< HEAD
+=======
+        console.error('Login error detail:', error.response?.data);
+        
+>>>>>>> e11383f (Added latest features)
         // Handle 2FA Required
         const responseData = error.response?.data as { 
           two_factor_required?: boolean; 
@@ -95,11 +100,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         const detail = responseData?.detail || 
                       responseData?.non_field_errors?.[0] || 
+<<<<<<< HEAD
                       JSON.stringify(responseData) ||
                       'Login failed';
         return { error: detail };
       }
       return { error: 'Login failed' };
+=======
+                      (typeof responseData === 'string' ? responseData : null) ||
+                      (error.code === 'ERR_NETWORK' ? 'Unable to connect to server. Please check if the backend is running.' : 'Login failed');
+        return { error: detail };
+      }
+      console.error('Non-axios login error:', error);
+      return { error: 'An unexpected error occurred. Please try again.' };
+>>>>>>> e11383f (Added latest features)
     }
   };
 
