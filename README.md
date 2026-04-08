@@ -113,5 +113,5 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ---
 
-**Developed for RCCG Emmanuel Sanctuary.**
+**Developed for RCCG Emmanuel Sanctuary. By Mike**
 
