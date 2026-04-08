@@ -8,7 +8,13 @@ export interface ChurchSettings {
   church_name: string;
   address: string | null;
   contact_email: string | null;
+  phone_number: string | null;
   logo_url: string | null;
+  website_url: string | null;
+  facebook_url: string | null;
+  instagram_url: string | null;
+  youtube_url: string | null;
+  service_times: string | null;
   attendance_reminders: boolean;
   new_member_alerts: boolean;
   weekly_reports: boolean;

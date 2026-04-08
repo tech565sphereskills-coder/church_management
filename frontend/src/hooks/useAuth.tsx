@@ -41,10 +41,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         can_manage_calendar, can_view_reports, can_manage_settings
       });
       setHodDepartments(hod_departments || []);
+      return { success: true };
     } catch (error) {
       console.error('Error fetching profile:', error);
-      setUser(null);
-      setRole(null);
+      
+      // If it's an auth error (401/403), we should clear user state
+      if (axios.isAxiosError(error) && (error.response?.status === 401 || error.response?.status === 403)) {
+        setUser(null);
+        setRole(null);
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+      }
+      // For other errors (500, network, etc.), we keep the user state but role remains null
+      return { success: false, error };
     } finally {
       setLoading(false);
     }
@@ -77,16 +86,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       if (refreshToken) localStorage.setItem('refresh_token', refreshToken);
       
-      await fetchUserProfile();
+      // Crucial: Wait for profile and handle failure
+      const profileResult = await fetchUserProfile();
+      
+      if (!profileResult.success) {
+        // If profile fetch failed even after successful login, it might be a server issue or account setup issue
+        return { error: 'Login successful, but failed to load your profile. Please contact support.' };
+      }
       
       return { error: null };
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
-<<<<<<< HEAD
-=======
         console.error('Login error detail:', error.response?.data);
         
->>>>>>> e11383f (Added latest features)
         // Handle 2FA Required
         const responseData = error.response?.data as { 
           two_factor_required?: boolean; 
@@ -100,20 +112,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         const detail = responseData?.detail || 
                       responseData?.non_field_errors?.[0] || 
-<<<<<<< HEAD
-                      JSON.stringify(responseData) ||
-                      'Login failed';
-        return { error: detail };
-      }
-      return { error: 'Login failed' };
-=======
                       (typeof responseData === 'string' ? responseData : null) ||
                       (error.code === 'ERR_NETWORK' ? 'Unable to connect to server. Please check if the backend is running.' : 'Login failed');
         return { error: detail };
       }
       console.error('Non-axios login error:', error);
       return { error: 'An unexpected error occurred. Please try again.' };
->>>>>>> e11383f (Added latest features)
+
     }
   };
 
@@ -133,8 +138,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
+    delete api.defaults.headers.common['Authorization'];
     setUser(null);
     setRole(null);
+    setPermissions({
+      can_manage_members: false,
+      can_manage_attendance: false,
+      can_manage_financials: false,
+      can_manage_departments: false,
+      can_manage_children: false,
+      can_manage_prayer_requests: false,
+      can_manage_calendar: false,
+      can_view_reports: false,
+      can_manage_settings: false,
+    });
   };
 
   const isAdmin = role === 'admin';

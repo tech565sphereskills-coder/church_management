@@ -23,18 +23,12 @@ interface AttendanceStats {
 export function useAttendanceHistory(
   dateRange: { from: Date | undefined; to: Date | undefined },
   serviceType?: string,
-<<<<<<< HEAD
-  searchQuery?: string
-) {
-  const [records, setRecords] = useState<AttendanceRecord[]>([]);
-=======
   searchQuery?: string,
   page: number = 1
 ) {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
->>>>>>> e11383f (Added latest features)
   const [stats, setStats] = useState<AttendanceStats>({
     totalServices: 0,
     totalAttendance: 0,
@@ -47,21 +41,13 @@ export function useAttendanceHistory(
   const fetchAttendanceHistory = useCallback(async () => {
     try {
       setLoading(true);
-<<<<<<< HEAD
-      const params: Record<string, string> = {};
-=======
       const params: Record<string, string> = { page: page.toString() };
->>>>>>> e11383f (Added latest features)
       if (dateRange.from) params.from_date = format(dateRange.from, 'yyyy-MM-dd');
       if (dateRange.to) params.to_date = format(dateRange.to, 'yyyy-MM-dd');
       if (serviceType && serviceType !== 'all') params.service_type = serviceType;
       if (searchQuery) params.search = searchQuery;
 
       const response = await api.get('/attendance/history/', { params });
-<<<<<<< HEAD
-      setRecords(response.data.records);
-      setStats(response.data.stats);
-=======
       
       // Handle DRF paginated response
       if (response.data.results) {
@@ -75,7 +61,6 @@ export function useAttendanceHistory(
         setTotalCount(response.data.records.length);
         setTotalPages(1);
       }
->>>>>>> e11383f (Added latest features)
     } catch (error: unknown) {
       console.error('Error fetching attendance history:', error);
       toast({
@@ -86,21 +71,13 @@ export function useAttendanceHistory(
     } finally {
       setLoading(false);
     }
-<<<<<<< HEAD
-  }, [dateRange.from, dateRange.to, serviceType, searchQuery, toast]);
-=======
   }, [dateRange.from, dateRange.to, serviceType, searchQuery, page, toast]);
->>>>>>> e11383f (Added latest features)
 
   useEffect(() => {
     fetchAttendanceHistory();
   }, [fetchAttendanceHistory]);
 
-<<<<<<< HEAD
-  return { records, stats, loading, refetch: fetchAttendanceHistory };
-=======
   return { records, stats, loading, totalCount, totalPages, refetch: fetchAttendanceHistory };
->>>>>>> e11383f (Added latest features)
 }
 
 export function useMonthlyAttendanceData() {

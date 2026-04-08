@@ -11,17 +11,13 @@ import {
   Filter, 
   Download,
   UserCheck,
+  LayoutDashboard,
+  PieChart,
   TrendingUp,
   Award,
   Zap,
   Clock,
   UserX,
-  ArrowDownCircle,
-  ArrowUpCircle,
-  Scale,
-  Edit2,
-  Trash2,
-  AlertTriangle,
   Smartphone,
   CheckCircle2
 } from 'lucide-react';
@@ -41,10 +37,9 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { useMembers, Member } from '@/hooks/useMembers';
+import { useMembers, Member, NewMemberData } from '@/hooks/useMembers';
 import { useAttendance, ServiceType } from '@/hooks/useAttendance';
 import { useOfflineAttendance } from '@/hooks/useOfflineAttendance';
-import { NewMemberData } from '@/components/members/NewMemberDialog';
 
 interface LocationState {
   serviceType?: ServiceType;
@@ -94,7 +89,7 @@ export default function Attendance() {
   const [isServiceQROpen, setIsServiceQROpen] = useState(false);
   const [offlineMarkedIds, setOfflineMarkedIds] = useState<string[]>([]);
   const [selectedMemberQR, setSelectedMemberQR] = useState<{ name: string; qrCode: string } | null>(null);
-  const [activeTab, setActiveTab] = useState('search');
+  const [activeTab, setActiveTab] = useState('snapshot');
   const [deptFilter, setDeptFilter] = useState('all');
 
   const pendingQueueCount = queue.filter(q => q.status === 'pending').length;
@@ -107,13 +102,10 @@ export default function Attendance() {
     setOfflineMarkedIds(offlineIds);
   }, [pendingRecords]);
 
-<<<<<<< HEAD
-=======
   useEffect(() => {
     document.title = 'Attendance Tracking | RCCG Emmanuel Sanctuary';
   }, []);
 
->>>>>>> e11383f (Added latest features)
   const today = new Date().toLocaleDateString('en-NG', {
     weekday: 'long',
     year: 'numeric',
@@ -432,34 +424,132 @@ export default function Attendance() {
         )}
 
         {/* Attendance Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5">
-            <TabsTrigger value="search" className="gap-2">
-              <Search className="h-4 w-4" />
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6 w-full overflow-hidden">
+          <TabsList className="flex w-full overflow-x-auto justify-start border-b rounded-none bg-transparent h-auto p-0 scrollbar-hide">
+            <TabsTrigger value="snapshot" className="flex-1 min-w-[100px] border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none py-3">
+              <LayoutDashboard className="h-4 w-4 ml-1" />
+              Snapshot
+            </TabsTrigger>
+            <TabsTrigger value="search" className="flex-1 min-w-[100px] border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none py-3">
+              <Search className="h-4 w-4 ml-1" />
               Search
             </TabsTrigger>
-            <TabsTrigger value="browse" className="gap-2">
-              <Users className="h-4 w-4" />
+            <TabsTrigger value="browse" className="flex-1 min-w-[100px] border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none py-3">
+              <Users className="h-4 w-4 ml-1" />
               Browse
             </TabsTrigger>
-            <TabsTrigger value="marked" className="gap-2">
-              <Check className="h-4 w-4" />
+            <TabsTrigger value="marked" className="flex-1 min-w-[100px] border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none py-3">
+              <Check className="h-4 w-4 ml-1" />
               Marked
             </TabsTrigger>
-            <TabsTrigger value="absent" className="gap-2 text-rose-600 data-[state=active]:text-rose-700">
-              <UserX className="h-4 w-4" />
+            <TabsTrigger value="absent" className="flex-1 min-w-[100px] border-b-2 border-transparent data-[state=active]:border-rose-600 data-[state=active]:bg-transparent rounded-none py-3 text-rose-600">
+              <UserX className="h-4 w-4 ml-1" />
               Absent
             </TabsTrigger>
-            <TabsTrigger value="queue" className="gap-2 relative">
+            <TabsTrigger value="queue" className="flex-1 min-w-[100px] border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none py-3 relative">
               <Smartphone className="h-4 w-4" />
               Queue
               {pendingQueueCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white animate-pulse">
+                <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white animate-pulse">
                   {pendingQueueCount}
                 </span>
               )}
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="snapshot" className="mt-6">
+            <div className="grid gap-6 md:grid-cols-2">
+              {/* Present Section */}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="bg-white rounded-[2rem] border border-emerald-100 p-6 shadow-sm"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600">
+                      <UserCheck className="h-6 w-6" />
+                    </div>
+                    <h3 className="text-lg font-black text-slate-800">Present Individuals</h3>
+                  </div>
+                  <Badge className="bg-emerald-500 text-white border-none font-bold">
+                    {todayAttendance.length + offlineMarkedIds.length} Total
+                  </Badge>
+                </div>
+
+                <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                  {members
+                    .filter(m => todayAttendance.includes(m.id) || offlineMarkedIds.includes(m.id))
+                    .sort((a, b) => a.full_name.localeCompare(b.full_name))
+                    .map((member) => (
+                      <div key={member.id} className="flex items-center justify-between p-3 rounded-xl bg-emerald-50/50 border border-emerald-100/50">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback className="bg-emerald-100 text-emerald-700 text-[10px] font-bold">
+                              {getInitials(member.full_name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-sm font-bold text-slate-700">{member.full_name}</span>
+                        </div>
+                        <span className="text-[10px] font-black uppercase text-emerald-600">Confirmed</span>
+                      </div>
+                    ))}
+                  {(todayAttendance.length + offlineMarkedIds.length) === 0 && (
+                    <div className="text-center py-12 text-slate-400 font-medium">
+                      No one has checked in yet.
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+
+              {/* Absent Section */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="bg-white rounded-[2rem] border border-rose-100 p-6 shadow-sm"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 bg-rose-100 rounded-xl flex items-center justify-center text-rose-600">
+                      <UserX className="h-6 w-6" />
+                    </div>
+                    <h3 className="text-lg font-black text-slate-800">Not Available (Absent)</h3>
+                  </div>
+                  <Badge className="bg-rose-500 text-white border-none font-bold">
+                    {absentMembers.length} Total
+                  </Badge>
+                </div>
+
+                <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                  {absentMembers.map((member) => (
+                    <div key={member.id} className="flex items-center justify-between p-3 rounded-xl bg-rose-50/50 border border-rose-100/50">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8 grayscale opacity-70">
+                          <AvatarFallback className="bg-slate-100 text-slate-500 text-[10px] font-bold">
+                            {getInitials(member.full_name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm font-bold text-slate-500">{member.full_name}</span>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="h-7 text-[10px] font-black text-rose-500 hover:text-rose-600 hover:bg-rose-50"
+                        onClick={() => handleMarkAttendance(member)}
+                      >
+                        Mark Present
+                      </Button>
+                    </div>
+                  ))}
+                  {absentMembers.length === 0 && (
+                    <div className="text-center py-12 text-emerald-500 font-bold">
+                      Amazing! Everyone is present!
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </div>
+          </TabsContent>
 
           <TabsContent value="search" className="mt-6">
             <motion.div
@@ -508,23 +598,24 @@ export default function Attendance() {
               animate={{ opacity: 1, scale: 1 }}
               className="space-y-4"
             >
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     placeholder="Filter names..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9"
+                    className="pl-9 h-11 rounded-xl shadow-sm border-slate-200"
                   />
                 </div>
                 <div className="flex items-center gap-2">
-                  <Filter className="h-4 w-4 text-muted-foreground" />
+                  <Filter className="h-4 w-4 text-muted-foreground hidden sm:block" />
                   <Select value={deptFilter} onValueChange={setDeptFilter}>
-                    <SelectTrigger className="w-[180px]">
+                    <SelectTrigger className="w-full sm:w-[180px] h-11 rounded-xl shadow-sm border-slate-200 bg-white">
                       <SelectValue placeholder="Department" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="all">All Departments</SelectItem>
                       {departments.map((d) => (
                         <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                       ))}
@@ -597,15 +688,15 @@ export default function Attendance() {
                         </div>
 
                         <div className="mb-6">
-                          <h3 className="text-lg font-bold text-slate-900 group-hover:text-primary transition-colors">
+                          <h3 className="text-lg font-black text-slate-900 group-hover:text-primary transition-colors leading-tight">
                             {member.full_name}
                           </h3>
-                          <div className="flex flex-col gap-1 mt-1">
-                            <p className="text-sm font-medium text-slate-500 flex items-center gap-1.5">
+                          <div className="flex flex-col gap-1.5 mt-2">
+                            <p className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
                               <Smartphone className="h-3.5 w-3.5 text-slate-300" />
                               {member.phone || 'No phone'}
                             </p>
-                            <p className="text-xs font-bold uppercase tracking-tighter text-slate-400">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-50 px-2 py-0.5 rounded-md w-fit">
                               {member.department_names?.join(', ') || 'General Member'}
                             </p>
                           </div>
@@ -615,22 +706,22 @@ export default function Attendance() {
                           <Button
                             onClick={() => handleMarkAttendance(member)}
                             disabled={isMarked}
-                            className={`w-full h-11 rounded-xl font-bold transition-all ${
+                            className={`w-full h-12 rounded-2xl font-black transition-all shadow-lg ${
                               isMarked 
-                                ? 'bg-success/10 text-success hover:bg-success/10 cursor-default' 
-                                : 'btn-gold shadow-lg shadow-primary/20'
+                                ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-50 cursor-default shadow-none border border-emerald-100' 
+                                : 'btn-gold shadow-primary/20'
                             }`}
                           >
                             {isMarked ? (
-                              <>
-                                <CheckCircle2 className="mr-2 h-4 w-4" />
-                                Marked Present
-                              </>
+                              <span className="flex items-center justify-center gap-2">
+                                <CheckCircle2 className="h-5 w-5" />
+                                CONFIRMED PRESENT
+                              </span>
                             ) : (
-                              <>
-                                <Check className="mr-2 h-4 w-4" />
-                                Mark Attendance
-                              </>
+                              <span className="flex items-center justify-center gap-2">
+                                <Check className="h-5 w-5" />
+                                MARK AS PRESENT
+                              </span>
                             )}
                           </Button>
                         )}
@@ -680,24 +771,24 @@ export default function Attendance() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.02 }}
-                    className={`flex items-center justify-between p-4 rounded-xl border border-border bg-card transition-all hover:shadow-md ${isMarked ? 'bg-success/5 border-success/20' : ''}`}
+                    className={`flex items-center justify-between p-4 rounded-2xl border transition-all hover:shadow-md ${isMarked ? 'bg-emerald-50/50 border-emerald-100' : 'bg-white border-slate-100 shadow-sm'}`}
                   >
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarFallback className="bg-primary/10 text-primary">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Avatar className="h-10 w-10 shadow-inner">
+                        <AvatarFallback className={`${isMarked ? 'bg-emerald-100 text-emerald-600' : 'bg-primary/10 text-primary'} text-xs font-black`}>
                           {getInitials(member.full_name)}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="overflow-hidden">
-                        <p className="font-semibold text-sm truncate">{member.full_name}</p>
-                        <p className="text-[10px] text-muted-foreground truncate">{member.department_names?.join(', ') || 'General'}</p>
+                      <div className="min-w-0">
+                        <p className={`font-black text-sm truncate ${isMarked ? 'text-emerald-700' : 'text-slate-800'}`}>{member.full_name}</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">{member.department_names?.join(', ') || 'General'}</p>
                       </div>
                     </div>
                     <Button
                       size="sm"
                       onClick={() => handleMarkAttendance(member)}
                       disabled={isMarked}
-                      className={`h-8 px-3 ${isMarked ? 'bg-success text-success-foreground' : 'btn-gold'}`}
+                      className={`h-9 px-4 rounded-xl font-black text-[10px] uppercase tracking-wider ${isMarked ? 'bg-emerald-500 text-white' : 'btn-gold'}`}
                     >
                       {isMarked ? <Check className="h-4 w-4" /> : 'Mark'}
                     </Button>
@@ -705,8 +796,11 @@ export default function Attendance() {
                 );
               })}
               {filteredBrowseMembers.length === 0 && (
-                <div key="no-members" className="col-span-full py-12 text-center text-muted-foreground">
-                  No members found matching filters.
+                <div key="no-members" className="col-span-full py-20 text-center flex flex-col items-center gap-4 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+                  <div className="h-16 w-16 bg-white rounded-full flex items-center justify-center shadow-sm">
+                    <Search className="h-8 w-8 text-slate-300" />
+                  </div>
+                  <p className="text-sm font-bold text-slate-500">No members match your current filters.</p>
                 </div>
               )}
             </motion.div>
@@ -871,8 +965,9 @@ export default function Attendance() {
             </motion.div>
           ) : null}
         </AnimatePresence>
+      </div>
 
-      {/* Dialogs */}
+      {/* Dialogs & Overlays */}
       <NewMemberDialog
         open={isNewMemberOpen}
         onOpenChange={setIsNewMemberOpen}
@@ -904,12 +999,32 @@ export default function Attendance() {
           description="Scan to check in with your phone number"
         />
       )}
-      </div>
+
       <SuccessAnimation 
         isVisible={showSuccess} 
         onClose={() => setShowSuccess(false)} 
         message="Attendance Marked!"
       />
+
+      {/* Mobile Floating Action Button (FAB) for QR Scan */}
+      <AnimatePresence>
+        {canManageAttendance && (
+          <motion.div
+            initial={{ scale: 0, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            className="fixed bottom-8 right-8 z-40 lg:hidden shadow-2xl rounded-full"
+          >
+            <Button
+              onClick={() => setIsScannerOpen(true)}
+              className="h-16 w-16 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-[0_10px_40px_rgba(79,70,229,0.4)] flex items-center justify-center p-0 border-4 border-white dark:border-slate-800 transition-shadow"
+            >
+              <Camera className="h-6 w-6" />
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

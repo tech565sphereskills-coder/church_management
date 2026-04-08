@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Users, UserCheck, UserPlus, TrendingUp, AlertTriangle, UserX } from 'lucide-react';
+import { Users, UserCheck, UserPlus, TrendingUp, AlertTriangle, UserX, Calendar } from 'lucide-react';
 import api from '@/lib/api';
 import { Header } from '@/components/layout/Header';
 import { StatCard } from '@/components/dashboard/StatCard';
@@ -15,7 +15,9 @@ import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { DepartmentDistribution } from '@/components/dashboard/DepartmentDistribution';
+import { ActivityStream } from '@/components/dashboard/ActivityStream';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -78,12 +80,13 @@ export default function AdminDashboard() {
   };
 
   const loading = statsLoading || deptLoading;
+  const isInitialLoading = loading && !dashboardStats;
 
   const getInitials = (name: string) => {
     return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
-  if (loading) {
+  if (isInitialLoading) {
     return (
       <div className="min-h-screen">
         <Header title="Dashboard" subtitle="Loading..." />
@@ -134,14 +137,22 @@ export default function AdminDashboard() {
         subtitle={`Welcome back${role ? `, ${role.replace('_', ' ')}` : ''}. Here's your church overview.`}
       />
 
-      <div className="flex-1 p-4 md:p-6 space-y-8 max-w-7xl mx-auto w-full">
+      <div className="flex-1 p-4 md:p-8 space-y-10 max-w-7xl mx-auto w-full">
         <WelcomeCard />
         
-        {/* Stats Grid — 5 cards */}
-        <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+        {/* Stats Grid — Optimized for Mobile Density (2 cols on xs) */}
+        <div className="grid gap-4 md:gap-6 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
           <StatCard title="Total Members" value={stats.totalMembers} icon={Users} delay={0} />
           <StatCard title="Active Members" value={stats.activeMembers} icon={UserCheck} variant="primary" delay={0.1} />
-          <StatCard title="Today's Attendance" value={stats.todayAttendance} icon={TrendingUp} delay={0.2} />
+          <div className="relative group">
+            <StatCard title="Live Attendance" value={stats.todayAttendance} icon={TrendingUp} delay={0.2} />
+            {stats.todayAttendance > 0 && (
+              <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 z-20">
+                <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[10px] font-black text-emerald-600 uppercase tracking-tighter">Live</span>
+              </div>
+            )}
+          </div>
           <StatCard title="New This Month" value={stats.newThisMonth} icon={UserPlus} variant="accent" delay={0.3} />
           <StatCard title="Inactive Members" value={stats.inactiveMembers} icon={UserX} delay={0.4} />
         </div>
@@ -208,62 +219,41 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Recent Activity */}
-        <div className="mt-8 grid gap-6 lg:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Attendance</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {recentAttendance.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">No attendance records yet</p>
-              ) : (
-                <div className="space-y-4">
-                  {recentAttendance.map((record) => (
-                    <div key={record.id} className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarFallback className="bg-primary/10 text-primary">
-                            {getInitials(record.members?.full_name || 'U')}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium">{record.members?.full_name}</p>
-                          <p className="text-sm text-muted-foreground">{record.members?.department || 'General'}</p>
-                        </div>
+        {/* Recent Activity Stream */}
+        <div className="mt-8 grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <ActivityStream />
+          </div>
+          <div className="space-y-6">
+            <Card className="border-slate-100 shadow-premium overflow-hidden">
+              <CardHeader className="bg-slate-50/50 border-b border-slate-100">
+                <CardTitle className="text-lg font-black text-slate-800 flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-primary" />
+                  Upcoming Services
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="divide-y divide-slate-100">
+                  {[
+                    { day: 'Sunday', time: '8:00 AM', name: 'First Service', type: 'Full' },
+                    { day: 'Sunday', time: '10:30 AM', name: 'Second Service', type: 'Full' },
+                    { day: 'Wednesday', time: '6:00 PM', name: 'Midweek Service', type: 'Interactive' },
+                  ].map((service, index) => (
+                    <div key={index} className="flex items-center justify-between p-4 hover:bg-slate-50/50 transition-colors group">
+                      <div>
+                        <p className="font-bold text-slate-800 group-hover:text-primary transition-colors">{service.name}</p>
+                        <p className="text-xs font-medium text-slate-400 capitalize">{service.day} at {service.time}</p>
                       </div>
-                      <span className="text-sm text-muted-foreground">
-                        {new Date(record.marked_at).toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit' })}
-                      </span>
+                      <Badge variant="outline" className="text-[10px] font-black border-slate-200 text-slate-500">{service.type}</Badge>
                     </div>
                   ))}
                 </div>
-              )}
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Upcoming Services</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {[
-                  { day: 'Sunday', time: '8:00 AM', name: 'First Service' },
-                  { day: 'Sunday', time: '10:30 AM', name: 'Second Service' },
-                  { day: 'Wednesday', time: '6:00 PM', name: 'Midweek Service' },
-                ].map((service, index) => (
-                  <div key={index} className="flex items-center justify-between rounded-lg border border-border p-4">
-                    <div>
-                      <p className="font-medium">{service.name}</p>
-                      <p className="text-sm text-muted-foreground">{service.day} at {service.time}</p>
-                    </div>
-                    <div className="h-3 w-3 rounded-full bg-accent animate-pulse-glow" />
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                <div className="p-4 bg-primary/5">
+                   <p className="text-[10px] font-black text-primary uppercase tracking-widest text-center">Sanctuary Doors Open 30m Prior</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>

@@ -20,6 +20,7 @@ import {
   HandHelping,
   CalendarDays,
   Calendar as CalendarIcon,
+  Cake,
   ShieldCheck,
   PieChart,
   Package,
@@ -28,6 +29,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from 'next-themes';
+import { useSidebar } from '@/context/sidebar-context';
 
 const RCCG_LOGO_URL = 'https://res.cloudinary.com/dnglp9qfd/image/upload/v1770460225/Rccg_logo_ttgxko.png';
 
@@ -46,6 +48,7 @@ const menuItems: MenuItem[] = [
   { icon: UserCheck, label: 'Attendance', path: '/attendance', permission: 'canManageAttendance' },
   { icon: Users, label: 'Members', path: '/members', permission: 'canManageMembers' },
   { icon: MessageSquare, label: 'Messaging', path: '/messaging' },
+  { icon: Cake, label: 'Celebrations', path: '/birthdays', permission: 'canManageMembers' },
   { icon: AlertTriangle, label: 'Follow-Up', path: '/follow-up', permission: 'canManageMembers' },
   { icon: Banknote, label: 'Financials', path: '/financials', permission: 'canManageFinances' },
   { icon: Building2, label: 'Departments', path: '/departments', permission: 'canManageDepartments' },
@@ -69,10 +72,23 @@ interface AppSidebarProps {
   onMobileClose?: () => void;
 }
 
-export function AppSidebar({ isCollapsed, onToggle, isMobile, mobileOpen, onMobileClose }: AppSidebarProps) {
+import {
+  Sheet,
+  SheetContent,
+} from "@/components/ui/sheet";
+
+export function AppSidebar() {
+  const { isCollapsed, setIsCollapsed, isMobile, mobileOpen, setMobileOpen } = useSidebar();
   const location = useLocation();
   const { user, role, signOut, isAdmin, ...authProps } = useAuth();
   const { theme, setTheme } = useTheme();
+
+  const onToggle = () => {
+    if (isMobile) setMobileOpen(!mobileOpen);
+    else setIsCollapsed(!isCollapsed);
+  };
+  
+  const onMobileClose = () => setMobileOpen(false);
 
   const getUserInitials = () => {
     if (!user?.email) return 'U';
@@ -93,65 +109,50 @@ export function AppSidebar({ isCollapsed, onToggle, isMobile, mobileOpen, onMobi
   };
 
   const handleNavClick = () => {
-    if (isMobile && onMobileClose) onMobileClose();
+    if (isMobile) onMobileClose();
   };
 
-  // On mobile, render as a sliding drawer
-  if (isMobile) {
-    return (
-      <AnimatePresence>
-        {mobileOpen && (
-          <motion.aside
-            initial={{ x: -280 }}
-            animate={{ x: 0 }}
-            exit={{ x: -280 }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
-            className="fixed left-0 top-0 z-40 flex h-screen w-[280px] flex-col bg-sidebar text-sidebar-foreground"
-          >
-            <SidebarContent
-              isCollapsed={false}
-              onToggle={onToggle}
-              location={location}
-              isAdmin={isAdmin}
-              authProps={authProps}
-              user={user}
-              role={role}
-              signOut={signOut}
-              getUserInitials={getUserInitials}
-              getRoleLabel={getRoleLabel}
-              onNavClick={handleNavClick}
-              theme={theme}
-              setTheme={setTheme}
-            />
-          </motion.aside>
-        )}
-      </AnimatePresence>
-    );
-  }
+  const sidebarContent = (
+    <SidebarContent
+      isCollapsed={isMobile ? false : isCollapsed}
+      onToggle={onToggle}
+      location={location}
+      isAdmin={isAdmin}
+      authProps={authProps}
+      user={user}
+      role={role}
+      signOut={signOut}
+      getUserInitials={getUserInitials}
+      getRoleLabel={getRoleLabel}
+      onNavClick={handleNavClick}
+      theme={theme}
+      setTheme={setTheme}
+      isMobile={isMobile || false}
+      onMobileClose={onMobileClose}
+    />
+  );
 
   return (
-    <motion.aside
-      initial={false}
-      animate={{ width: isCollapsed ? 80 : 280 }}
-      transition={{ duration: 0.3, ease: 'easeInOut' }}
-      className="fixed left-0 top-0 z-40 flex h-screen flex-col bg-sidebar text-sidebar-foreground print:hidden"
-    >
-      <SidebarContent
-        isCollapsed={isCollapsed}
-        onToggle={onToggle}
-        location={location}
-        isAdmin={isAdmin}
-        authProps={authProps}
-        user={user}
-        role={role}
-        signOut={signOut}
-        getUserInitials={getUserInitials}
-        getRoleLabel={getRoleLabel}
-        onNavClick={handleNavClick}
-        theme={theme}
-        setTheme={setTheme}
-      />
-    </motion.aside>
+    <>
+      {/* Mobile Professional Drawer (Sheet) */}
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetContent side="left" className="p-0 border-none w-[280px]">
+          <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground shadow-2xl">
+            {sidebarContent}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Desktop Aside Version (Responsively hidden below LG) */}
+      <motion.aside
+        initial={false}
+        animate={{ width: isCollapsed ? 80 : 280 }}
+        transition={{ duration: 0.3, ease: 'easeInOut' }}
+        className="fixed left-0 top-0 z-40 hidden lg:flex h-screen flex-col bg-sidebar text-sidebar-foreground print:hidden"
+      >
+        {sidebarContent}
+      </motion.aside>
+    </>
   );
 }
 
@@ -169,11 +170,13 @@ interface SidebarContentProps {
   onNavClick: () => void;
   theme: string | undefined;
   setTheme: (t: string) => void;
+  isMobile: boolean;
+  onMobileClose?: () => void;
 }
 
 function SidebarContent({
   isCollapsed, onToggle, location, isAdmin, authProps, user, signOut,
-  getUserInitials, getRoleLabel, onNavClick, theme, setTheme,
+  getUserInitials, getRoleLabel, onNavClick, theme, setTheme, isMobile, onMobileClose
 }: SidebarContentProps) {
   return (
     <>
@@ -192,12 +195,13 @@ function SidebarContent({
                 <img src={RCCG_LOGO_URL} alt="RCCG Logo" className="h-full w-full object-contain" />
               </div>
               <div className="flex flex-col">
-                <span className="font-display text-lg font-semibold leading-tight">RCCG</span>
-                <span className="text-xs text-sidebar-foreground/70">Emmanuel Sanctuary</span>
+                <span className="font-display text-lg font-semibold leading-tight text-sidebar-foreground">RCCG</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-sidebar-foreground/50">Emmanuel Sanctuary</span>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
+
 
         {isCollapsed && (
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-white dark:bg-white/10 p-1 ring-1 ring-white/10">

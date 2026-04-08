@@ -32,8 +32,6 @@ import { useDepartments } from '@/hooks/useDepartments';
 import { useFamilies, Family } from '@/hooks/useFamilies';
 import { MemberStatus, NewMemberData, Gender } from '@/hooks/useMembers';
 
-// Departments constant removed to use dynamic data
-
 const formSchema = z.object({
   surname: z.string().min(2, 'Surname must be at least 2 characters'),
   firstname: z.string().min(2, 'Firstname must be at least 2 characters'),
@@ -52,12 +50,9 @@ const formSchema = z.object({
   church_membership: z.enum(['worker', 'minister']).optional().or(z.literal('')),
   department_post: z.string().optional(),
   year_joined: z.string().optional(),
-<<<<<<< HEAD
-=======
   year_joined_workforce: z.string().optional(),
   is_ordained: z.boolean().default(false),
->>>>>>> e11383f (Added latest features)
-  ordained_as: z.enum(['deacon', 'deaconess', 'full_pastor']).optional().or(z.literal('')),
+  ordained_as: z.enum(['deacon', 'deaconess', 'minister', 'assistant_pastor', 'full_pastor']).optional().or(z.literal('')),
   year_ordination: z.string().optional(),
 });
 
@@ -101,11 +96,8 @@ export function NewMemberDialog({
       church_membership: '',
       department_post: '',
       year_joined: '',
-<<<<<<< HEAD
-=======
       year_joined_workforce: '',
       is_ordained: false,
->>>>>>> e11383f (Added latest features)
       ordained_as: '',
       year_ordination: '',
     },
@@ -144,11 +136,8 @@ export function NewMemberDialog({
       church_membership: data.church_membership || undefined,
       department_post: data.department_post || undefined,
       year_joined: data.year_joined ? parseInt(data.year_joined) : undefined,
-<<<<<<< HEAD
-=======
       year_joined_workforce: data.year_joined_workforce ? parseInt(data.year_joined_workforce) : undefined,
       is_ordained: data.is_ordained,
->>>>>>> e11383f (Added latest features)
       ordained_as: data.ordained_as || undefined,
       year_ordination: data.year_ordination ? parseInt(data.year_ordination) : undefined,
     };
@@ -206,7 +195,6 @@ export function NewMemberDialog({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            {/* Personal Information */}
             <div className="space-y-4">
               <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 border-b pb-2">Personal Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -318,7 +306,6 @@ export function NewMemberDialog({
               </div>
             </div>
 
-            {/* Family & Marital Status */}
             <div className="space-y-4">
               <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 border-b pb-2">Family & Marital Status</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -403,7 +390,6 @@ export function NewMemberDialog({
               )}
             </div>
 
-            {/* Church Membership */}
             <div className="space-y-4">
               <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 border-b pb-2">Church Membership</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -448,9 +434,6 @@ export function NewMemberDialog({
                   name="year_joined"
                   render={({ field }) => (
                     <FormItem>
-<<<<<<< HEAD
-                      <FormLabel>Year Joined</FormLabel>
-=======
                       <FormLabel>Year Joined RCCG</FormLabel>
                       <FormControl>
                         <Input type="number" placeholder="YYYY" {...field} />
@@ -459,13 +442,13 @@ export function NewMemberDialog({
                     </FormItem>
                   )}
                 />
+                
                 <FormField
                   control={form.control}
                   name="year_joined_workforce"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Year Joined Workforce</FormLabel>
->>>>>>> e11383f (Added latest features)
                       <FormControl>
                         <Input type="number" placeholder="YYYY" {...field} />
                       </FormControl>
@@ -511,45 +494,7 @@ export function NewMemberDialog({
               />
             </div>
 
-            {/* Ordination Details */}
             <div className="space-y-4">
-<<<<<<< HEAD
-              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 border-b pb-2">Ordination Details</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="ordained_as"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Currently Ordained As</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select ordination" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="deacon">Deacon</SelectItem>
-                          <SelectItem value="deaconess">Deaconess</SelectItem>
-                          <SelectItem value="full_pastor">Full Pastor</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="year_ordination"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Year of Ordination</FormLabel>
-                      <FormControl>
-                        <Input type="number" placeholder="YYYY" {...field} />
-                      </FormControl>
-                      <FormMessage />
-=======
               <div className="flex items-center justify-between border-b pb-2">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">Ordination Details</h3>
                 <FormField
@@ -564,13 +509,10 @@ export function NewMemberDialog({
                         />
                       </FormControl>
                       <FormLabel className="text-xs font-black uppercase text-indigo-600 cursor-pointer">Are you ordained?</FormLabel>
->>>>>>> e11383f (Added latest features)
                     </FormItem>
                   )}
                 />
               </div>
-<<<<<<< HEAD
-=======
               
               {form.watch('is_ordained') && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
@@ -589,6 +531,8 @@ export function NewMemberDialog({
                           <SelectContent>
                             <SelectItem value="deacon">Deacon</SelectItem>
                             <SelectItem value="deaconess">Deaconess</SelectItem>
+                            <SelectItem value="minister">Minister</SelectItem>
+                            <SelectItem value="assistant_pastor">Assistant Pastor</SelectItem>
                             <SelectItem value="full_pastor">Full Pastor</SelectItem>
                           </SelectContent>
                         </Select>
@@ -612,76 +556,20 @@ export function NewMemberDialog({
                   />
                 </div>
               )}
->>>>>>> e11383f (Added latest features)
             </div>
 
-            {/* Additional Info */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 border-b pb-2">Additional Info</h3>
-              <div className="grid grid-cols-1 gap-4">
-                <FormField
-                  control={form.control}
-                  name="invited_by"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Invited By</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Who invited them?" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-xl border p-4 bg-primary/5 border-primary/20">
-                      <FormControl>
-                        <input
-                          type="checkbox"
-                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary mt-1"
-                          checked={field.value === 'first_timer'}
-                          onChange={(e) => {
-                            field.onChange(e.target.checked ? 'first_timer' : 'active');
-                          }}
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel className="text-sm font-bold text-primary">
-                          Mark as First Timer
-                        </FormLabel>
-                        <p className="text-xs text-muted-foreground">
-                          This will track them as a visitor for this month's statistics.
-                        </p>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1"
-                onClick={() => onOpenChange(false)}
-              >
+            <div className="flex justify-end gap-3 pt-6 border-t">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="px-8 rounded-xl h-11 font-bold">
                 Cancel
               </Button>
-              <Button type="submit" className="btn-gold flex-1" disabled={isLoading}>
+              <Button type="submit" className="btn-gold px-8 rounded-xl h-11 font-black" disabled={isLoading}>
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Registering...
+                    REGISTERING...
                   </>
                 ) : (
-                  <>
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Register Member
-                  </>
+                  'COMPLETE REGISTRATION'
                 )}
               </Button>
             </div>
@@ -691,5 +579,3 @@ export function NewMemberDialog({
     </Dialog>
   );
 }
-
-export type { NewMemberData };

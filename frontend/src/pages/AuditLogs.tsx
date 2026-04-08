@@ -34,61 +34,17 @@ import {
 import api from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
-
-<<<<<<< HEAD
-interface AuditLog {
-  id: string;
-  user_name: string;
-  action: 'create' | 'update' | 'delete' | 'login' | 'export';
-  model_name: string;
-  object_id: string;
-  object_name: string;
-  details: Record<string, any>;
-  timestamp: string;
-}
-
-export default function AuditLogs() {
-  const [logs, setLogs] = useState<AuditLog[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [actionFilter, setActionFilter] = useState('all');
-
-  const fetchLogs = async () => {
-    setLoading(true);
-    try {
-      const response = await api.get('/audit-logs/');
-      setLogs(response.data);
-    } catch (error) {
-      console.error('Failed to fetch audit logs', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchLogs();
-  }, []);
-
-  const filteredLogs = logs.filter(log => {
-    const matchesSearch = 
-      log.user_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.object_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.model_name?.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesAction = actionFilter === 'all' || log.action === actionFilter;
-    
-    return matchesSearch && matchesAction;
-  });
-=======
 import { useAuditLogs, AuditLog } from '@/hooks/useAuditLogs';
 import { useDebounce } from '@/hooks/useDebounce';
 import { FunctionalPagination } from '@/components/common/FunctionalPagination';
+import { AuditLogDetailDialog } from '@/components/admin/AuditLogDetailDialog';
 
 export default function AuditLogs() {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebounce(searchQuery, 500);
   const [actionFilter, setActionFilter] = useState('all');
+  const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
 
   const { data: logData, isLoading: loading, refetch } = useAuditLogs(currentPage, debouncedSearch, actionFilter);
 
@@ -104,16 +60,13 @@ export default function AuditLogs() {
     setCurrentPage(1);
   }, [debouncedSearch, actionFilter]);
 
-  const filteredLogs = logs; // Server returns filtered logs
->>>>>>> e11383f (Added latest features)
-
   const getActionBadge = (action: AuditLog['action']) => {
     switch (action) {
-      case 'create': return <Badge className="bg-emerald-500 hover:bg-emerald-600 font-bold uppercase tracking-tighter">Created</Badge>;
-      case 'update': return <Badge className="bg-blue-500 hover:bg-blue-600 font-bold uppercase tracking-tighter">Updated</Badge>;
-      case 'delete': return <Badge className="bg-rose-500 hover:bg-rose-600 font-bold uppercase tracking-tighter">Deleted</Badge>;
-      case 'export': return <Badge className="bg-amber-500 hover:bg-amber-600 font-bold uppercase tracking-tighter">Export</Badge>;
-      case 'login': return <Badge className="bg-indigo-500 hover:bg-indigo-600 font-bold uppercase tracking-tighter">Login</Badge>;
+      case 'create': return <Badge className="bg-emerald-500 hover:bg-emerald-600 font-bold uppercase tracking-tighter text-white">Created</Badge>;
+      case 'update': return <Badge className="bg-blue-500 hover:bg-blue-600 font-bold uppercase tracking-tighter text-white">Updated</Badge>;
+      case 'delete': return <Badge className="bg-rose-500 hover:bg-rose-600 font-bold uppercase tracking-tighter text-white">Deleted</Badge>;
+      case 'export': return <Badge className="bg-amber-500 hover:bg-amber-600 font-bold uppercase tracking-tighter text-white">Export</Badge>;
+      case 'login': return <Badge className="bg-indigo-500 hover:bg-indigo-600 font-bold uppercase tracking-tighter text-white">Login</Badge>;
       default: return <Badge variant="outline">{action}</Badge>;
     }
   };
@@ -134,7 +87,7 @@ export default function AuditLogs() {
                         </div>
                         <div>
                             <p className="text-xs font-bold uppercase tracking-widest text-indigo-100 mb-1">Total Logs</p>
-                            <h2 className="text-3xl font-black">{logs.length}</h2>
+                            <h2 className="text-3xl font-black">{totalCount}</h2>
                         </div>
                     </div>
                 </CardContent>
@@ -148,10 +101,8 @@ export default function AuditLogs() {
                             <Activity className="h-6 w-6" />
                         </div>
                         <div>
-                            <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Actions Today</p>
-                            <h2 className="text-3xl font-black text-slate-900 dark:text-white">
-                                {logs.filter(l => format(parseISO(l.timestamp), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')).length}
-                            </h2>
+                            <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Action Status</p>
+                            <h2 className="text-3xl font-black text-slate-900 dark:text-white">Active</h2>
                         </div>
                     </div>
                 </CardContent>
@@ -164,8 +115,8 @@ export default function AuditLogs() {
                             <RefreshCcw className="h-6 w-6" />
                         </div>
                         <div>
-                            <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Status</p>
-                            <h2 className="text-3xl font-black text-slate-900 dark:text-white">Active</h2>
+                            <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Server Connectivity</p>
+                            <h2 className="text-3xl font-black text-slate-900 dark:text-white">Linked</h2>
                         </div>
                     </div>
                 </CardContent>
@@ -201,22 +152,14 @@ export default function AuditLogs() {
                     </SelectContent>
                   </Select>
 
-<<<<<<< HEAD
-                  <Button variant="outline" size="icon" onClick={fetchLogs} className="h-11 w-11 rounded-xl border-slate-200">
-=======
                   <Button variant="outline" size="icon" onClick={() => refetch()} className="h-11 w-11 rounded-xl border-slate-200">
->>>>>>> e11383f (Added latest features)
                     <RefreshCcw className={cn("h-4 w-4", loading && "animate-spin")} />
                   </Button>
                 </div>
               </div>
 
-              <div className="px-6 py-2">
-<<<<<<< HEAD
-                <div className="overflow-x-auto">
-=======
+              <div className="px-0 py-2">
                 <div className="hidden md:block overflow-x-auto px-6 py-2">
->>>>>>> e11383f (Added latest features)
                   <Table>
                     <TableHeader>
                         <TableRow className="hover:bg-transparent border-slate-50">
@@ -234,24 +177,19 @@ export default function AuditLogs() {
                                     <TableCell colSpan={5} className="h-16 bg-slate-50/50 rounded-lg" />
                                 </TableRow>
                             ))
-<<<<<<< HEAD
-                        ) : filteredLogs.length > 0 ? (
-                            filteredLogs.map((log) => (
-=======
                         ) : logs.length > 0 ? (
                             logs.map((log) => (
->>>>>>> e11383f (Added latest features)
-                                <TableRow key={log.id} className="group hover:bg-slate-50/50 transition-colors border-slate-50">
+                                <TableRow 
+                                  key={log.id} 
+                                  onClick={() => setSelectedLog(log)}
+                                  className="group hover:bg-slate-50/50 transition-colors border-slate-50 cursor-pointer"
+                                >
                                     <TableCell>
                                         <div className="flex flex-col">
                                             <span className="text-sm font-bold text-slate-900 dark:text-white">
                                                 {format(parseISO(log.timestamp), 'h:mm a')}
                                             </span>
-<<<<<<< HEAD
-                                            <span className="text-[10px] text-slate-400 font-medium">
-=======
                                             <span className="text-[10px] text-slate-400 font-medium whitespace-nowrap">
->>>>>>> e11383f (Added latest features)
                                                 {format(parseISO(log.timestamp), 'dd MMM yyyy')}
                                             </span>
                                         </div>
@@ -272,11 +210,7 @@ export default function AuditLogs() {
                                                     {log.model_name}
                                                 </Badge>
                                                 <ArrowRight className="h-3 w-3 text-slate-300" />
-<<<<<<< HEAD
-                                                <span className="text-sm font-bold text-slate-900 dark:text-white">{log.object_name || 'N/A'}</span>
-=======
                                                 <span className="text-sm font-bold text-slate-900 dark:text-white truncate max-w-[200px]">{log.object_name || 'N/A'}</span>
->>>>>>> e11383f (Added latest features)
                                             </div>
                                         </div>
                                     </TableCell>
@@ -300,8 +234,6 @@ export default function AuditLogs() {
                     </TableBody>
                   </Table>
                 </div>
-<<<<<<< HEAD
-=======
 
                 {/* Mobile View: Cards */}
                 <div className="md:hidden space-y-4 px-6 pb-6">
@@ -311,7 +243,11 @@ export default function AuditLogs() {
                         ))
                     ) : logs.length > 0 ? (
                         logs.map((log) => (
-                            <div key={log.id} className="p-4 rounded-2xl border border-slate-100 bg-white shadow-sm space-y-3">
+                            <div 
+                              key={log.id} 
+                              onClick={() => setSelectedLog(log)}
+                              className="p-4 rounded-2xl border border-slate-100 bg-white shadow-sm space-y-3 cursor-pointer"
+                            >
                                 <div className="flex justify-between items-start">
                                     <div className="flex items-center gap-2">
                                         <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center">
@@ -353,12 +289,17 @@ export default function AuditLogs() {
                     isLoading={loading}
                   />
                 </div>
->>>>>>> e11383f (Added latest features)
               </div>
             </CardContent>
           </Card>
         </div>
       </main>
+
+      <AuditLogDetailDialog 
+        log={selectedLog} 
+        open={!!selectedLog} 
+        onOpenChange={(open) => !open && setSelectedLog(null)} 
+      />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Header } from '@/components/layout/Header';
 import { motion } from 'framer-motion';
 import { format, subMonths } from 'date-fns';
@@ -14,12 +14,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import api from '@/lib/api';
-import { useEffect, useMemo } from 'react';
-<<<<<<< HEAD
-=======
 import { useDebounce } from '@/hooks/useDebounce';
 import { FunctionalPagination } from '@/components/common/FunctionalPagination';
->>>>>>> e11383f (Added latest features)
 
 const SERVICE_TYPE_LABELS: Record<string, string> = {
   sunday_service: 'Sunday Service',
@@ -32,12 +28,6 @@ export default function History() {
     from: subMonths(new Date(), 1),
     to: new Date(),
   });
-<<<<<<< HEAD
-  const [serviceType, setServiceType] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState('');
-
-  const { records, stats, loading } = useAttendanceHistory(dateRange, serviceType, searchQuery);
-=======
   const [currentPage, setCurrentPage] = useState(1);
   const [serviceType, setServiceType] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -53,7 +43,6 @@ export default function History() {
   useEffect(() => {
     setCurrentPage(1);
   }, [dateRange, serviceType, debouncedSearch]);
->>>>>>> e11383f (Added latest features)
 
   const exportToCSV = () => {
     const headers = ['Member Name', 'Service Date', 'Service Type', 'Service Name', 'Marked At'];
@@ -322,8 +311,6 @@ export default function History() {
                   </div>
                 ))}
               </div>
-<<<<<<< HEAD
-=======
               {/* Pagination */}
               <div className="p-4 border-t">
                 <FunctionalPagination 
@@ -333,7 +320,6 @@ export default function History() {
                   isLoading={loading}
                 />
               </div>
->>>>>>> e11383f (Added latest features)
             </>
           )}
         </motion.div>

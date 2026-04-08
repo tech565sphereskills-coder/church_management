@@ -45,6 +45,8 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import api from '@/lib/api';
+import { format } from 'date-fns';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -60,6 +62,17 @@ export default function Settings() {
   const [churchName, setChurchName] = useState('');
   const [address, setAddress] = useState('');
   const [contactEmail, setContactEmail] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  
+  // Social Media & Web
+  const [websiteUrl, setWebsiteUrl] = useState('');
+  const [facebookUrl, setFacebookUrl] = useState('');
+  const [instagramUrl, setInstagramUrl] = useState('');
+  const [youtubeUrl, setYoutubeUrl] = useState('');
+  
+  // Service Configuration
+  const [serviceTimes, setServiceTimes] = useState('');
+  
   const [attendanceReminders, setAttendanceReminders] = useState(true);
   const [newMemberAlerts, setNewMemberAlerts] = useState(true);
   const [weeklyReports, setWeeklyReports] = useState(false);
@@ -84,12 +97,68 @@ export default function Settings() {
   const [isDisabling2FA, setIsDisabling2FA] = useState(false);
   const [isDisableDialogOpen, setIsDisableDialogOpen] = useState(false);
 
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportArchive = async () => {
+    try {
+      setIsExporting(true);
+      toast({
+        title: "Preparing Archive",
+        description: "Compiling church records into a secure backup file...",
+      });
+      
+      const [members, attendance, financials] = await Promise.all([
+        api.get('/members/'),
+        api.get('/attendance/stats/'),
+        api.get('/financials/summary/')
+      ]);
+
+      const backupData = {
+        timestamp: new Date().toISOString(),
+        church_name: churchName,
+        data: {
+          members: members.data,
+          attendance: attendance.data,
+          financials: financials.data
+        }
+      };
+
+      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `RCCG_Sanctuary_Backup_${format(new Date(), 'yyyy_MM_dd')}.json`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "Export Successful",
+        description: "The system archive has been downloaded securely.",
+      });
+    } catch (error) {
+      console.error('Export failed:', error);
+      toast({
+        title: "Export Failed",
+        description: "An error occurred while compiling the archive. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   useEffect(() => {
     if (settings) {
       setLogoUrl(settings.logo_url || '/rccg_logo.png');
       setChurchName(settings.church_name || '');
       setAddress(settings.address || '');
       setContactEmail(settings.contact_email || '');
+      setPhoneNumber(settings.phone_number || '');
+      setWebsiteUrl(settings.website_url || '');
+      setFacebookUrl(settings.facebook_url || '');
+      setInstagramUrl(settings.instagram_url || '');
+      setYoutubeUrl(settings.youtube_url || '');
+      setServiceTimes(settings.service_times || '');
       setAttendanceReminders(settings.attendance_reminders);
       setNewMemberAlerts(settings.new_member_alerts);
       setWeeklyReports(settings.weekly_reports);
@@ -112,7 +181,13 @@ export default function Settings() {
       church_name: churchName,
       address,
       contact_email: contactEmail,
+      phone_number: phoneNumber,
       logo_url: logoUrl,
+      website_url: websiteUrl,
+      facebook_url: facebookUrl,
+      instagram_url: instagramUrl,
+      youtube_url: youtubeUrl,
+      service_times: serviceTimes,
       attendance_reminders: attendanceReminders,
       new_member_alerts: newMemberAlerts,
       weekly_reports: weeklyReports,
@@ -303,18 +378,33 @@ export default function Settings() {
                                 className="h-12 border-slate-200 focus:ring-primary shadow-none text-lg" 
                               />
                             </div>
-                            <div className="grid gap-2">
-                              <Label htmlFor="mail" className="text-xs font-bold uppercase text-slate-500">Contact Email Address</Label>
-                              <Input 
-                                id="mail" 
-                                value={contactEmail} 
-                                onChange={(e) => setContactEmail(e.target.value)} 
-                                disabled={!isAdmin}
-                                className="h-12 border-slate-200 focus:ring-primary shadow-none" 
-                              />
-                            </div>
                           </div>
                         </div>
+                        <div className="grid md:grid-cols-2 gap-8">
+                          <div className="grid gap-2">
+                            <Label htmlFor="mail" className="text-xs font-bold uppercase text-slate-500">Contact Email Address</Label>
+                            <Input 
+                              id="mail" 
+                              value={contactEmail} 
+                              onChange={(e) => setContactEmail(e.target.value)} 
+                              disabled={!isAdmin}
+                              placeholder="church@email.com"
+                              className="h-12 border-slate-200 focus:ring-primary shadow-none" 
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <Label htmlFor="phone" className="text-xs font-bold uppercase text-slate-500">Contact Phone Number</Label>
+                            <Input 
+                              id="phone" 
+                              value={phoneNumber} 
+                              onChange={(e) => setPhoneNumber(e.target.value)} 
+                              disabled={!isAdmin}
+                              placeholder="+234 ..."
+                              className="h-12 border-slate-200 focus:ring-primary shadow-none" 
+                            />
+                          </div>
+                        </div>
+
                         <div className="grid gap-2">
                           <Label htmlFor="addr" className="text-xs font-bold uppercase text-slate-500">Physical Address</Label>
                           <Input 
@@ -322,8 +412,78 @@ export default function Settings() {
                             value={address} 
                             onChange={(e) => setAddress(e.target.value)} 
                             disabled={!isAdmin}
+                            placeholder="Church Street, Location"
                             className="h-12 border-slate-200 focus:ring-primary shadow-none" 
                           />
+                        </div>
+
+                        <Separator className="my-8" />
+
+                        <div className="space-y-6">
+                          <h4 className="text-sm font-bold uppercase tracking-wider text-slate-500">Social Media & Web Presence</h4>
+                          <div className="grid md:grid-cols-2 gap-6">
+                            <div className="grid gap-2">
+                              <Label htmlFor="website" className="text-xs font-bold uppercase text-slate-500">Official Website</Label>
+                              <Input 
+                                id="website" 
+                                value={websiteUrl} 
+                                onChange={(e) => setWebsiteUrl(e.target.value)} 
+                                disabled={!isAdmin}
+                                placeholder="https://..."
+                                className="h-12 border-slate-200 focus:ring-primary shadow-none" 
+                              />
+                            </div>
+                            <div className="grid gap-2">
+                              <Label htmlFor="facebook" className="text-xs font-bold uppercase text-slate-500">Facebook Page</Label>
+                              <Input 
+                                id="facebook" 
+                                value={facebookUrl} 
+                                onChange={(e) => setFacebookUrl(e.target.value)} 
+                                disabled={!isAdmin}
+                                placeholder="facebook.com/..."
+                                className="h-12 border-slate-200 focus:ring-primary shadow-none" 
+                              />
+                            </div>
+                            <div className="grid gap-2">
+                              <Label htmlFor="instagram" className="text-xs font-bold uppercase text-slate-500">Instagram Handle</Label>
+                              <Input 
+                                id="instagram" 
+                                value={instagramUrl} 
+                                onChange={(e) => setInstagramUrl(e.target.value)} 
+                                disabled={!isAdmin}
+                                placeholder="instagram.com/..."
+                                className="h-12 border-slate-200 focus:ring-primary shadow-none" 
+                              />
+                            </div>
+                            <div className="grid gap-2">
+                              <Label htmlFor="youtube" className="text-xs font-bold uppercase text-slate-500">YouTube Channel</Label>
+                              <Input 
+                                id="youtube" 
+                                value={youtubeUrl} 
+                                onChange={(e) => setYoutubeUrl(e.target.value)} 
+                                disabled={!isAdmin}
+                                placeholder="youtube.com/..."
+                                className="h-12 border-slate-200 focus:ring-primary shadow-none" 
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        <Separator className="my-8" />
+
+                        <div className="space-y-4">
+                          <h4 className="text-sm font-bold uppercase tracking-wider text-slate-500">Service Configuration</h4>
+                          <div className="grid gap-2">
+                            <Label htmlFor="service-times" className="text-xs font-bold uppercase text-slate-500">Service Times & Schedules</Label>
+                            <Input 
+                              id="service-times" 
+                              value={serviceTimes} 
+                              onChange={(e) => setServiceTimes(e.target.value)} 
+                              disabled={!isAdmin}
+                              placeholder="e.g. Sundays: 8:00 AM, 11:00 AM | Midweek: Wednesday 6:00 PM"
+                              className="h-12 border-slate-200 focus:ring-primary shadow-none" 
+                            />
+                          </div>
                         </div>
                       </CardContent>
                       <CardFooter className="bg-slate-50/50 border-t border-slate-100 p-6 flex justify-end">
@@ -590,8 +750,14 @@ export default function Settings() {
                                 <p className="text-xs text-slate-400">Last run: Today, 03:00 AM</p>
                               </div>
                               <div className="flex flex-col gap-2">
-                                <Button variant="outline" className="w-full text-xs font-bold gap-2 bg-white h-10 !text-black">
-                                  <Download className="h-3 w-3" /> Export Archive
+                                <Button 
+                                  variant="outline" 
+                                  className="w-full text-xs font-bold gap-2 bg-white h-10 !text-black"
+                                  onClick={handleExportArchive}
+                                  disabled={isExporting}
+                                >
+                                  {isExporting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+                                  {isExporting ? 'Exporting...' : 'Export Archive'}
                                 </Button>
                                 <Button 
                                   variant="outline" 

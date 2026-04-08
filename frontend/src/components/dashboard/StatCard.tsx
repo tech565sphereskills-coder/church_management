@@ -44,38 +44,45 @@ export function StatCard({
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
+      whileHover={{ y: -4, transition: { duration: 0.2 } }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay }}
       className={cn(
-        'stat-card',
-        variant === 'primary' && 'bg-primary text-primary-foreground',
-        variant === 'accent' && 'bg-accent text-accent-foreground'
+        'relative overflow-hidden p-6 rounded-2xl border transition-all duration-300',
+        variant === 'default' && 'bg-white border-slate-100 shadow-sm hover:shadow-md dark:bg-slate-900 dark:border-slate-800',
+        variant === 'primary' && 'bg-gradient-to-br from-indigo-600 to-indigo-700 text-white border-indigo-500 shadow-lg shadow-indigo-200',
+        variant === 'accent' && 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-emerald-400 shadow-lg shadow-emerald-100'
       )}
     >
-      <Icon
-        className={cn(
-          'stat-card-icon',
-          variant === 'default' && 'text-primary/10',
-          variant === 'primary' && 'text-primary-foreground/20',
-          variant === 'accent' && 'text-accent-foreground/20'
-        )}
-      />
+      <div className={cn(
+        "absolute -right-4 -top-4 transition-transform group-hover:scale-110 opacity-10",
+        variant === 'default' && 'text-slate-900',
+        variant !== 'default' && 'text-white'
+      )}>
+        <Icon size={120} strokeWidth={1} />
+      </div>
       
-      <div className="relative z-10">
+      <div className="relative z-10 flex flex-col h-full">
+        <div className={cn(
+            "flex h-10 w-10 items-center justify-center rounded-xl mb-4 shadow-sm",
+            variant === 'default' && 'bg-slate-50 text-slate-600 border border-slate-100',
+            variant === 'primary' && 'bg-white/10 text-white border border-white/20 backdrop-blur-sm',
+            variant === 'accent' && 'bg-white/10 text-white border border-white/20 backdrop-blur-sm'
+        )}>
+            <Icon size={20} />
+        </div>
         <p
           className={cn(
-            'text-sm font-medium',
-            variant === 'default' && 'text-slate-600 dark:text-white font-semibold',
-            variant === 'primary' && 'text-primary-foreground',
-            variant === 'accent' && 'text-accent-foreground'
+            'text-xs font-bold uppercase tracking-widest',
+            variant === 'default' ? 'text-slate-400' : 'text-white/70'
           )}
         >
           {title}
         </p>
         
         <p className={cn(
-          "mt-2 text-3xl font-bold tracking-tight",
-          "dark:text-white"
+          "mt-1 text-3xl font-black tracking-tight",
+          variant === 'default' ? 'text-slate-900' : 'text-white'
         )}>
           {typeof value === 'number' ? (
             <AnimatedNumber value={value} delay={delay + 0.1} />
@@ -87,18 +94,16 @@ export function StatCard({
         {change !== undefined && (
           <p
             className={cn(
-              'mt-2 flex items-center text-sm',
-              variant === 'default' &&
-                (isPositive ? 'text-success' : 'text-destructive'),
-              variant !== 'default' && 'text-current opacity-80'
+              'mt-1 flex items-center text-[10px] font-black uppercase tracking-wider',
+              variant === 'default' ? (isPositive ? 'text-emerald-500' : 'text-rose-500') : 'text-white/90'
             )}
           >
-            <span className="font-medium">
-              {isPositive ? '+' : ''}
+            <span>
+              {isPositive ? '↑' : '↓'}
               {change}%
             </span>
             {changeLabel && (
-              <span className="ml-1 opacity-70">{changeLabel}</span>
+              <span className="ml-1.5 opacity-60">{changeLabel}</span>
             )}
           </p>
         )}

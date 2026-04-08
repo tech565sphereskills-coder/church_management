@@ -31,16 +31,11 @@ export interface Member {
   family_name?: string;
   
   year_joined: number | null;
-<<<<<<< HEAD
-  date_joined: string;
-  
-=======
   year_joined_workforce: number | null;
   date_joined: string;
   
   is_ordained: boolean;
->>>>>>> e11383f (Added latest features)
-  ordained_as: 'deacon' | 'deaconess' | 'full_pastor' | null;
+  ordained_as: 'deacon' | 'deaconess' | 'minister' | 'assistant_pastor' | 'full_pastor' | null;
   year_ordination: number | null;
   
   qr_code: string | null;
@@ -72,11 +67,8 @@ export interface NewMemberData {
   family?: string;
   
   year_joined?: number;
-<<<<<<< HEAD
-=======
   year_joined_workforce?: number;
   is_ordained?: boolean;
->>>>>>> e11383f (Added latest features)
   ordained_as?: string;
   year_ordination?: number;
   
@@ -84,9 +76,6 @@ export interface NewMemberData {
   invited_by?: string;
 }
 
-<<<<<<< HEAD
-export function useMembers() {
-=======
 export interface PaginatedMembers {
   count: number;
   next: string | null;
@@ -95,17 +84,10 @@ export interface PaginatedMembers {
 }
 
 export function useMembers(page: number = 1, search: string = '', status: string = 'all') {
->>>>>>> e11383f (Added latest features)
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-<<<<<<< HEAD
-  const { data: members = [], isLoading, refetch } = useQuery({
-    queryKey: ['members'],
-    queryFn: async () => {
-      const response = await api.get('/members/');
-=======
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['members', page, search, status],
     queryFn: async () => {
@@ -114,19 +96,15 @@ export function useMembers(page: number = 1, search: string = '', status: string
       if (status && status !== 'all') params.status = status;
       
       const response = await api.get<PaginatedMembers>('/members/', { params });
->>>>>>> e11383f (Added latest features)
       return response.data;
     },
     enabled: !!user,
   });
 
-<<<<<<< HEAD
-=======
   const members = data?.results || [];
   const totalCount = data?.count || 0;
   const totalPages = Math.ceil(totalCount / 20); // 20 is the default PAGE_SIZE in settings.py
 
->>>>>>> e11383f (Added latest features)
   const fetchMembers = useCallback(async () => {
     await refetch();
   }, [refetch]);
@@ -172,32 +150,19 @@ export function useMembers(page: number = 1, search: string = '', status: string
       queryClient.invalidateQueries({ queryKey: ['members'] });
       queryClient.invalidateQueries({ queryKey: ['stats'] });
       return response.data;
-<<<<<<< HEAD
-    } catch (error: any) {
-      console.error('Error creating member:', error);
-      if (error.response?.data?.phone) {
-=======
     } catch (error: unknown) {
       console.error('Error creating member:', error);
       const err = error as { response?: { data?: { phone?: unknown, non_field_errors?: string[] } } };
       if (err.response?.data?.phone) {
->>>>>>> e11383f (Added latest features)
         toast({
           title: 'Duplicate Phone Number',
           description: 'A member with this phone number already exists.',
           variant: 'destructive',
         });
-<<<<<<< HEAD
-      } else if (error.response?.data?.non_field_errors) {
-        toast({
-          title: 'Duplicate Registration',
-          description: error.response.data.non_field_errors[0],
-=======
       } else if (err.response?.data?.non_field_errors) {
         toast({
           title: 'Duplicate Registration',
           description: err.response.data.non_field_errors[0],
->>>>>>> e11383f (Added latest features)
           variant: 'destructive',
         });
       } else {
@@ -257,10 +222,6 @@ export function useMembers(page: number = 1, search: string = '', status: string
     }
   };
 
-<<<<<<< HEAD
-  return {
-    members,
-=======
   const exportMembers = async (): Promise<void> => {
     try {
       const response = await api.get('/members/export_excel/', {
@@ -321,7 +282,6 @@ export function useMembers(page: number = 1, search: string = '', status: string
     members,
     totalCount,
     totalPages,
->>>>>>> e11383f (Added latest features)
     loading,
     fetchMembers,
     searchMembers,
@@ -329,10 +289,7 @@ export function useMembers(page: number = 1, search: string = '', status: string
     createMember,
     updateMember,
     deleteMember,
-<<<<<<< HEAD
-=======
     exportMembers,
     importMembers,
->>>>>>> e11383f (Added latest features)
   };
 }

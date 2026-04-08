@@ -17,8 +17,6 @@ import type { Member, MemberStatus } from '@/hooks/useMembers';
 import { useDepartments } from '@/hooks/useDepartments';
 import { useFamilies, Family } from '@/hooks/useFamilies';
 
-// Departments constant removed to use dynamic data
-
 const editSchema = z.object({
   surname: z.string().min(2, 'Surname must be at least 2 characters'),
   firstname: z.string().min(2, 'Firstname must be at least 2 characters'),
@@ -37,12 +35,9 @@ const editSchema = z.object({
   church_membership: z.enum(['worker', 'minister']).optional().or(z.literal('')),
   department_post: z.string().optional(),
   year_joined: z.coerce.number().optional().or(z.literal(0)),
-<<<<<<< HEAD
-=======
   year_joined_workforce: z.coerce.number().optional().or(z.literal(0)),
   is_ordained: z.boolean().default(false),
->>>>>>> e11383f (Added latest features)
-  ordained_as: z.enum(['deacon', 'deaconess', 'full_pastor']).optional().or(z.literal('')),
+  ordained_as: z.enum(['deacon', 'deaconess', 'minister', 'assistant_pastor', 'full_pastor']).optional().or(z.literal('')),
   year_ordination: z.coerce.number().optional().or(z.literal(0)),
 });
 
@@ -73,11 +68,8 @@ export function EditMemberDialog({ open, onOpenChange, member, onSave }: EditMem
       church_membership: '',
       department_post: '',
       year_joined: undefined,
-<<<<<<< HEAD
-=======
       year_joined_workforce: undefined,
       is_ordained: false,
->>>>>>> e11383f (Added latest features)
       ordained_as: '',
       year_ordination: undefined,
     },
@@ -105,11 +97,8 @@ export function EditMemberDialog({ open, onOpenChange, member, onSave }: EditMem
         church_membership: member.church_membership || '',
         department_post: member.department_post || '',
         year_joined: member.year_joined || undefined,
-<<<<<<< HEAD
-=======
         year_joined_workforce: member.year_joined_workforce || undefined,
         is_ordained: member.is_ordained || false,
->>>>>>> e11383f (Added latest features)
         ordained_as: member.ordained_as || '',
         year_ordination: member.year_ordination || undefined,
       });
@@ -121,11 +110,7 @@ export function EditMemberDialog({ open, onOpenChange, member, onSave }: EditMem
     setIsLoading(true);
     
     // Create a typed updates object
-<<<<<<< HEAD
-    const updates: any = { ...data };
-=======
     const updates: Partial<EditFormData> & Record<string, unknown> = { ...data };
->>>>>>> e11383f (Added latest features)
     
     if (!updates.email) updates.email = null;
     if (!updates.address) updates.address = null;
@@ -136,10 +121,7 @@ export function EditMemberDialog({ open, onOpenChange, member, onSave }: EditMem
     if (!updates.church_membership) updates.church_membership = null;
     if (!updates.department_post) updates.department_post = null;
     if (!updates.year_joined) updates.year_joined = null;
-<<<<<<< HEAD
-=======
     if (!updates.year_joined_workforce) updates.year_joined_workforce = null;
->>>>>>> e11383f (Added latest features)
     if (!updates.ordained_as) updates.ordained_as = null;
     if (!updates.year_ordination) updates.year_ordination = null;
 
@@ -161,7 +143,6 @@ export function EditMemberDialog({ open, onOpenChange, member, onSave }: EditMem
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-             {/* Personal Information */}
              <div className="space-y-4">
               <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 border-b pb-2">Personal Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -202,7 +183,6 @@ export function EditMemberDialog({ open, onOpenChange, member, onSave }: EditMem
               )} />
             </div>
 
-            {/* Family & Marital Status */}
             <div className="space-y-4">
               <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 border-b pb-2">Family & Marital Status</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -259,7 +239,6 @@ export function EditMemberDialog({ open, onOpenChange, member, onSave }: EditMem
               )}
             </div>
 
-            {/* Church Membership */}
             <div className="space-y-4">
               <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 border-b pb-2">Church Membership</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -277,14 +256,10 @@ export function EditMemberDialog({ open, onOpenChange, member, onSave }: EditMem
                   <FormItem><FormLabel>Post in Department</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control} name="year_joined" render={({ field }) => (
-<<<<<<< HEAD
-                  <FormItem><FormLabel>Year Joined</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-=======
                   <FormItem><FormLabel>Year Joined RCCG</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control} name="year_joined_workforce" render={({ field }) => (
                   <FormItem><FormLabel>Year Joined Workforce</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
->>>>>>> e11383f (Added latest features)
                 )} />
               </div>
 
@@ -319,30 +294,7 @@ export function EditMemberDialog({ open, onOpenChange, member, onSave }: EditMem
               />
             </div>
 
-            {/* Ordination Details */}
             <div className="space-y-4">
-<<<<<<< HEAD
-              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 border-b pb-2">Ordination Details</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField control={form.control} name="ordained_as" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Currently Ordained As</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                      <SelectContent>
-                        <SelectItem value="deacon">Deacon</SelectItem>
-                        <SelectItem value="deaconess">Deaconess</SelectItem>
-                        <SelectItem value="full_pastor">Full Pastor</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="year_ordination" render={({ field }) => (
-                  <FormItem><FormLabel>Year of Ordination</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-              </div>
-=======
               <div className="flex items-center justify-between border-b pb-2">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">Ordination Details</h3>
                 <FormField
@@ -372,6 +324,8 @@ export function EditMemberDialog({ open, onOpenChange, member, onSave }: EditMem
                         <SelectContent>
                           <SelectItem value="deacon">Deacon</SelectItem>
                           <SelectItem value="deaconess">Deaconess</SelectItem>
+                          <SelectItem value="minister">Minister</SelectItem>
+                          <SelectItem value="assistant_pastor">Assistant Pastor</SelectItem>
                           <SelectItem value="full_pastor">Full Pastor</SelectItem>
                         </SelectContent>
                       </Select>
@@ -383,7 +337,6 @@ export function EditMemberDialog({ open, onOpenChange, member, onSave }: EditMem
                   )} />
                 </div>
               )}
->>>>>>> e11383f (Added latest features)
             </div>
 
             <FormField control={form.control} name="status" render={({ field }) => (
@@ -402,9 +355,9 @@ export function EditMemberDialog({ open, onOpenChange, member, onSave }: EditMem
             )} />
 
             <div className="flex gap-3 pt-4">
-              <Button type="button" variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button type="submit" className="btn-gold flex-1" disabled={isLoading}>
-                {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><Pencil className="mr-2 h-4 w-4" />Save Changes</>}
+              <Button type="button" variant="outline" className="flex-1 h-11 font-bold rounded-xl" onClick={() => onOpenChange(false)}>Cancel</Button>
+              <Button type="submit" className="btn-gold flex-1 h-11 font-black rounded-xl" disabled={isLoading}>
+                {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><Pencil className="mr-2 h-4 w-4" />SAVE CHANGES</>}
               </Button>
             </div>
           </form>

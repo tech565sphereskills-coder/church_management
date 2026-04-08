@@ -12,10 +12,7 @@ from django.http import HttpResponse
 from django.contrib.auth.models import User
 from rest_framework import viewsets, permissions, status, serializers
 from rest_framework.response import Response
-<<<<<<< HEAD
-=======
 from rest_framework.pagination import PageNumberPagination
->>>>>>> e11383f (Added latest features)
 from rest_framework.decorators import action
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -44,14 +41,11 @@ from .permissions import (
     IsPrayerOfficerOrHigher
 )
 
-<<<<<<< HEAD
-=======
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 20
     page_size_query_param = 'page_size'
     max_page_size = 1000
 
->>>>>>> e11383f (Added latest features)
 # Helper for auditing
 def log_activity(user, action, model_name, object_id, object_name, details=None):
     try:
@@ -242,20 +236,14 @@ class ProfileViewSet(viewsets.ModelViewSet):
         return super().get_permissions()
 
 class MemberViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
-<<<<<<< HEAD
-    queryset = Member.objects.all()
-    serializer_class = MemberSerializer
-=======
     queryset = Member.objects.all().order_by('surname', 'firstname')
     serializer_class = MemberSerializer
     pagination_class = StandardResultsSetPagination
-    filter_backends = [permissions.IsAuthenticated, permissions.DjangoModelPermissionsOrAnonReadOnly] # This will be overridden below
     from rest_framework.filters import SearchFilter, OrderingFilter
     filter_backends = [SearchFilter, OrderingFilter]
     search_fields = ['surname', 'firstname', 'phone', 'email', 'address']
     ordering_fields = ['surname', 'firstname', 'date_joined', 'created_at']
     ordering = ['surname', 'firstname']
->>>>>>> e11383f (Added latest features)
     
     def get_queryset(self):
         user = self.request.user
@@ -327,7 +315,6 @@ class MemberViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
                 return Response({'error': 'The uploaded file is empty.'}, status=400)
 
             # Clean column names
-            original_cols = list(df.columns)
             df.columns = [c.lower().replace(' ', '_').strip() for c in df.columns]
             found_cols = list(df.columns)
             
@@ -338,25 +325,14 @@ class MemberViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
 
             for i, row in df.iterrows():
                 # Extract names - support user's specific headers
-<<<<<<< HEAD
-                surname = str(row.get('surname', row.get('last_name', ''))).strip() if pd.notna(row.get('surname')) or pd.notna(row.get('last_name')) else ''
-                
-                # Support "first_name_and_other_name"
-                firstname_val = row.get('firstname', row.get('first_name', row.get('first_name_and_other_name', '')))
-                firstname = str(firstname_val).strip() if pd.notna(firstname_val) else ''
-                
-                other_name = str(row.get('other_name', '')).strip() if pd.notna(row.get('other_name')) else ''
-                full_name = str(row.get('full_name', row.get('name', ''))).strip() if pd.notna(row.get('full_name')) or pd.notna(row.get('name')) else ''
-=======
-                surname = str(row.get('surname', row.get('last_name', row.get('last name', '')))).strip() if pd.notna(row.get('surname')) or pd.notna(row.get('last_name')) or pd.notna(row.get('last name')) else ''
+                surname = str(row.get('surname', row.get('last_name', row.get('last name', '')))).strip() if any(pd.notna(row.get(k)) for k in ['surname', 'last_name', 'last name']) else ''
                 
                 # Support "first_name_and_other_name"
                 firstname_val = row.get('firstname', row.get('first_name', row.get('first name', row.get('first_name_and_other_name', ''))))
                 firstname = str(firstname_val).strip() if pd.notna(firstname_val) else ''
                 
-                other_name = str(row.get('other_name', row.get('other name', ''))).strip() if pd.notna(row.get('other_name')) or pd.notna(row.get('other name')) else ''
-                full_name = str(row.get('full_name', row.get('full name', row.get('name', '')))).strip() if pd.notna(row.get('full_name')) or pd.notna(row.get('full name')) or pd.notna(row.get('name')) else ''
->>>>>>> e11383f (Added latest features)
+                other_name = str(row.get('other_name', row.get('other name', ''))).strip() if any(pd.notna(row.get(k)) for k in ['other_name', 'other name']) else ''
+                full_name = str(row.get('full_name', row.get('full name', row.get('name', '')))).strip() if any(pd.notna(row.get(k)) for k in ['full_name', 'full name', 'name']) else ''
 
                 # Specific handling for "first_name_and_other_name" splitting
                 if 'first_name_and_other_name' in row and pd.notna(row['first_name_and_other_name']):
@@ -366,15 +342,6 @@ class MemberViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
                     if len(parts) > 1 and not other_name:
                         other_name = parts[1]
 
-<<<<<<< HEAD
-                # If structured names are missing but full_name is present, split it
-                if (not surname or not firstname) and full_name:
-                    names = full_name.split(' ')
-                    if len(names) >= 2:
-                        surname = names[0]
-                        firstname = names[1]
-                        other_name = ' '.join(names[2:]) if len(names) > 2 else other_name
-=======
                 # Special case for "Name" column which often contains full name
                 if not surname and not firstname and full_name:
                     names = full_name.split(' ')
@@ -382,50 +349,24 @@ class MemberViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
                         surname = names[-1] # Assume last part is surname
                         firstname = names[0]
                         other_name = ' '.join(names[1:-1]) if len(names) > 2 else other_name
->>>>>>> e11383f (Added latest features)
                     elif names:
                         surname = names[0]
                         firstname = 'TBD'
                 
                 if not surname or not firstname:
                     skipped_count += 1
-<<<<<<< HEAD
-                    if i < 5: skip_reasons.append(f"Row {i+1}: Missing surname/firstname (Headers: {found_cols})")
-                    continue
-
-                # Phone number mapping
-                phone_val = row.get('phone', row.get('phone_number', row.get('mobile', '')))
-                if pd.isna(phone_val):
-                    phone = ''
-=======
-                    err_msg = f"Row {i+1}: Missing surname or firstname. (Found: surname='{surname}', firstname='{firstname}', full_name='{full_name}')"
-                    skip_reasons.append(err_msg)
-                    print(f"DEBUG IMPORT: {err_msg}")
                     continue
 
                 # Phone number mapping
                 phone_val = row.get('phone', row.get('phone_number', row.get('phone no', row.get('mobile', ''))))
                 if pd.isna(phone_val) or str(phone_val).strip() == '':
                     phone = '0000000000' # Default if missing
->>>>>>> e11383f (Added latest features)
                 else:
                     phone = str(phone_val)
                     if phone.endswith('.0'):
                         phone = phone[:-2]
                     phone = ''.join(filter(str.isdigit, phone))
                 
-<<<<<<< HEAD
-                email = str(row.get('email', '')).strip() if pd.notna(row.get('email')) else None
-                if email and '@' not in email: email = None
-                
-                # Check for existing member
-                member = None
-                if email:
-                    member = Member.objects.filter(email=email).first()
-                if not member and phone:
-                    member = Member.objects.filter(surname=surname, firstname=firstname, phone=phone).first() or \
-                             Member.objects.filter(phone=phone).first()
-=======
                 email = str(row.get('email', row.get('email_address', row.get('email address', '')))).strip() if any(pd.notna(row.get(k)) for k in ['email', 'email_address', 'email address']) else None
                 if email and '@' not in email: email = None
                 
@@ -437,50 +378,12 @@ class MemberViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
                     member = Member.objects.filter(phone=phone).first()
                 if not member:
                     member = Member.objects.filter(surname__iexact=surname, firstname__iexact=firstname).first()
->>>>>>> e11383f (Added latest features)
                 
                 # Defaults for required fields
                 gender = str(row.get('gender', 'male')).lower() if pd.notna(row.get('gender')) else 'male'
                 if gender.startswith('f'): gender = 'female'
                 elif not gender.startswith('m'): gender = 'male'
 
-<<<<<<< HEAD
-                marital_status = str(row.get('marital_status', 'single')).lower() if pd.notna(row.get('marital_status')) else 'single'
-                if marital_status not in ['single', 'married', 'widowed', 'divorced']: marital_status = 'single'
-
-                church_membership = str(row.get('church_membership', '')).lower() if pd.notna(row.get('church_membership')) else None
-                if church_membership:
-                    if 'minister' in church_membership: church_membership = 'minister'
-                    elif 'worker' in church_membership: church_membership = 'worker'
-                    else: church_membership = None
-
-                # Handle Date of Birth
-                dob = None
-                dob_val = row.get('date_of_birth', row.get('dob', ''))
-                dob_str = str(dob_val).strip() if pd.notna(dob_val) else ''
-                if dob_str:
-                    try:
-                        dob = pd.to_datetime(dob_str).date()
-                    except:
-                        pass
-
-                # Year mapping based on user headers
-                year_joined_header = 'what_year_did_you_join_rccg?'
-                year_ordination_header = 'year_of_ordination'
-                ordained_as_header = 'currently_ordained_as:'
-                dept_post_header = 'post_in_the_department'
-                spouse_name_header = "spouse's_full_name"
-                spouse_phone_header = "spouse's_phone_no"
-
-                # Data mapping
-                def safe_int(val):
-                    if pd.isna(val) or val == '': return None
-                    try:
-                        return int(float(val))
-                    except:
-                        return None
-
-=======
                 marital_status = str(row.get('marital_status', row.get('marital status', 'single'))).lower() if pd.notna(row.get('marital_status')) or pd.notna(row.get('marital status')) else 'single'
                 if marital_status not in ['single', 'married', 'widowed', 'divorced']: marital_status = 'single'
 
@@ -502,41 +405,25 @@ class MemberViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
                             break
                         except:
                             continue
-
-                # Data mapping dictionary
->>>>>>> e11383f (Added latest features)
                 data = {
                     'surname': surname,
                     'firstname': firstname,
                     'other_name': other_name,
-<<<<<<< HEAD
-                    'phone': phone or '0000000000',
-=======
                     'phone': phone,
->>>>>>> e11383f (Added latest features)
                     'email': email,
                     'gender': gender,
                     'address': str(row.get('address', '')).strip() if pd.notna(row.get('address')) else '',
                     'marital_status': marital_status,
                     'date_of_birth': dob,
                     'church_membership': church_membership,
-<<<<<<< HEAD
-                    'department_post': str(row.get(dept_post_header, row.get('department_post', ''))).strip() if pd.notna(row.get(dept_post_header, row.get('department_post'))) else '',
-                    'year_joined': safe_int(row.get(year_joined_header, row.get('year_joined'))),
-                    'ordained_as': str(row.get(ordained_as_header, row.get('ordained_as', ''))).strip() if pd.notna(row.get(ordained_as_header, row.get('ordained_as'))) else None,
-                    'year_ordination': safe_int(row.get(year_ordination_header, row.get('year_ordination'))),
-                    'spouse_full_name': str(row.get(spouse_name_header, row.get('spouse_full_name', ''))).strip() if pd.notna(row.get(spouse_name_header, row.get('spouse_full_name'))) else '',
-                    'spouse_phone_number': str(row.get(spouse_phone_header, row.get('spouse_phone_number', ''))).strip() if pd.notna(row.get(spouse_phone_header, row.get('spouse_phone_number'))) else '',
-                }
-=======
                     'department_post': str(row.get('post_in_the_department', row.get('department_post', row.get('position', '')))).strip() if any(pd.notna(row.get(k)) for k in ['post_in_the_department', 'department_post', 'position']) else '',
-                    'year_joined': None, # Handle below
-                    'year_joined_workforce': None, # Handle below
-                    'is_ordained': False, # Handle below
+                    'year_joined': None, 
+                    'year_joined_workforce': None, 
+                    'is_ordained': False, 
                     'ordained_as': str(row.get('currently_ordained_as:', row.get('ordained_as', row.get('ordination', '')))).strip() if any(pd.notna(row.get(k)) for k in ['currently_ordained_as:', 'ordained_as', 'ordination']) else None,
-                    'year_ordination': None, # Handle below
-                    'spouse_full_name': str(row.get("spouse's_full_name", row.get("spouse name", ""))).strip() if any(pd.notna(row.get(k)) for k in ["spouse's_full_name", "spouse's full name", "spouse name"]) else '',
-                    'spouse_phone_number': str(row.get("spouse's_phone_no", row.get("spouse phone", ""))).strip() if any(pd.notna(row.get(k)) for k in ["spouse's_phone_no", "spouse's phone no", "spouse phone"]) else '',
+                    'year_ordination': None, 
+                    'spouse_full_name': str(row.get("spouse's_full_name", row.get("spouse name", ""))).strip() if any(pd.notna(row.get(k)) for k in ["spouse's_full_name", "spouse name"]) else '',
+                    'spouse_phone_number': str(row.get("spouse's_phone_no", row.get("spouse phone", ""))).strip() if any(pd.notna(row.get(k)) for k in ["spouse's_phone_no", "spouse phone"]) else '',
                 }
 
                 # Safe integer parsing for years
@@ -547,9 +434,9 @@ class MemberViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
                     except:
                         return None
 
-                data['year_joined'] = parse_year(row.get('what_year_did_you_join_rccg?', row.get('year_joined', row.get('year joined'))))
-                data['year_joined_workforce'] = parse_year(row.get('which_year_did_you_join_the_workforce?', row.get('year_joined_workforce', row.get('workforce join year'))))
-                data['year_ordination'] = parse_year(row.get('year_of_ordination', row.get('year_ordination', row.get('ordination year'))))
+                data['year_joined'] = parse_year(row.get('what_year_did_you_join_rccg?', row.get('year_joined')))
+                data['year_joined_workforce'] = parse_year(row.get('which_year_did_you_join_the_workforce?', row.get('year_joined_workforce')))
+                data['year_ordination'] = parse_year(row.get('year_of_ordination', row.get('year_ordination')))
 
                 # Handle is_ordained
                 ord_val = str(row.get('are_you_ordained?', row.get('is_ordained', ''))).lower()
@@ -557,7 +444,6 @@ class MemberViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
                     data['is_ordained'] = True
                 elif data['ordained_as']:
                     data['is_ordained'] = True
->>>>>>> e11383f (Added latest features)
                 
                 try:
                     if member:
@@ -570,25 +456,11 @@ class MemberViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
                         created_count += 1
                 except Exception as e:
                     skipped_count += 1
-<<<<<<< HEAD
-                    if i < 5: skip_reasons.append(f"Row {i+1}: Save error - {str(e)}")
-
-            status_msg = f"Import complete. Created: {created_count}, Updated: {updated_count}, Skipped: {skipped_count}."
-            if skipped_count > 0:
-                status_msg += f" Reasons: {'; '.join(skip_reasons[:3])}"
-=======
-                    err_msg = f"Row {i+1}: Database error - {str(e)}"
-                    skip_reasons.append(err_msg)
-                    print(f"DEBUG IMPORT: {err_msg}")
+                    skip_reasons.append(f"Row {i+1}: {str(e)}")
 
             status_msg = f"Import complete. Total: {len(df)}, Created: {created_count}, Updated: {updated_count}, Skipped: {skipped_count}."
-            if skipped_count > 0:
-                print(f"DEBUG IMPORT: Total skipped {skipped_count}. Reasons: {skip_reasons[:5]}")
->>>>>>> e11383f (Added latest features)
-            
             log_activity(request.user, AuditLog.Action.CREATE, 'Member', None, status_msg)
             
-            # Sanitize sample row for JSON serialization
             sample_row = None
             if not df.empty:
                 sample_row = {k: (str(v) if pd.notna(v) else None) for k, v in df.iloc[0].to_dict().items()}
@@ -607,17 +479,11 @@ class MemberViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
                 }
             })
         except Exception as e:
-            print(f"IMPORT ERROR: {str(e)}")
-            print(traceback.format_exc())
-            return Response({
-                'error': f"Processing Error: {str(e)}", 
-                'debug': str(traceback.format_exc()) if settings.DEBUG else "Check server logs for details."
-            }, status=400)
+            return Response({'error': f"Processing Error: {str(e)}", 'trace': traceback.format_exc()}, status=400)
 
     @action(detail=False, methods=['get'], permission_classes=[IsAttendanceOfficerOrHigher])
     def export_excel(self, request):
         log_activity(request.user, AuditLog.Action.EXPORT, 'Member', None, 'Member List Export')
-        # Get all fields including properties
         members = Member.objects.all()
         data = []
         for m in members:
@@ -634,17 +500,12 @@ class MemberViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
                 'spouse_full_name': m.spouse_full_name,
                 'spouse_phone_number': m.spouse_phone_number,
                 'church_membership': m.church_membership,
-<<<<<<< HEAD
-                'department_post': m.department_post,
-                'year_joined': m.year_joined,
-=======
                 'family': m.family.name if m.family else '',
                 'departments': ", ".join(m.departments.values_list('name', flat=True)),
                 'department_post': m.department_post,
                 'year_joined_rccg': m.year_joined,
                 'year_joined_workforce': m.year_joined_workforce,
                 'is_ordained': 'Yes' if m.is_ordained else 'No',
->>>>>>> e11383f (Added latest features)
                 'ordained_as': m.ordained_as,
                 'year_ordination': m.year_ordination,
                 'status': m.status,
@@ -669,10 +530,6 @@ class ServiceViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
     permission_classes = [IsAttendanceOfficerOrHigher]
 
 class AttendanceRecordViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
-<<<<<<< HEAD
-    queryset = AttendanceRecord.objects.all()
-    serializer_class = AttendanceRecordSerializer
-=======
     queryset = AttendanceRecord.objects.all().order_by('-marked_at')
     serializer_class = AttendanceRecordSerializer
     pagination_class = StandardResultsSetPagination
@@ -681,7 +538,6 @@ class AttendanceRecordViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet)
     search_fields = ['member__surname', 'member__firstname', 'service__name']
     ordering_fields = ['marked_at']
     ordering = ['-marked_at']
->>>>>>> e11383f (Added latest features)
     
     def get_queryset(self):
         user = self.request.user
@@ -717,7 +573,6 @@ class AttendanceRecordViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet)
         today = timezone.now().date()
         week_start = today - timedelta(days=6)
         
-        # Get count per day for last 7 days
         data = []
         for i in range(7):
             date = week_start + timedelta(days=i)
@@ -747,18 +602,9 @@ class AttendanceRecordViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet)
 
     @action(detail=False, methods=['get'])
     def history(self, request):
-<<<<<<< HEAD
-        # Placeholder for complex filtering
-        records = AttendanceRecord.objects.select_related('member', 'service').order_by('-marked_at')
-        data = []
-        for r in records:
-=======
         queryset = self.get_queryset().select_related('member', 'service')
-        
-        # Apply SearchFilter manually or through filter_backends
         queryset = self.filter_queryset(queryset)
         
-        # Additional Filters
         from_date = request.query_params.get('from_date')
         to_date = request.query_params.get('to_date')
         service_type = request.query_params.get('service_type')
@@ -770,7 +616,6 @@ class AttendanceRecordViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet)
         if service_type and service_type != 'all':
             queryset = queryset.filter(service__service_type=service_type)
             
-        # Stats based on filtered queryset
         stats = {
             'totalAttendance': queryset.count(),
             'totalServices': queryset.values('service').distinct().count(),
@@ -787,10 +632,6 @@ class AttendanceRecordViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet)
             
         page = self.paginate_queryset(queryset)
         if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            # We need to map the serialized data to the format the frontend expects
-            # or update the frontend to use the standard serializer output.
-            # For now, let's keep the custom format but paginated.
             data = []
             for r in page:
                 data.append({
@@ -807,10 +648,8 @@ class AttendanceRecordViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet)
                 'stats': stats
             })
 
-        # Fallback if no pagination
         data = []
         for r in queryset:
->>>>>>> e11383f (Added latest features)
             data.append({
                 'id': str(r.id),
                 'marked_at': r.marked_at,
@@ -820,26 +659,6 @@ class AttendanceRecordViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet)
                 'service_type': r.service.service_type,
                 'service_name': r.service.name,
             })
-<<<<<<< HEAD
-        
-        total_services = Service.objects.count()
-        total_attendance = AttendanceRecord.objects.count()
-        
-        # Simple stats
-        stats = {
-            'totalServices': total_services,
-            'totalAttendance': total_attendance,
-            'averageAttendance': round(total_attendance / total_services) if total_services else 0,
-            'attendanceByType': dict(
-                AttendanceRecord.objects.values('service__service_type')
-                .annotate(count=Count('id'))
-                .values_list('service__service_type', 'count')
-            )
-        }
-        
-=======
-            
->>>>>>> e11383f (Added latest features)
         return Response({
             'records': data,
             'stats': stats
@@ -897,10 +716,99 @@ class MemberFollowUpViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'])
     def calculate(self, request):
         MemberFollowUp.recalculate()
-        return Response({'status': 'calculation completed'})
+        count = MemberFollowUp.objects.filter(needs_follow_up=True).count()
+        return Response({'status': f'Calculation completed. {count} members need follow-up.'})
+
+    @action(detail=True, methods=['post'])
+    def send_message(self, request, pk=None):
+        follow_up = self.get_object()
+        template_id = request.data.get('template_id')
+        message_custom = request.data.get('message')
+        
+        member = follow_up.member
+        template = None
+        if template_id:
+            template = SMSTemplate.objects.filter(id=template_id).first()
+            
+        message_body = message_custom
+        if template and not message_body:
+            message_body = template.body.replace('{name}', member.firstname)
+        
+        if not message_body:
+            message_body = f"Hello {member.firstname}, we missed you at service recently. We hope everything is well. God bless!"
+
+        # Mock sending SMS/Email
+        # In a real app, you'd call an SMS gateway here
+        status_code = 'sent'
+        error_msg = None
+        
+        log = CommunicationLog.objects.create(
+            channel='sms' if member.phone else 'email',
+            recipient_name=member.full_name,
+            recipient_contact=member.phone or member.email or 'Unknown',
+            message=message_body,
+            status=status_code,
+            error_message=error_msg,
+            sent_by=request.user
+        )
+        
+        follow_up.needs_follow_up = False
+        follow_up.follow_up_notes = f"Follow-up sent on {timezone.now().date()}"
+        follow_up.save()
+        
+        return Response({
+            'status': 'Message sent successfully',
+            'log_id': str(log.id)
+        })
 
     def get_queryset(self):
-        return self.queryset.filter(needs_follow_up=True)
+        return self.queryset.filter(needs_follow_up=True).select_related('member')
+
+class SMSTemplateViewSet(viewsets.ModelViewSet):
+    queryset = SMSTemplate.objects.all()
+    serializer_class = SMSTemplateSerializer
+    permission_classes = [IsAttendanceOfficerOrHigher]
+
+class CommunicationLogViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = CommunicationLog.objects.all().order_by('-created_at')
+    serializer_class = CommunicationLogSerializer
+    permission_classes = [IsAttendanceOfficerOrHigher]
+    pagination_class = StandardResultsSetPagination
+
+class SMSViewSet(viewsets.ViewSet):
+    permission_classes = [IsAttendanceOfficerOrHigher]
+    
+    @action(detail=False, methods=['post'])
+    def send(self, request):
+        phone = request.data.get('phone')
+        message = request.data.get('message')
+        # Mock sending
+        CommunicationLog.objects.create(
+            channel='sms',
+            recipient_name="Manual Send",
+            recipient_contact=phone,
+            message=message,
+            status='sent',
+            sent_by=request.user
+        )
+        return Response({'status': 'Message logged/sent'})
+
+class SettingsViewSet(viewsets.ModelViewSet):
+    queryset = ChurchSettings.objects.all()
+    serializer_class = ChurchSettingsSerializer
+    permission_classes = [IsAdmin]
+
+    def list(self, request, *args, **kwargs):
+        settings, created = ChurchSettings.objects.get_or_create(id=1)
+        serializer = self.get_serializer(settings)
+        return Response(serializer.data)
+
+    def partial_update(self, request, *args, **kwargs):
+        settings, created = ChurchSettings.objects.get_or_create(id=1)
+        serializer = self.get_serializer(settings, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
 
 class StatsViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated, IsViewerOrHigher]
@@ -923,7 +831,6 @@ class StatsViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['get'])
     def service_comparison(self, request):
-        # Last 6 months service comparison
         six_months_ago = timezone.now() - timedelta(days=180)
         
         comparison = (
@@ -934,7 +841,6 @@ class StatsViewSet(viewsets.ViewSet):
             .order_by('month')
         )
         
-        # Format for frontend
         data_map = {}
         for entry in comparison:
             m_str = entry['month'].strftime('%b')
@@ -1016,10 +922,8 @@ class StatsViewSet(viewsets.ViewSet):
         inactive = Member.objects.filter(status='inactive').count()
         first_timers = Member.objects.filter(status='first_timer').count()
         
-        # Average attendance per service
         avg_att = AttendanceRecord.objects.values('service').annotate(count=Count('id')).aggregate(Avg('count'))['count__avg'] or 0
         
-        # Financial totals for current month
         now = timezone.now()
         this_month = now.month
         this_year = now.year
@@ -1045,13 +949,15 @@ class StatsViewSet(viewsets.ViewSet):
             'averageAttendance': round(avg_att),
             'totalTithes': total_tithes,
             'totalOfferings': total_offerings,
-            'growthRate': 0, # Placeholder for growth calculation
+            'growthRate': 0,
         })
 
 class SMSTemplateViewSet(viewsets.ModelViewSet):
     queryset = SMSTemplate.objects.all().order_by('-created_at')
     serializer_class = SMSTemplateSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+from .sms_provider import get_sms_provider
 
 class SMSViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -1064,11 +970,11 @@ class SMSViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['get'])
     def status(self, request):
-        # In a real app, this would check if the SMS provider (Twilio/etc) is reachable
+        provider = get_sms_provider()
         return Response({
             'connected': True,
-            'provider': 'Simulated Provider',
-            'balance': 'Unlimited'
+            'provider': provider.__class__.__name__,
+            'is_simulation': provider.__class__.__name__ == 'SimulationProvider'
         })
 
     @action(detail=False, methods=['post'])
@@ -1079,18 +985,38 @@ class SMSViewSet(viewsets.ViewSet):
         if not recipients or not message:
             return Response({'error': 'Recipients and message are required'}, status=400)
 
-        # Log each message
+        provider = get_sms_provider()
+        success_count = 0
+        failure_count = 0
+
         for r in recipients:
+            phone = r.get('phone')
+            if not phone:
+                failure_count += 1
+                continue
+
+            success, info = provider.send(phone, message)
+            
             CommunicationLog.objects.create(
                 channel='sms',
                 recipient_name=r.get('name', 'Unknown'),
-                recipient_contact=r.get('phone', 'Unknown'),
+                recipient_contact=phone,
                 message=message,
                 sent_by=request.user,
-                status='sent' # Simulated success for now, but logged
+                status='sent' if success else 'failed',
+                notes=info if not success else None
             )
             
-        return Response({'status': f'Success: Message queued for {len(recipients)} recipients'})
+            if success:
+                success_count += 1
+            else:
+                failure_count += 1
+            
+        return Response({
+            'status': f'Completed: {success_count} sent, {failure_count} failed.',
+            'success_count': success_count,
+            'failure_count': failure_count
+        })
 
 class CommunicationLogViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
     queryset = CommunicationLog.objects.all().order_by('-created_at')
@@ -1119,9 +1045,6 @@ class SettingsViewSet(viewsets.ViewSet):
 class ContributionViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
     queryset = Contribution.objects.all().order_by('-date', '-created_at')
     serializer_class = ContributionSerializer
-<<<<<<< HEAD
-    permission_classes = [permissions.IsAuthenticated, IsAdmin | IsFinanceOfficer]
-=======
     pagination_class = StandardResultsSetPagination
     permission_classes = [permissions.IsAuthenticated, IsAdmin | IsFinanceOfficer]
     from rest_framework.filters import SearchFilter, OrderingFilter
@@ -1129,7 +1052,6 @@ class ContributionViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
     search_fields = ['member__surname', 'member__firstname', 'notes', 'contribution_type']
     ordering_fields = ['date', 'amount', 'created_at']
     ordering = ['-date', '-created_at']
->>>>>>> e11383f (Added latest features)
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -1144,16 +1066,7 @@ class ContributionViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(recorded_by=self.request.user)
-        # Audit logging is handled by AuditableModelViewSetMixin.perform_create
         super().perform_create(serializer)
-
-    def perform_update(self, serializer):
-        # Audit logging is handled by AuditableModelViewSetMixin.perform_update
-        super().perform_update(serializer)
-
-    def perform_destroy(self, instance):
-        # Audit logging is handled by AuditableModelViewSetMixin.perform_destroy
-        super().perform_destroy(instance)
 
     @action(detail=True, methods=['get'])
     def generate_receipt(self, request, pk=None):
@@ -1161,7 +1074,6 @@ class ContributionViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
         from reportlab.lib.pagesizes import letter
         from reportlab.lib.units import inch
         from reportlab.lib import colors
-        from reportlab.lib.styles import getSampleStyleSheet
         
         contribution = self.get_object()
         settings, _ = ChurchSettings.objects.get_or_create(id=1)
@@ -1169,39 +1081,27 @@ class ContributionViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
         p = canvas.Canvas(buffer, pagesize=letter)
         width, height = letter
         
-        # --- Professional RCCG Branding ---
         # Header Background
         p.setFillColor(colors.HexColor("#0f172a")) # Slate 900
         p.rect(0, height - 1.5*inch, width, 1.5*inch, fill=1)
         
-        # Church Name
         p.setFillColor(colors.white)
         p.setFont("Helvetica-Bold", 20)
         p.drawString(0.5*inch, height - 0.7*inch, settings.church_name.upper())
-        
-        # Motto/Subtitle (Optional placeholder)
         p.setFont("Helvetica", 10)
         p.drawString(0.5*inch, height - 0.9*inch, "Official Treasury Division")
         
-        # Receipt Label
         p.setFont("Helvetica-Bold", 40)
-        p.setStrokeColor(colors.white)
-        p.setFillColor(colors.white)
         p.drawRightString(width - 0.5*inch, height - 0.8*inch, "RECEIPT")
         
-        # --- Info Section ---
         p.setFillColor(colors.black)
         p.setFont("Helvetica-Bold", 12)
         p.drawString(0.5*inch, height - 2.0*inch, "RECEIPT TO:")
-        
         p.setFont("Helvetica", 11)
         p.drawString(0.5*inch, height - 2.2*inch, contribution.member.full_name if contribution.member else "Anonymous Contributor")
         if contribution.member:
             p.drawString(0.5*inch, height - 2.4*inch, f"ID: {str(contribution.member.id)[:8].upper()}")
-            if contribution.member.email:
-                p.drawString(0.5*inch, height - 2.6*inch, contribution.member.email)
         
-        # Receipt Details Table-like box
         p.setFont("Helvetica-Bold", 12)
         p.drawRightString(width - 0.5*inch, height - 2.0*inch, "RECEIPT DETAILS:")
         p.setFont("Helvetica", 11)
@@ -1209,8 +1109,6 @@ class ContributionViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
         p.drawRightString(width - 0.5*inch, height - 2.4*inch, f"Date: {contribution.date}")
         p.drawRightString(width - 0.5*inch, height - 2.6*inch, f"Method: {contribution.payment_method.replace('_', ' ').title()}")
         
-        # --- Main content box ---
-        p.setStrokeColor(colors.HexColor("#e2e8f0")) # Slate 200
         p.setFillColor(colors.HexColor("#f8fafc")) # Slate 50
         p.rect(0.5*inch, 4.5*inch, width - 1*inch, 2.5*inch, fill=1)
         
@@ -1224,42 +1122,48 @@ class ContributionViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
         p.drawString(0.8*inch, 5.8*inch, contribution.contribution_type.replace('_', ' ').title())
         p.drawRightString(width - 0.8*inch, 5.8*inch, f"NGN {contribution.amount:,.2f}")
         
-        if contribution.notes:
-            p.setFont("Helvetica-Oblique", 10)
-            p.setFillColor(colors.grey)
-            p.drawString(0.8*inch, 5.5*inch, f"Note: {contribution.notes}")
-        
-        # --- Totals ---
-        p.setFillColor(colors.black)
         p.line(width - 3*inch, 5.0*inch, width - 0.8*inch, 5.0*inch)
-        
         p.setFont("Helvetica-Bold", 16)
         p.drawString(width - 3*inch, 4.7*inch, "TOTAL")
         p.drawRightString(width - 0.8*inch, 4.7*inch, f"NGN {contribution.amount:,.2f}")
         
-        # --- Footer ---
         p.setFont("Helvetica-Bold", 12)
         p.drawString(0.5*inch, 3.5*inch, "Authorized Signature")
         p.line(0.5*inch, 3.7*inch, 2.5*inch, 3.7*inch)
         
         p.setFont("Helvetica-Oblique", 10)
         p.drawCentredString(width/2, 2.5*inch, "This is an electronically generated receipt. No signature required.")
-        p.setFont("Helvetica-Bold", 10)
         p.drawCentredString(width/2, 2.3*inch, f"God bless you for your {contribution.contribution_type.replace('_', ' ')}.")
         
-        # Church Footer Info
-        p.setFillColor(colors.grey)
-        p.setFont("Helvetica", 9)
-        p.drawCentredString(width/2, 1.0*inch, f"{settings.church_name} | {settings.address or ''}")
-        if settings.contact_email:
-            p.drawCentredString(width/2, 0.8*inch, f"Email: {settings.contact_email}")
-            
         p.showPage()
         p.save()
         
         buffer.seek(0)
         response = HttpResponse(buffer, content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename=receipt_{contribution.id}.pdf'
+        return response
+
+    @action(detail=False, methods=['get'])
+    def summary(self, request):
+        month = request.query_params.get('month')
+        year = request.query_params.get('year')
+        queryset = self.get_queryset()
+        if month and year:
+            queryset = queryset.filter(date__month=month, date__year=year)
+        summary_data = queryset.values('contribution_type').annotate(total=Sum('amount'))
+        return Response(list(summary_data))
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAdmin | IsFinanceOfficer])
+    def export_excel(self, request):
+        contributions = Contribution.objects.select_related('member', 'recorded_by').all()
+        data = [{'Date': c.date, 'Member': c.member.full_name if c.member else 'Anonymous', 'Type': c.contribution_type, 'Amount': c.amount, 'Recorded By': c.recorded_by.username} for c in contributions]
+        df = pd.DataFrame(data)
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Contributions')
+        output.seek(0)
+        response = HttpResponse(output.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename=financials_export.xlsx'
         return response
 
 class FamilyViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
@@ -1281,135 +1185,47 @@ class InventoryItemViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [IsAdmin | IsFinanceOfficer]
         return [IsViewerOrHigher()]
-        p.setFont("Helvetica-Bold", 16)
-        p.drawString(width - 3*inch, 4.7*inch, "TOTAL")
-        p.drawRightString(width - 0.8*inch, 4.7*inch, f"NGN {contribution.amount:,.2f}")
-        
-        # --- Footer ---
-        p.setFont("Helvetica-Bold", 12)
-        p.drawString(0.5*inch, 3.5*inch, "Authorized Signature")
-        p.line(0.5*inch, 3.7*inch, 2.5*inch, 3.7*inch)
-        
-        p.setFont("Helvetica-Oblique", 10)
-        p.drawCentredString(width/2, 2.5*inch, "This is an electronically generated receipt. No signature required.")
-        p.setFont("Helvetica-Bold", 10)
-        p.drawCentredString(width/2, 2.3*inch, f"God bless you for your {contribution.contribution_type.replace('_', ' ')}.")
-        
-        # Church Footer Info
-        p.setFillColor(colors.grey)
-        p.setFont("Helvetica", 9)
-        p.drawCentredString(width/2, 1.0*inch, f"{settings.church_name} | {settings.address or ''}")
-        if settings.contact_email:
-            p.drawCentredString(width/2, 0.8*inch, f"Email: {settings.contact_email}")
-            
-        p.showPage()
-        p.save()
-        
-        buffer.seek(0)
-        response = HttpResponse(buffer, content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename=receipt_{contribution.id}.pdf'
-        return response
-
 
     @action(detail=False, methods=['get'])
     def summary(self, request):
-        from django.db.models import Sum
         month = request.query_params.get('month')
         year = request.query_params.get('year')
-        
         queryset = self.get_queryset()
         if month and year:
             queryset = queryset.filter(date__month=month, date__year=year)
-            
         summary_data = queryset.values('contribution_type').annotate(total=Sum('amount'))
         return Response(list(summary_data))
-
-    @action(detail=False, methods=['get'], permission_classes=[IsAdmin | IsFinanceOfficer])
-    def export_excel(self, request):
-        log_activity(request.user, AuditLog.Action.EXPORT, 'Contribution', None, 'Contribution Export')
-        contributions = Contribution.objects.select_related('member', 'recorded_by').all()
-        data = []
-        for c in contributions:
-            data.append({
-                'Date': c.date,
-                'Member': c.member.full_name if c.member else 'Anonymous',
-                'Type': c.contribution_type,
-                'Amount': c.amount,
-                'Note': c.notes,
-                'Recorded By': c.recorded_by.username,
-            })
-            
-        df = pd.DataFrame(data)
-        output = io.BytesIO()
-        with pd.ExcelWriter(output, engine='openpyxl') as writer:
-            df.to_excel(writer, index=False, sheet_name='Contributions')
-            
-        output.seek(0)
-        response = HttpResponse(
-            output.read(),
-            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        )
-        response['Content-Disposition'] = 'attachment; filename=financials_export.xlsx'
-        return response
 
 class ExpenseViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
     queryset = Expense.objects.all().order_by('-date', '-created_at')
     serializer_class = ExpenseSerializer
-<<<<<<< HEAD
-=======
     pagination_class = StandardResultsSetPagination
->>>>>>> e11383f (Added latest features)
     permission_classes = [permissions.IsAuthenticated, IsAdmin | IsFinanceOfficer]
 
     def perform_create(self, serializer):
         serializer.save(recorded_by=self.request.user)
         super().perform_create(serializer)
 
-    def perform_update(self, serializer):
-        super().perform_update(serializer)
-
-    def perform_destroy(self, instance):
-        super().perform_destroy(instance)
-
-
     @action(detail=False, methods=['get'])
     def summary(self, request):
-        from django.db.models import Sum
         month = request.query_params.get('month')
         year = request.query_params.get('year')
-        
         queryset = self.get_queryset()
         if month and year:
             queryset = queryset.filter(date__month=month, date__year=year)
-            
         summary_data = queryset.values('category').annotate(total=Sum('amount'))
         return Response(list(summary_data))
 
     @action(detail=False, methods=['get'], permission_classes=[IsAdmin | IsFinanceOfficer])
     def export_excel(self, request):
-        log_activity(request.user, AuditLog.Action.EXPORT, 'Expense', None, 'Expense Export')
         expenses = self.get_queryset().select_related('recorded_by').all()
-        data = []
-        for e in expenses:
-            data.append({
-                'Date': e.date,
-                'Description': e.description,
-                'Category': e.category,
-                'Amount': e.amount,
-                'Note': e.notes,
-                'Recorded By': e.recorded_by.username if e.recorded_by else 'Unknown',
-            })
-            
+        data = [{'Date': e.date, 'Description': e.description, 'Category': e.category, 'Amount': e.amount, 'Recorded By': e.recorded_by.username if e.recorded_by else 'Unknown'} for e in expenses]
         df = pd.DataFrame(data)
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
             df.to_excel(writer, index=False, sheet_name='Expenses')
-            
         output.seek(0)
-        response = HttpResponse(
-            output.read(),
-            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        )
+        response = HttpResponse(output.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = 'attachment; filename=expenses_export.xlsx'
         return response
 
@@ -1428,19 +1244,14 @@ class CalendarEventViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def unified_feed(self, request):
-        """Returns both CalendarEvents and Services in a single feed."""
         start_date = request.query_params.get('start')
         end_date = request.query_params.get('end')
-        
         events_qs = self.get_queryset()
         services_qs = Service.objects.all()
-        
         if start_date and end_date:
             events_qs = events_qs.filter(start_time__date__range=[start_date, end_date])
             services_qs = services_qs.filter(service_date__range=[start_date, end_date])
-            
         events = CalendarEventSerializer(events_qs, many=True).data
-        # Map Service objects to a similar structure
         services = []
         for s in services_qs:
             services.append({
@@ -1448,21 +1259,16 @@ class CalendarEventViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
                 'title': s.name,
                 'description': s.description,
                 'event_type': 'service',
-                'start_time': f"{s.service_date}T08:00:00Z", # Default time for Sunday/Midweek
+                'start_time': f"{s.service_date}T08:00:00Z",
                 'end_time': f"{s.service_date}T10:00:00Z",
                 'location': 'Main Sanctuary',
                 'is_service_model': True
             })
-            
         return Response(events + services)
 
 class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = AuditLog.objects.all()
+    queryset = AuditLog.objects.all().order_by('-timestamp')
     serializer_class = AuditLogSerializer
-<<<<<<< HEAD
-    permission_classes = [permissions.IsAuthenticated, IsAdmin]
-    filterset_fields = ['user', 'action', 'model_name']
-=======
     pagination_class = StandardResultsSetPagination
     permission_classes = [permissions.IsAuthenticated, IsAdmin]
     from rest_framework.filters import SearchFilter, OrderingFilter
@@ -1470,15 +1276,10 @@ class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
     search_fields = ['user__username', 'model_name', 'object_name', 'action']
     ordering_fields = ['timestamp']
     ordering = ['-timestamp']
->>>>>>> e11383f (Added latest features)
-
-    def get_queryset(self):
-        return AuditLog.objects.all().order_by('-timestamp')
 
 class DepartmentViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
     queryset = Department.objects.all().order_by('name')
     serializer_class = DepartmentSerializer
-    
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [IsAdmin()]
@@ -1487,11 +1288,7 @@ class DepartmentViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
 class ChildViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
     queryset = Child.objects.all().order_by('full_name')
     serializer_class = ChildSerializer
-<<<<<<< HEAD
-=======
     pagination_class = StandardResultsSetPagination
->>>>>>> e11383f (Added latest features)
-    
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [IsChildrenOfficerOrHigher()]
@@ -1500,7 +1297,6 @@ class ChildViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
 class ChildCheckInViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
     queryset = ChildCheckIn.objects.all().order_by('-checked_in_at')
     serializer_class = ChildCheckInSerializer
-    
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy', 'checkout']:
             return [IsChildrenOfficerOrHigher()]
@@ -1508,20 +1304,13 @@ class ChildCheckInViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         instance = serializer.save(checked_in_by=self.request.user)
-        log_activity(
-            self.request.user, 
-            AuditLog.Action.CREATE, 
-            instance.__class__.__name__, 
-            instance.id, 
-            str(instance)
-        )
+        log_activity(self.request.user, AuditLog.Action.CREATE, instance.__class__.__name__, instance.id, str(instance))
 
     @action(detail=True, methods=['post'])
     def checkout(self, request, pk=None):
         checkin = self.get_object()
         if checkin.checked_out_at:
             return Response({'error': 'Child already checked out'}, status=400)
-        
         checkin.checked_out_at = timezone.now()
         checkin.save()
         return Response({'status': 'checked out successfully'})
@@ -1529,17 +1318,13 @@ class ChildCheckInViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
 class PrayerRequestViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
     queryset = PrayerRequest.objects.all().order_by('-created_at')
     serializer_class = PrayerRequestSerializer
-    
     def get_permissions(self):
         if self.action == 'create':
             return [permissions.AllowAny()]
-        if self.action in ['update', 'partial_update', 'destroy', 'mark_as_prayed', 'mark_as_answered']:
-            return [IsPrayerOfficerOrHigher()]
-        return [IsPrayerOfficerOrHigher()] # Only prayer team can see the list
+        return [IsPrayerOfficerOrHigher()]
 
     def perform_create(self, serializer):
         if self.request.user.is_authenticated:
-            # If logged in, try to link to member profile if exists
             try:
                 member = Member.objects.get(email=self.request.user.email)
                 instance = serializer.save(member=member)
@@ -1547,14 +1332,7 @@ class PrayerRequestViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
                 instance = serializer.save()
         else:
             instance = serializer.save()
-        
-        log_activity(
-            self.request.user if self.request.user.is_authenticated else None, 
-            AuditLog.Action.CREATE, 
-            'PrayerRequest', 
-            instance.id, 
-            f"Prayer: {instance.requester_name}"
-        )
+        log_activity(self.request.user if self.request.user.is_authenticated else None, AuditLog.Action.CREATE, 'PrayerRequest', instance.id, f"Prayer: {instance.requester_name}")
 
     @action(detail=True, methods=['post'])
     def mark_as_prayed(self, request, pk=None):
@@ -1579,10 +1357,10 @@ class PledgeViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
     queryset = Pledge.objects.all().order_by('-target_date')
     serializer_class = PledgeSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdmin | IsFinanceOfficer]
+
 class CheckInQueueViewSet(viewsets.ModelViewSet):
     queryset = CheckInQueue.objects.all()
     serializer_class = CheckInQueueSerializer
-
     def get_permissions(self):
         if self.action == 'create':
             return [permissions.AllowAny()]
@@ -1590,172 +1368,74 @@ class CheckInQueueViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         phone_number = self.request.data.get('phone_number')
-        # Try to find a member with this phone number
         member = Member.objects.filter(phone=phone_number).first()
-        
-        # Get latest active service
         today = timezone.now().date()
         service = Service.objects.filter(service_date=today).order_by('-created_at').first()
-        
         if not service:
-            # Fallback to absolute latest service if none today
             service = Service.objects.all().order_by('-service_date', '-id').first()
-
         serializer.save(member=member, service=service)
-        
-        # Log public check-in
-        log_activity(
-            None, 
-            'public_check_in_request', 
-            'CheckInQueue', 
-            None, 
-            f"Phone: {phone_number}",
-            details={'member_found': member.id if member else None}
-        )
 
     @action(detail=True, methods=['post'], permission_classes=[IsAttendanceOfficerOrHigher])
     def confirm(self, request, pk=None):
         queue_item = self.get_object()
         if queue_item.status != 'pending':
             return Response({'error': 'Already processed'}, status=400)
-
-        # Check for phone number update if provided
-        new_phone = request.data.get('phone_number')
         member = queue_item.member
-
         if member:
-            if new_phone and new_phone != member.phone:
-                # Update member's phone number
-                old_phone = member.phone
-                member.phone = new_phone
-                member.save()
-                log_activity(
-                    request.user,
-                    AuditLog.Action.UPDATE,
-                    'Member',
-                    member.id,
-                    member.full_name,
-                    details={'old_phone': old_phone, 'new_phone': new_phone}
-                )
-
-            # Mark attendance
-            AttendanceRecord.objects.get_or_create(
-                member=member,
-                service=queue_item.service,
-                defaults={'marked_by': request.user}
-            )
-            
+            AttendanceRecord.objects.get_or_create(member=member, service=queue_item.service, defaults={'marked_by': request.user})
             queue_item.status = 'confirmed'
             queue_item.save()
-            
             return Response(self.get_serializer(queue_item).data)
-        
-        return Response({'error': 'No member linked to this request'}, status=400)
+        return Response({'error': 'No member linked'}, status=400)
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAttendanceOfficerOrHigher])
-    def reject(self, request, pk=None):
-        queue_item = self.get_object()
-        queue_item.status = 'rejected'
-        queue_item.save()
-        return Response(self.get_serializer(queue_item).data)
 class TwoFactorViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
-
     @action(detail=False, methods=['post'])
     def enable(self, request):
         profile = request.user.profile
-        if profile.is_two_factor_enabled:
-            return Response({'error': '2FA is already enabled'}, status=400)
-            
         if not profile.two_factor_secret:
             profile.two_factor_secret = pyotp.random_base32()
             profile.save()
-            
         totp = pyotp.TOTP(profile.two_factor_secret)
-        provisioning_url = totp.provisioning_uri(
-            name=request.user.email,
-            issuer_name="RCCG Sanctuary"
-        )
-        
-        # Generate QR Code as base64
+        provisioning_url = totp.provisioning_uri(name=request.user.email, issuer_name="RCCG Sanctuary")
         qr = qrcode.QRCode(version=1, box_size=10, border=5)
         qr.add_data(provisioning_url)
         qr.make(fit=True)
         img = qr.make_image(fill_color="black", back_color="white")
-        
         buffered = BytesIO()
         img.save(buffered, format="PNG")
         qr_base64 = base64.b64encode(buffered.getvalue()).decode()
-        
-        return Response({
-            'qr_code': f"data:image/png;base64,{qr_base64}",
-            'secret': profile.two_factor_secret
-        })
+        return Response({'qr_code': f"data:image/png;base64,{qr_base64}", 'secret': profile.two_factor_secret})
 
     @action(detail=False, methods=['post'])
     def verify(self, request):
         token = request.data.get('token')
         profile = request.user.profile
-        
-        if not profile.two_factor_secret:
-            return Response({'error': '2FA not initialized'}, status=400)
-            
         totp = pyotp.TOTP(profile.two_factor_secret)
         if totp.verify(token):
             profile.is_two_factor_enabled = True
             profile.save()
-            log_activity(request.user, AuditLog.Action.UPDATE, 'Profile', profile.id, '2FA Enabled')
-            return Response({'status': '2FA enabled successfully'})
-        else:
-            return Response({'error': 'Invalid token'}, status=400)
-
-    @action(detail=False, methods=['post'])
-    def disable(self, request):
-        token = request.data.get('token')
-        profile = request.user.profile
-        
-        if not profile.is_two_factor_enabled:
-            return Response({'error': '2FA is not enabled'}, status=400)
-            
-        totp = pyotp.TOTP(profile.two_factor_secret)
-        if totp.verify(token):
-            profile.is_two_factor_enabled = False
-            # We keep the secret for now in case they want to re-enable, 
-            # or we could clear it for full reset.
-            profile.save()
-            log_activity(request.user, AuditLog.Action.UPDATE, 'Profile', profile.id, '2FA Disabled')
-            return Response({'status': '2FA disabled successfully'})
-        else:
-            return Response({'error': 'Invalid token'}, status=400)
-
-        return Response({
-            'is_enabled': request.user.profile.is_two_factor_enabled
-        })
+            return Response({'status': '2FA enabled'})
+        return Response({'error': 'Invalid token'}, status=400)
 
 class TwoFactorTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
-        # First, standard password validation
-        try:
-            data = super().validate(attrs)
-        except Exception as e:
-            raise e
-            
+        # Support login by email
+        username = attrs.get('username')
+        if username and '@' in username:
+            user = User.objects.filter(email__iexact=username).first()
+            if user:
+                attrs['username'] = user.username
+
+        data = super().validate(attrs)
         profile = getattr(self.user, 'profile', None)
         if profile and profile.is_two_factor_enabled:
             token = self.context['request'].data.get('two_factor_token')
             if not token:
-                # Signal to frontend that 2FA is required
-                raise serializers.ValidationError({
-                    'two_factor_required': True,
-                    'detail': '2FA token required'
-                }, code='2fa_required')
-            
+                raise serializers.ValidationError({'two_factor_required': True}, code='2fa_required')
             totp = pyotp.TOTP(profile.two_factor_secret)
             if not totp.verify(token):
-                raise serializers.ValidationError({
-                    'detail': 'Invalid 2FA token'
-                }, code='invalid_2fa')
-                
+                raise serializers.ValidationError({'detail': 'Invalid 2FA token'}, code='invalid_2fa')
         return data
 
 class TwoFactorTokenObtainPairView(TokenObtainPairView):

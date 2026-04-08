@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useNavigate, useOutletContext } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { useSidebar } from '@/context/sidebar-context';
 import { Bell, Search, Menu, Sun, Moon, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from 'next-themes';
@@ -21,7 +22,7 @@ interface HeaderProps {
 
 export function Header({ title, subtitle }: HeaderProps) {
   const navigate = useNavigate();
-  const { setMobileOpen } = useOutletContext<{ setMobileOpen: (open: boolean) => void }>();
+  const { setMobileOpen, isMobile } = useSidebar();
   const { theme, setTheme } = useTheme();
   const [notifications, setNotifications] = useState([
     { id: 1, title: 'New Member Registered', description: 'Michael Smith just joined the workforce.', time: '2m ago', icon: 'user' },
@@ -49,16 +50,18 @@ export function Header({ title, subtitle }: HeaderProps) {
     <header className="sticky top-0 z-30 flex h-20 items-center justify-between border-b border-border bg-background/80 px-6 backdrop-blur-md">
       <div className="flex items-center gap-4">
         <Button
+          type="button"
           variant="ghost"
           size="icon"
           onClick={() => setMobileOpen(true)}
           className="lg:hidden -ml-2 h-10 w-10 md:h-12 md:w-12"
+          aria-label="Open side menu"
         >
           <Menu className="h-5 w-5 md:h-6 md:w-6" />
         </Button>
-        <div>
-          <h1 className="text-xl md:text-2xl font-semibold text-foreground tracking-tight">{title}</h1>
-          <p className="text-xs md:text-sm text-muted-foreground font-medium">{subtitle || today}</p>
+        <div className="flex flex-col">
+          <h1 className="text-xl md:text-2xl font-semibold text-foreground tracking-tight line-clamp-1">{title}</h1>
+          <p className="text-[10px] md:text-sm text-muted-foreground font-medium truncate">{subtitle || today}</p>
         </div>
       </div>
 

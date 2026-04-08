@@ -124,11 +124,8 @@ export default function Auth() {
                     <img src={RCCG_LOGO_URL} alt="RCCG" className="w-full h-full object-contain" />
                 </div>
                 <div className="h-8 w-px bg-white/20" />
-<<<<<<< HEAD
-                <span className="text-white text-sm font-bold tracking-[0.3em] uppercase">Sanctuary Portal</span>
-=======
                 <span className="text-white text-sm font-bold tracking-[0.3em] uppercase">E-Sanctuary Portal</span>
->>>>>>> e11383f (Added latest features)
+
             </motion.div>
 
             <div className="max-w-xl">
@@ -190,19 +187,50 @@ export default function Auth() {
                 transition={{ duration: 0.5 }}
                 className="w-full max-w-sm mx-auto space-y-8"
             >
-                <div className="space-y-3">
-                    <div className="lg:hidden flex justify-center mb-8">
-                         <div className="h-14 w-14 bg-white rounded-2xl p-3 shadow-2xl border border-slate-100">
+                <div className="space-y-4">
+                    {/* Mobile Header */}
+                    <div className="lg:hidden flex flex-col items-center mb-10">
+                        <motion.div 
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ duration: 0.6, ease: "easeOut" }}
+                            className="h-16 w-16 bg-white rounded-2xl p-3.5 shadow-2xl border border-slate-100 mb-4"
+                        >
                             <img src={RCCG_LOGO_URL} alt="RCCG" className="w-full h-full object-contain" />
-                        </div>
+                        </motion.div>
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2, duration: 0.6 }}
+                            className="text-center"
+                        >
+                            <span className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.4em]">E-Sanctuary</span>
+                            <h2 className="text-2xl font-black text-slate-900 tracking-tight mt-1">Portal Sign In</h2>
+                        </motion.div>
                     </div>
-                    <h2 className="text-3xl font-black text-slate-900 tracking-tight">Sign In</h2>
-                    <p className="text-slate-500 font-medium">Please enter your credentials to access your dashboard.</p>
+
+                    {/* Desktop Header */}
+                    <div className="hidden lg:block">
+                        <h2 className="text-3xl font-black text-slate-900 tracking-tight">Sign In</h2>
+                        <p className="text-slate-500 font-medium">Please enter your credentials to access your dashboard.</p>
+                    </div>
                 </div>
 
-                <form onSubmit={handleLogin} className="space-y-6">
+                <motion.form 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3, duration: 0.6 }}
+                    onSubmit={handleLogin} 
+                    className="space-y-6"
+                >
                     <div className="space-y-4">
-                        <div className="space-y-2 group">
+                        {/* Email Field with Animation */}
+                        <motion.div 
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.4 }}
+                            className="space-y-2 group"
+                        >
                             <Label htmlFor="login-email" className="text-xs font-bold text-slate-400 group-focus-within:text-indigo-600 uppercase tracking-widest ml-1 transition-colors">Email Address</Label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-slate-400 group-focus-within:text-indigo-600 transition-colors">
@@ -218,9 +246,15 @@ export default function Auth() {
                                     required
                                 />
                             </div>
-                        </div>
+                        </motion.div>
 
-                        <div className="space-y-2 group">
+                        {/* Password Field with Animation */}
+                        <motion.div 
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.5 }}
+                            className="space-y-2 group"
+                        >
                             <div className="flex justify-between items-center px-1">
                                 <Label htmlFor="login-password" className="text-xs font-bold text-slate-400 group-focus-within:text-indigo-600 uppercase tracking-widest transition-colors">Password</Label>
                                 <button
@@ -252,7 +286,7 @@ export default function Auth() {
                                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                 </button>
                             </div>
-                        </div>
+                        </motion.div>
 
                         <AnimatePresence>
                             {is2FARequired && (
@@ -328,7 +362,7 @@ export default function Auth() {
                              <p className="text-[11px] text-slate-500 font-medium leading-relaxed">Only authorized personnel can access this portal. If you need assistance, contact the Media Dept.</p>
                         </div>
                     </div>
-                </form>
+                </motion.form>
             </motion.div>
         </div>
 

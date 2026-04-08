@@ -38,6 +38,8 @@ class ChurchMembership(models.TextChoices):
 class OrdinationRole(models.TextChoices):
     DEACON = 'deacon', 'Deacon'
     DEACONESS = 'deaconess', 'Deaconess'
+    MINISTER = 'minister', 'Minister'
+    ASSISTANT_PASTOR = 'assistant_pastor', 'Assistant Pastor'
     FULL_PASTOR = 'full_pastor', 'Full Pastor'
 
 class ContributionType(models.TextChoices):
@@ -132,12 +134,12 @@ class Family(models.Model):
 
 class Member(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    surname = models.CharField(max_length=100)
-    firstname = models.CharField(max_length=100)
+    surname = models.CharField(max_length=100, db_index=True)
+    firstname = models.CharField(max_length=100, db_index=True)
     other_name = models.CharField(max_length=100, blank=True, null=True)
-    phone = models.CharField(max_length=20)
+    phone = models.CharField(max_length=20, db_index=True)
     gender = models.CharField(max_length=10, choices=Gender.choices)
-    email = models.EmailField(blank=True, null=True)
+    email = models.EmailField(blank=True, null=True, db_index=True)
     address = models.TextField(blank=True, null=True)
     date_of_birth = models.DateField(blank=True, null=True)
     
@@ -151,15 +153,10 @@ class Member(models.Model):
     family = models.ForeignKey(Family, on_delete=models.SET_NULL, null=True, blank=True, related_name='members')
     
     year_joined = models.IntegerField(blank=True, null=True)
-<<<<<<< HEAD
-    date_joined = models.DateField(auto_now_add=True)
-    
-=======
     year_joined_workforce = models.IntegerField(blank=True, null=True)
     date_joined = models.DateField(auto_now_add=True)
     
     is_ordained = models.BooleanField(default=False)
->>>>>>> e11383f (Added latest features)
     ordained_as = models.CharField(max_length=20, choices=OrdinationRole.choices, blank=True, null=True)
     year_ordination = models.IntegerField(blank=True, null=True)
     
@@ -383,7 +380,18 @@ class ChurchSettings(models.Model):
     church_name = models.CharField(max_length=255, default='RCCG Emmanuel Sanctuary')
     address = models.TextField(blank=True, null=True)
     contact_email = models.EmailField(blank=True, null=True)
+    phone_number = models.CharField(max_length=20, blank=True, null=True)
     logo_url = models.TextField(blank=True, null=True, default='/rccg_logo.png')
+    
+    # Social Media & Web
+    website_url = models.URLField(blank=True, null=True)
+    facebook_url = models.URLField(blank=True, null=True)
+    instagram_url = models.URLField(blank=True, null=True)
+    youtube_url = models.URLField(blank=True, null=True)
+    
+    # Service Configuration
+    service_times = models.TextField(blank=True, null=True, help_text="List your service times (e.g. Sundays 9am, 11am)")
+    
     attendance_reminders = models.BooleanField(default=True)
     new_member_alerts = models.BooleanField(default=True)
     weekly_reports = models.BooleanField(default=False)

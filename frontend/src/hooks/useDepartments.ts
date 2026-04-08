@@ -24,12 +24,9 @@ export function useDepartments() {
     queryKey: ['departments'],
     queryFn: async () => {
       const response = await api.get('/departments/');
-<<<<<<< HEAD
-      return response.data;
-=======
       // Handle both direct array and paginated structure for resiliency
       return (response.data.results || response.data) as Department[];
->>>>>>> e11383f (Added latest features)
+
     },
     enabled: !!user,
   });

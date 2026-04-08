@@ -41,7 +41,8 @@ export function useChildren() {
     try {
       setLoading(true);
       const response = await api.get('/children/');
-      setChildren(response.data);
+      const data = response.data;
+      setChildren(Array.isArray(data) ? data : (data.results || []));
     } catch (error) {
       console.error('Error fetching children:', error);
       toast({
@@ -57,7 +58,8 @@ export function useChildren() {
   const fetchCheckIns = useCallback(async () => {
     try {
       const response = await api.get('/child-checkins/');
-      setCheckIns(response.data);
+      const data = response.data;
+      setCheckIns(Array.isArray(data) ? data : (data.results || []));
     } catch (error) {
       console.error('Error fetching child check-ins:', error);
     }
