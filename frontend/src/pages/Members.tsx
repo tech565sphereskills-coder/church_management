@@ -44,6 +44,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useDepartments } from '@/hooks/useDepartments';
 import { MemberDetailsSheet } from '@/components/members/MemberDetailsSheet';
+import { PublicRegistrationLink } from '@/components/members/PublicRegistrationLink';
+import { Share2 } from 'lucide-react';
 
 const PAGE_SIZE = 20;
 
@@ -165,6 +167,7 @@ function MemberCard({ member, index, onView, onEdit, onQR }: MemberCardProps) {
 }
 
 export default function Members() {
+  const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebounce(searchQuery, 500);
@@ -198,6 +201,7 @@ export default function Members() {
   const [smsRecipients, setSmsRecipients] = useState<{ id: string | null; phone: string; name: string }[] | null>(null);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
+  const [isShareLinkOpen, setIsShareLinkOpen] = useState(false);
   const [viewingMember, setViewingMember] = useState<Member | null>(null);
   const [isInsightsOpen, setIsInsightsOpen] = useState(false);
 
@@ -500,7 +504,14 @@ export default function Members() {
                 <Button variant="outline" onClick={handleExport} className="flex-1 sm:flex-none h-11 rounded-xl">
                   <FileDown className="mr-2 h-4 w-4" /> Export
                 </Button>
-                <Button onClick={() => setIsNewMemberOpen(true)} className="btn-gold flex-1 sm:flex-none h-11 rounded-xl">
+                <Button 
+                   variant="outline" 
+                   onClick={() => setIsShareLinkOpen(true)} 
+                   className="flex-1 sm:flex-none h-11 rounded-xl gap-2 text-primary border-primary/20 hover:bg-primary/5 hover:text-primary transition-all"
+                >
+                  <Share2 className="h-4 w-4" /> Share Link
+                </Button>
+                <Button onClick={() => navigate('/members/add')} className="btn-gold flex-1 sm:flex-none h-11 rounded-xl">
                   <Plus className="mr-2 h-4 w-4" /> Add Member
                 </Button>
               </div>
@@ -657,7 +668,7 @@ export default function Members() {
                        Clear Filters
                     </Button>
                     {canManageAttendance && (
-                      <Button className="btn-gold h-10 rounded-xl px-6" onClick={() => setIsNewMemberOpen(true)}>
+                      <Button className="btn-gold h-10 rounded-xl px-6" onClick={() => navigate('/members/add')}>
                         <Plus className="mr-2 h-4 w-4" /> Add Member
                       </Button>
                     )}
@@ -719,7 +730,8 @@ export default function Members() {
         departments={departments}
       />
 
-      <NewMemberDialog open={isNewMemberOpen} onOpenChange={setIsNewMemberOpen} onMemberCreated={handleMemberCreated} />
+      <NewMemberDialog open={isNewMemberOpen} onOpenChange={setIsNewMemberOpen} onMemberCreated={fetchMembers} />
+      <PublicRegistrationLink isOpen={isShareLinkOpen} onOpenChange={setIsShareLinkOpen} />
 
       <EditMemberDialog
         open={!!editTarget}

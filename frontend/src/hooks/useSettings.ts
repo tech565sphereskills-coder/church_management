@@ -18,6 +18,7 @@ export interface ChurchSettings {
   attendance_reminders: boolean;
   new_member_alerts: boolean;
   weekly_reports: boolean;
+  auto_confirm_qr_checkin: boolean;
   smtp_server: string | null;
   smtp_port: number;
   smtp_user: string | null;

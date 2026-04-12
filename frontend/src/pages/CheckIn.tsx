@@ -87,51 +87,65 @@ export default function CheckIn() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
-      {/* Background patterns */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.03]">
-        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_2px_2px,rgba(0,0,0,1)_1px,transparent_0)] bg-[length:40px_40px]" />
+    <div className="min-h-screen bg-[#0f172a] flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      {/* Dynamic Background Elements */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/20 rounded-full blur-[120px] animate-pulse" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-500/20 rounded-full blur-[120px] animate-pulse" />
+      
+      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.05]">
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_2px_2px,rgba(255,255,255,1)_1px,transparent_0)] bg-[length:40px_40px]" />
       </div>
 
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl shadow-slate-200/50 p-6 xs:p-8 sm:p-12 relative overflow-hidden"
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ type: "spring", damping: 20, stiffness: 100 }}
+        className="w-full max-w-md backdrop-blur-xl bg-white/10 rounded-[2.5rem] border border-white/20 shadow-2xl shadow-black/50 p-8 sm:p-12 relative overflow-hidden z-10"
       >
-        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16" />
-        <div className="absolute bottom-0 left-0 w-24 h-24 bg-primary/5 rounded-full -ml-12 -mb-12" />
+        {/* Glow effect */}
+        <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-40 h-40 bg-indigo-500/10 rounded-full -ml-20 -mb-20 blur-3xl" />
 
         <div className="relative">
           <div className="flex flex-col items-center text-center mb-10">
-            <div className="h-16 w-16 bg-primary rounded-2xl flex items-center justify-center shadow-xl shadow-primary/20 mb-6 transform -rotate-3">
-              <Church className="h-8 w-8 text-white" />
-            </div>
-            <h1 className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 mb-2">Welcome Home!</h1>
-            <p className="text-slate-500 text-sm md:text-base font-medium">Please enter your phone number or scan your QR code.</p>
+            <motion.div 
+              whileHover={{ rotate: 10, scale: 1.1 }}
+              className="h-20 w-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-indigo-500/40 mb-8 transform -rotate-3"
+            >
+              <Church className="h-10 w-10 text-white" />
+            </motion.div>
+            <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white mb-3">Welcome Home!</h1>
+            <p className="text-indigo-200/70 text-sm md:text-base font-medium">Sanctuary is open for you. Check in below.</p>
           </div>
 
           <AnimatePresence mode="wait">
             {isSuccess ? (
               <motion.div
                 key="success"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
                 className="flex flex-col items-center text-center py-8"
               >
-                <div className="h-20 w-20 bg-emerald-50 rounded-full flex items-center justify-center mb-6">
-                  <CheckCircle2 className="h-12 w-12 text-emerald-500" />
-                </div>
-                <h2 className="text-2xl font-bold text-slate-900 mb-2">Check-in Sent!</h2>
-                <p className="text-slate-500 mb-8 max-w-[250px]">
-                  {scannedMember ? `Welcome, ${scannedMember}! ` : ''}
-                  An official will verify your check-in shortly. God bless you!
+                <motion.div 
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", damping: 12, stiffness: 200 }}
+                  className="h-24 w-24 bg-emerald-500/20 rounded-full flex items-center justify-center mb-8 border border-emerald-500/50"
+                >
+                  <CheckCircle2 className="h-14 w-14 text-emerald-400" />
+                </motion.div>
+                <h2 className="text-3xl font-black text-white mb-3">You're Checked In!</h2>
+                <p className="text-indigo-100/60 mb-10 max-w-[280px] leading-relaxed">
+                  {scannedMember ? <span className="text-emerald-400 block font-bold text-lg mb-2">Welcome, {scannedMember}!</span> : ''}
+                  Your presence is registered. May you reach out to heaven today!
                 </p>
                 <Button 
                   onClick={() => setIsSuccess(false)}
-                  variant="outline"
-                  className="rounded-xl px-8 h-12 font-bold focus-visible:ring-primary/20"
+                  variant="ghost"
+                  className="rounded-2xl px-10 h-14 font-black bg-white/5 text-white hover:bg-white/10 border border-white/10 transition-all"
                 >
-                  Check-in another person
+                  Mark another person
                 </Button>
               </motion.div>
             ) : (
@@ -140,32 +154,38 @@ export default function CheckIn() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="space-y-6"
+                className="space-y-8"
               >
-                <Button
-                  onClick={() => setIsScannerOpen(true)}
-                  variant="outline"
-                  className="w-full h-16 rounded-2xl border-2 border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary font-black flex items-center justify-center gap-3 transition-all"
-                >
-                  <QrCode className="h-6 w-6" />
-                  SCAN MY QR CODE
-                </Button>
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button
+                    onClick={() => setIsScannerOpen(true)}
+                    className="w-full h-20 rounded-[1.5rem] bg-indigo-500/20 hover:bg-indigo-500/30 border-2 border-indigo-400/30 text-indigo-100 font-black flex items-center justify-center gap-4 transition-all shadow-xl shadow-indigo-500/10 group"
+                  >
+                    <div className="h-12 w-12 rounded-xl bg-indigo-500/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <QrCode className="h-6 w-6 text-indigo-300" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-bold opacity-60 uppercase tracking-tighter">Fast Access</p>
+                      <p className="text-lg">SCAN MY QR CODE</p>
+                    </div>
+                  </Button>
+                </motion.div>
 
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t border-slate-200" />
+                    <span className="w-full border-t border-white/10" />
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-white px-4 text-slate-400 font-bold">Or enter phone</span>
+                    <span className="bg-[#0f172a] px-4 text-indigo-300/40 font-black tracking-widest leading-none">Or manual entry</span>
                   </div>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="phone" className="text-sm font-black text-slate-700 ml-1">Phone Number</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="phone" className="text-xs font-black text-indigo-200/50 uppercase ml-2 tracking-widest">Phone Number</Label>
                     <div className="relative group">
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-slate-400 group-focus-within:text-primary transition-colors">
-                        <Phone className="h-5 w-5" />
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-5 pointer-events-none text-indigo-300/30 group-focus-within:text-indigo-400 transition-colors">
+                        <Phone className="h-6 w-6" />
                       </div>
                       <Input
                         id="phone"
@@ -173,7 +193,7 @@ export default function CheckIn() {
                         placeholder="e.g. 08012345678"
                         value={phoneNumber}
                         onChange={(e) => setPhoneNumber(e.target.value)}
-                        className="pl-12 h-16 bg-slate-50 border-slate-200 rounded-2xl text-xl font-bold tracking-widest focus-visible:ring-primary/20 transition-all"
+                        className="pl-14 h-16 bg-white/5 border-white/10 rounded-2xl text-xl font-bold tracking-widest focus-visible:ring-indigo-500/30 focus-visible:border-indigo-500/50 text-white placeholder:text-white/10 transition-all"
                         required
                       />
                     </div>
@@ -182,14 +202,14 @@ export default function CheckIn() {
                   <Button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full h-16 rounded-2xl text-lg font-black tracking-tight shadow-xl shadow-primary/20 group relative overflow-hidden"
+                    className="w-full h-16 rounded-2xl bg-indigo-500 hover:bg-indigo-400 text-white text-lg font-black tracking-widest shadow-2xl shadow-indigo-500/40 group relative overflow-hidden transition-all"
                   >
                     {isLoading ? (
-                      <Loader2 className="h-6 w-6 animate-spin" />
+                      <Loader2 className="h-7 w-7 animate-spin" />
                     ) : (
-                      <span className="flex items-center gap-2">
-                        CHECK IN NOW
-                        <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                      <span className="flex items-center gap-3">
+                        SUBMIT CHECK-IN
+                        <ArrowRight className="h-6 w-6 transition-transform group-hover:translate-x-2" />
                       </span>
                     )}
                   </Button>
@@ -206,10 +226,15 @@ export default function CheckIn() {
         />
       </motion.div>
 
-      <div className="mt-8 text-slate-400 text-sm font-medium flex items-center gap-2">
-        <Church className="h-4 w-4" />
-        RCCG Emmanuel Sanctuary
-      </div>
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5 }}
+        className="mt-12 text-indigo-200/30 text-xs font-black uppercase tracking-[0.3em] flex items-center gap-3"
+      >
+        <Church className="h-5 w-5 opacity-30" />
+        RCCG Sanctury Management System
+      </motion.div>
     </div>
   );
 }

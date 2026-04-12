@@ -10,10 +10,18 @@ import { PageTransition } from './PageTransition';
 import { AnimatePresence } from 'framer-motion';
 
 const PageLoader = () => (
-  <div className="flex h-[60vh] w-full items-center justify-center">
-    <div className="flex flex-col items-center gap-4">
-      <Loader2 className="h-10 w-10 animate-spin text-primary" />
-      <p className="text-sm font-black uppercase tracking-widest text-slate-400">Loading Sanctuary...</p>
+  <div className="flex h-[80vh] w-full items-center justify-center animate-in fade-in duration-500">
+    <div className="flex flex-col items-center gap-6">
+      <div className="relative">
+        <div className="h-16 w-16 rounded-full border-4 border-primary/10 border-t-primary animate-spin" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="h-8 w-8 bg-primary/5 rounded-full animate-pulse" />
+        </div>
+      </div>
+      <div className="flex flex-col items-center gap-1">
+        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary/40 animate-pulse">Entering</p>
+        <p className="text-sm font-black uppercase tracking-widest text-slate-800">Emmanuel Sanctuary</p>
+      </div>
     </div>
   </div>
 );

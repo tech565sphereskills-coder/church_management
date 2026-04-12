@@ -41,6 +41,8 @@ const AuditLogs = lazy(() => import("./pages/AuditLogs"));
 const BirthdayManager = lazy(() => import("./pages/BirthdayManager"));
 const Notifications = lazy(() => import("./pages/Notifications"));
 const CheckIn = lazy(() => import("./pages/CheckIn"));
+const AddMember = lazy(() => import("./pages/AddMember"));
+const PublicRegister = lazy(() => import("./pages/PublicRegister"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -89,6 +91,7 @@ const App = () => {
                         <Route path="/reset-password" element={<ResetPassword />} />
                         <Route path="/submit-prayer" element={<SubmitPrayer />} />
                         <Route path="/check-in" element={<CheckIn />} />
+                        <Route path="/register" element={<PublicRegister />} />
                         
                         {/* Protected routes */}
                         <Route element={<ProtectedRoute />}>
@@ -102,6 +105,7 @@ const App = () => {
                             </Route>
                             <Route path="/members" element={<ProtectedRoute requiredPermission="canManageMembers" />}>
                               <Route index element={<Members />} />
+                              <Route path="add" element={<AddMember />} />
                             </Route>
                             <Route path="/members/:memberId" element={<ProtectedRoute requiredPermission="canManageMembers" />}>
                               <Route index element={<MemberProfile />} />

@@ -30,6 +30,8 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from 'next-themes';
 import { useSidebar } from '@/context/sidebar-context';
+import { prefetchRoute } from '@/lib/prefetcher';
+import { useQueryClient } from '@tanstack/react-query';
 
 const RCCG_LOGO_URL = 'https://res.cloudinary.com/dnglp9qfd/image/upload/v1770460225/Rccg_logo_ttgxko.png';
 
@@ -82,6 +84,7 @@ export function AppSidebar() {
   const location = useLocation();
   const { user, role, signOut, isAdmin, ...authProps } = useAuth();
   const { theme, setTheme } = useTheme();
+  const queryClient = useQueryClient();
 
   const onToggle = () => {
     if (isMobile) setMobileOpen(!mobileOpen);
@@ -129,6 +132,7 @@ export function AppSidebar() {
       setTheme={setTheme}
       isMobile={isMobile || false}
       onMobileClose={onMobileClose}
+      queryClient={queryClient}
     />
   );
 
@@ -172,11 +176,13 @@ interface SidebarContentProps {
   setTheme: (t: string) => void;
   isMobile: boolean;
   onMobileClose?: () => void;
+  queryClient: import('@tanstack/react-query').QueryClient;
 }
 
 function SidebarContent({
   isCollapsed, onToggle, location, isAdmin, authProps, user, signOut,
-  getUserInitials, getRoleLabel, onNavClick, theme, setTheme, isMobile, onMobileClose
+  getUserInitials, getRoleLabel, onNavClick, theme, setTheme, isMobile, onMobileClose,
+  queryClient
 }: SidebarContentProps) {
   return (
     <>
@@ -228,6 +234,7 @@ function SidebarContent({
                 <NavLink
                   to={item.path}
                   onClick={onNavClick}
+                  onMouseEnter={() => prefetchRoute(item.path, { queryClient })}
                   className={cn(
                     'group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-200',
                     isActive

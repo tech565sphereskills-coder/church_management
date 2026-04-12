@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { DepartmentDistribution } from '@/components/dashboard/DepartmentDistribution';
 import { ActivityStream } from '@/components/dashboard/ActivityStream';
+import { LivePresenceFeed } from '@/components/dashboard/LivePresenceFeed';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -60,13 +61,14 @@ export default function AdminDashboard() {
     enabled: !!user,
   });
 
-  const { data: recentAttendance = [] } = useQuery({
+  const { data: recentAttendance = [], isLoading: recentLoading } = useQuery({
     queryKey: ['attendance', 'recent'],
     queryFn: async () => {
       const response = await api.get('/attendance/recent/');
       return response.data;
     },
     enabled: !!user,
+    refetchInterval: 10000, // Poll every 10 seconds for live feel
   });
 
   const stats = dashboardStats || {
@@ -193,12 +195,13 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Charts Row 1 */}
+        {/* Row 1 — Trends and Live activity */}
         <div className="mt-8 grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2">
             <AttendanceChart data={weeklyData} title="Weekly Attendance Trend" />
           </div>
-          <div>
+          <div className="space-y-6">
+            <LivePresenceFeed records={recentAttendance} isLoading={recentLoading} />
             <QuickActions />
           </div>
         </div>

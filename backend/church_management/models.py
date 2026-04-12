@@ -1,5 +1,6 @@
 import uuid
 from django.db import models
+from django.db.models import Q
 from django.contrib.auth.models import User
 
 class Role(models.TextChoices):
@@ -192,7 +193,7 @@ class Service(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
     service_type = models.CharField(max_length=50, choices=ServiceType.choices)
-    service_date = models.DateField()
+    service_date = models.DateField(db_index=True)
     description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -204,7 +205,7 @@ class AttendanceRecord(models.Model):
     member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='attendance_records')
     service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='attendance_records')
     marked_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='marked_attendance')
-    marked_at = models.DateTimeField(auto_now_add=True)
+    marked_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:
         unique_together = ('member', 'service')
@@ -220,34 +221,47 @@ class MemberFollowUp(models.Model):
 
     @classmethod
     def recalculate(cls):
-        active_members = Member.objects.filter(status='active')
-        recent_services = Service.objects.all().order_by('-service_date')[:10]
+        from django.db.models import OuterRef, Subquery, Max
         
-        if not recent_services:
+        # Get the 2nd most recent service date
+        recent_services = list(Service.objects.all().order_by('-service_date')[:2])
+        if len(recent_services) < 2:
+            # Not enough services to determine "2 consecutive missed"
+            cls.objects.all().update(needs_follow_up=False)
             return
 
-        for member in active_members:
-            consecutive_missed = 0
-            last_attended_date = None
-            
-            for service in recent_services:
-                attended = AttendanceRecord.objects.filter(member=member, service=service).exists()
-                if attended:
-                    last_attended_date = service.service_date
-                    break
-                consecutive_missed += 1
-                
-            if consecutive_missed >= 2:
-                cls.objects.update_or_create(
-                    member=member,
-                    defaults={
-                        'missed_consecutive_count': consecutive_missed,
-                        'last_attended_date': last_attended_date,
-                        'needs_follow_up': True
-                    }
-                )
-            else:
-                cls.objects.filter(member=member).update(needs_follow_up=False)
+        second_most_recent_date = recent_services[1].service_date
+        
+        # Subquery to find the latest attendance date for each member
+        latest_attendance = AttendanceRecord.objects.filter(
+            member=OuterRef('pk')
+        ).order_by('-marked_at').values('service__service_date')[:1]
+
+        # Members who haven't attended since before the 2nd most recent service
+        # or have never attended at all.
+        active_members = Member.objects.filter(status='active').annotate(
+            last_attended=Subquery(latest_attendance)
+        )
+        
+        # Identify members who need follow up:
+        # 1. Have a last_attended date that is older than the 2nd most recent service date
+        # 2. Or have no attendance record at all (last_attended is null)
+        to_follow_up = active_members.filter(
+            Q(last_attended__lt=second_most_recent_date) | Q(last_attended__isnull=True)
+        )
+        
+        # Reset everyone first (or we could be more surgical)
+        cls.objects.all().update(needs_follow_up=False)
+        
+        # Bulk create/update follow ups
+        for member in to_follow_up:
+            cls.objects.update_or_create(
+                member=member,
+                defaults={
+                    'needs_follow_up': True,
+                    'last_attended_date': member.last_attended
+                }
+            )
 
     def __str__(self):
         return f"Follow up for {self.member.full_name}"
@@ -256,8 +270,8 @@ class Contribution(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     member = models.ForeignKey(Member, on_delete=models.SET_NULL, null=True, blank=True, related_name='contributions')
     amount = models.DecimalField(max_digits=12, decimal_places=2)
-    contribution_type = models.CharField(max_length=50, choices=ContributionType.choices)
-    date = models.DateField()
+    contribution_type = models.CharField(max_length=50, choices=ContributionType.choices, db_index=True)
+    date = models.DateField(db_index=True)
     payment_method = models.CharField(max_length=50, choices=PaymentMethod.choices)
     recorded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='recorded_contributions')
     notes = models.TextField(blank=True, null=True)
@@ -395,6 +409,7 @@ class ChurchSettings(models.Model):
     attendance_reminders = models.BooleanField(default=True)
     new_member_alerts = models.BooleanField(default=True)
     weekly_reports = models.BooleanField(default=False)
+    auto_confirm_qr_checkin = models.BooleanField(default=False)
     
     # SMTP configuration
     smtp_server = models.CharField(max_length=255, blank=True, null=True)

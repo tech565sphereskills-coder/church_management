@@ -76,6 +76,7 @@ export default function Settings() {
   const [attendanceReminders, setAttendanceReminders] = useState(true);
   const [newMemberAlerts, setNewMemberAlerts] = useState(true);
   const [weeklyReports, setWeeklyReports] = useState(false);
+  const [autoConfirmQrCheckin, setAutoConfirmQrCheckin] = useState(false);
   const [smtpServer, setSmtpServer] = useState('');
   const [smtpPort, setSmtpPort] = useState(587);
   const [smtpUser, setSmtpUser] = useState('');
@@ -162,6 +163,7 @@ export default function Settings() {
       setAttendanceReminders(settings.attendance_reminders);
       setNewMemberAlerts(settings.new_member_alerts);
       setWeeklyReports(settings.weekly_reports);
+      setAutoConfirmQrCheckin(settings.auto_confirm_qr_checkin);
       setSmtpServer(settings.smtp_server || '');
       setSmtpPort(settings.smtp_port || 587);
       setSmtpUser(settings.smtp_user || '');
@@ -191,6 +193,7 @@ export default function Settings() {
       attendance_reminders: attendanceReminders,
       new_member_alerts: newMemberAlerts,
       weekly_reports: weeklyReports,
+      auto_confirm_qr_checkin: autoConfirmQrCheckin,
       smtp_server: smtpServer,
       smtp_port: smtpPort,
       smtp_user: smtpUser,
@@ -558,6 +561,7 @@ export default function Settings() {
                           { id: 'reminders', label: 'Attendance Reminders', desc: 'Alerts before service starts', state: attendanceReminders, setter: setAttendanceReminders },
                           { id: 'alerts', label: 'New Member Alerts', desc: 'Real-time notifications for registration', state: newMemberAlerts, setter: setNewMemberAlerts },
                           { id: 'reports', label: 'Weekly Reports', desc: 'Detailed PDF analytics every Monday', state: weeklyReports, setter: setWeeklyReports },
+                          { id: 'auto-confirm', label: 'Auto-confirm QR scans', desc: 'Immediately mark present on QR scan (no queue)', state: autoConfirmQrCheckin, setter: setAutoConfirmQrCheckin },
                         ].map((item) => (
                           <div key={item.id} className="flex items-center justify-between p-4 rounded-2xl bg-white border border-slate-100 transition-hover hover:border-slate-200">
                             <div className="space-y-1">
