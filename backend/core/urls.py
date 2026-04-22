@@ -11,7 +11,21 @@ from rest_framework.response import Response
 from rest_framework import status
 from dj_rest_auth.registration.views import SocialLoginView
 
+from django.http import JsonResponse
+
+def api_root(request):
+    return JsonResponse({
+        "status": "online",
+        "message": "RCCG Emmanuel Sanctuary API",
+        "endpoints": {
+            "api": "/api/",
+            "admin": "/admin/",
+            "token": "/api/token/"
+        }
+    })
+
 urlpatterns = [
+    path('', api_root),
     path('admin/', admin.site.urls),
     path('api/', include('church_management.urls')),
     path('api/token/', TwoFactorTokenObtainPairView.as_view(), name='token_obtain_pair'),
