@@ -10,7 +10,7 @@ from church_management.models import Profile, Role
 def create_admin_user():
     email = 'admin@emmanuel.com'
     username = 'admin'
-    password = 'admin123'
+    password = 'Admin123!'
     
     user, created = User.objects.get_or_create(username=username)
     user.email = email
