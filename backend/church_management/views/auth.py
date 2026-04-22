@@ -9,8 +9,8 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth.models import User
 
-from .base import log_activity, StandardResultsSetPagination
-from ..models import Profile, Role
+from .base import log_activity, StandardResultsSetPagination, AuditableModelViewSetMixin
+from ..models import Profile, Role, AuditLog
 from ..serializers import ProfileSerializer, RegisterSerializer, UserSerializer
 from ..permissions import IsAdmin, IsViewerOrHigher
 
@@ -19,7 +19,7 @@ class RegisterView(viewsets.GenericViewSet, viewsets.mixins.CreateModelMixin):
     serializer_class = RegisterSerializer
     permission_classes = [IsAdmin]
 
-class ProfileViewSet(viewsets.ModelViewSet):
+class ProfileViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
     permission_classes = [permissions.IsAuthenticated, IsViewerOrHigher]
@@ -33,11 +33,19 @@ class ProfileViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], permission_classes=[IsAdmin])
     def assign_role(self, request, pk=None):
         profile = self.get_object()
+        old_role = profile.role
         role = request.data.get('role')
         if role in Role.values:
             profile.role = role
-            # (Role logic from views.py)
             profile.save()
+            log_activity(
+                request.user, 
+                AuditLog.Action.UPDATE, 
+                'Profile', 
+                profile.id, 
+                f"Role changed: {old_role} -> {role}",
+                details={'old_role': old_role, 'new_role': role}
+            )
             return Response(self.get_serializer(profile).data)
         return Response({'error': 'invalid role'}, status=400)
 

@@ -9,6 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import api from '@/lib/api';
 import { z } from 'zod';
+import { cn } from '@/lib/utils';
+import { Check, X } from 'lucide-react';
 
 const RCCG_LOGO_URL = 'https://res.cloudinary.com/dnglp9qfd/image/upload/v1770460225/Rccg_logo_ttgxko.png';
 
@@ -19,6 +21,16 @@ const resetSchema = z.object({
   message: "Passwords don't match",
   path: ["confirmPassword"],
 });
+
+const Requirement = ({ met, label }: { met: boolean; label: string }) => (
+  <div className={cn(
+    "flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors",
+    met ? "text-emerald-600" : "text-slate-400"
+  )}>
+    {met ? <Check className="h-3 w-3" /> : <X className="h-3 w-3 opacity-20" />}
+    {label}
+  </div>
+);
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -102,6 +114,38 @@ export default function ResetPassword() {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                
+                {/* Password Strength Indicator */}
+                {password && (
+                  <div className="mt-2 space-y-2">
+                    <div className="flex gap-1 h-1.5">
+                      {[1, 2, 3, 4].map((i) => {
+                        const score = 
+                          (password.length >= 8 ? 1 : 0) +
+                          (/[A-Z]/.test(password) ? 1 : 0) +
+                          (/[0-9]/.test(password) ? 1 : 0) +
+                          (/[^A-Za-z0-9]/.test(password) ? 1 : 0);
+                        return (
+                          <div 
+                            key={i} 
+                            className={cn(
+                              "flex-1 rounded-full transition-all duration-500",
+                              i <= score 
+                                ? (score <= 2 ? "bg-red-500" : score === 3 ? "bg-amber-500" : "bg-emerald-500")
+                                : "bg-slate-100"
+                            )} 
+                          />
+                        );
+                      })}
+                    </div>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1">
+                      <Requirement met={password.length >= 8} label="8+ chars" />
+                      <Requirement met={/[A-Z]/.test(password)} label="Uppercase" />
+                      <Requirement met={/[0-9]/.test(password)} label="Number" />
+                      <Requirement met={/[^A-Za-z0-9]/.test(password)} label="Symbol" />
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">

@@ -9,3 +9,4 @@ from .misc import (
     DepartmentViewSet, ChildViewSet, ChildCheckInViewSet, PrayerRequestViewSet,
     SettingsViewSet, CheckInQueueViewSet, CalendarEventViewSet, AuditLogViewSet
 )
+from .notifications import NotificationViewSet

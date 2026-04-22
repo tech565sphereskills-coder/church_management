@@ -23,6 +23,7 @@ import { useMembers, Member } from '@/hooks/useMembers';
 import { format, addWeeks, startOfWeek, endOfWeek, isWithinInterval, parseISO, isSameDay } from 'date-fns';
 import { SendSMSDialog } from '@/components/sms/SendSMSDialog';
 import { cn } from '@/lib/utils';
+import { MetaManager } from '@/components/common/MetaManager';
 
 export default function BirthdayManager() {
   const { members, loading } = useMembers(1, '', 'all');
@@ -31,9 +32,6 @@ export default function BirthdayManager() {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [isSMSDialogOpen, setIsSMSDialogOpen] = useState(false);
 
-  useEffect(() => {
-    document.title = 'Celebration Manager | RCCG Emmanuel Sanctuary';
-  }, []);
 
   const weekStart = startOfWeek(selectedWeek);
   const weekEnd = endOfWeek(selectedWeek);
@@ -70,7 +68,8 @@ export default function BirthdayManager() {
   };
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-slate-50/50">
+    <div className="flex min-h-screen w-full flex-col bg-background/50">
+      <MetaManager title="Celebration Manager" description="Tracking birthdays and wedding anniversaries for the sanctuary family." />
       <Header title="Celebration Manager" subtitle="Tracking birthdays and wedding anniversaries for the sanctuary family." />
       
       <main className="flex-1 p-4 lg:p-8">

@@ -14,7 +14,7 @@ from ..serializers import (
     AuditLogSerializer, CheckInQueueSerializer
 )
 from ..permissions import (
-    IsAdmin, IsViewerOrHigher, IsChildrenOfficerOrHigher, IsPrayerOfficerOrHigher,
+    IsAdmin, IsAdminOrHasSettingsPerm, IsViewerOrHigher, IsChildrenOfficerOrHigher, IsPrayerOfficerOrHigher,
     IsAttendanceOfficerOrHigher
 )
 
@@ -61,12 +61,35 @@ class PrayerRequestViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
         return [IsPrayerOfficerOrHigher()]
 
 class SettingsViewSet(viewsets.ViewSet):
-    permission_classes = [IsAdmin]
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            return [permissions.IsAuthenticated()]
+        return [IsAdminOrHasSettingsPerm()]
 
     def list(self, request):
-        settings, created = ChurchSettings.objects.get_or_create(id=1)
-        serializer = ChurchSettingsSerializer(settings)
+        settings = ChurchSettings.objects.first()
+        if not settings:
+            settings = ChurchSettings.objects.create(id=1)
+        serializer = ChurchSettingsSerializer(settings, context={'request': request})
         return Response(serializer.data)
+
+    def partial_update(self, request, pk=None):
+        settings = ChurchSettings.objects.first()
+        if not settings:
+            settings = ChurchSettings.objects.create(id=1)
+        serializer = ChurchSettingsSerializer(settings, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            log_activity(
+                user=request.user,
+                action='update',
+                model_name='ChurchSettings',
+                object_id=str(settings.id),
+                object_name=settings.church_name,
+                details={'updates': request.data}
+            )
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class CalendarEventViewSet(AuditableModelViewSetMixin, viewsets.ModelViewSet):
     queryset = CalendarEvent.objects.all().order_by('start_time')

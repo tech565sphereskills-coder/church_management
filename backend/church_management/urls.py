@@ -7,7 +7,7 @@ from .views import (
     BudgetViewSet, PledgeViewSet, SMSTemplateViewSet, ContributionViewSet,
     DepartmentViewSet, ChildViewSet, ChildCheckInViewSet, PrayerRequestViewSet,
     SettingsViewSet, CheckInQueueViewSet, FamilyViewSet, InventoryItemViewSet,
-    TwoFactorViewSet, TwoFactorTokenObtainPairView
+    TwoFactorViewSet, TwoFactorTokenObtainPairView, NotificationViewSet
 )
 from .views.public import PublicMemberRegistrationViewSet
 
@@ -38,6 +38,7 @@ router.register(r'families', FamilyViewSet)
 router.register(r'inventory', InventoryItemViewSet)
 router.register(r'two-factor', TwoFactorViewSet, basename='two-factor')
 router.register(r'public/members', PublicMemberRegistrationViewSet, basename='public-members')
+router.register(r'notifications', NotificationViewSet, basename='notifications')
 
 urlpatterns = [
     path('settings/', SettingsViewSet.as_view({'get': 'list', 'patch': 'partial_update'})),

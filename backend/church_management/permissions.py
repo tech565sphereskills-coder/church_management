@@ -57,6 +57,13 @@ class IsViewerOrHigher(permissions.BasePermission):
             request.user.profile.can_manage_settings
         ])
 
+class IsAdminOrHasSettingsPerm(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if not (request.user and request.user.is_authenticated and hasattr(request.user, 'profile')):
+            return False
+        profile = request.user.profile
+        return profile.role == 'admin' or profile.can_manage_settings
+
 class ReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
         return bool(

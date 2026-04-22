@@ -152,13 +152,13 @@ export function MemberForm({
   return (
     <div className="w-full max-w-4xl mx-auto">
       {/* Photo Section - Visual Anchor */}
-      <div className="flex flex-col items-center justify-center p-8 bg-gradient-to-b from-slate-50 to-white rounded-3xl border border-slate-100 mb-8 shadow-sm">
+      <div className="flex flex-col items-center justify-center p-8 bg-gradient-to-b from-muted/50 to-card rounded-3xl border border-border mb-8 shadow-sm">
         <div className="relative group cursor-pointer" onClick={() => document.getElementById('photo-upload-full')?.click()}>
-          <div className="h-32 w-32 rounded-3xl border-2 border-dashed border-slate-200 bg-white flex items-center justify-center overflow-hidden transition-all group-hover:border-primary group-hover:scale-[1.02] shadow-xl shadow-slate-200/50">
+          <div className="h-32 w-32 rounded-3xl border-2 border-dashed border-border bg-card flex items-center justify-center overflow-hidden transition-all group-hover:border-primary group-hover:scale-[1.02] shadow-xl shadow-primary/10">
             {photoPreview ? (
               <img src={photoPreview} alt="Preview" className="h-full w-full object-cover" />
             ) : (
-              <div className="flex flex-col items-center text-slate-300">
+              <div className="flex flex-col items-center text-muted-foreground">
                 <Camera className="h-10 w-10 mb-2" />
                 <span className="text-[10px] font-black uppercase tracking-widest">Add Photo</span>
               </div>
@@ -183,13 +183,13 @@ export function MemberForm({
           />
         </div>
         <div className="text-center mt-6">
-          <h2 className="text-xl font-black text-slate-800 tracking-tight">Register New Member</h2>
-          <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1 italic">Building the family of God</p>
+          <h2 className="text-xl font-black text-foreground tracking-tight">Register New Member</h2>
+          <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest mt-1 italic">Building the family of God</p>
         </div>
       </div>
 
       {/* Tabs for Desktop, stacked segments for mobile responsiveness */}
-      <div className="flex p-1 bg-slate-100/50 rounded-2xl mb-8 gap-1">
+      <div className="flex p-1 bg-muted/50 rounded-2xl mb-8 gap-1">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -197,8 +197,8 @@ export function MemberForm({
             className={cn(
               "flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
               activeTab === tab.id 
-                ? "bg-white text-primary shadow-sm" 
-                : "text-slate-400 hover:text-slate-600 hover:bg-white/50"
+                ? "bg-card text-primary shadow-sm" 
+                : "text-muted-foreground hover:text-foreground hover:bg-card/50"
             )}
           >
             <tab.icon className="h-4 w-4" />
@@ -224,9 +224,9 @@ export function MemberForm({
                     name="surname"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-xs font-black uppercase text-slate-500 tracking-widest">Surname *</FormLabel>
+                        <FormLabel className="text-xs font-black uppercase text-muted-foreground tracking-widest">Surname *</FormLabel>
                         <FormControl>
-                          <Input placeholder="Surname" className="h-12 rounded-xl bg-slate-50/50" {...field} />
+                          <Input placeholder="Surname" className="h-12 rounded-xl bg-muted/30" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -590,12 +590,12 @@ export function MemberForm({
                         <div 
                           className={cn(
                             "relative inline-flex h-8 w-14 items-center rounded-full transition-colors cursor-pointer",
-                            field.value ? "bg-indigo-600" : "bg-slate-200"
+                            field.value ? "bg-indigo-600" : "bg-muted"
                           )}
                           onClick={() => field.onChange(!field.value)}
                         >
                           <span className={cn(
-                            "inline-block h-6 w-6 transform rounded-full bg-white transition-transform shadow-sm",
+                            "inline-block h-6 w-6 transform rounded-full bg-background transition-transform shadow-sm",
                             field.value ? "translate-x-7" : "translate-x-1"
                           )} />
                         </div>

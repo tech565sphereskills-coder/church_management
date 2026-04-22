@@ -38,6 +38,7 @@ import { useAuditLogs, AuditLog } from '@/hooks/useAuditLogs';
 import { useDebounce } from '@/hooks/useDebounce';
 import { FunctionalPagination } from '@/components/common/FunctionalPagination';
 import { AuditLogDetailDialog } from '@/components/admin/AuditLogDetailDialog';
+import { MetaManager } from '@/components/common/MetaManager';
 
 export default function AuditLogs() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -52,9 +53,6 @@ export default function AuditLogs() {
   const totalCount = logData?.count || 0;
   const totalPages = Math.ceil(totalCount / 20); // 20 is PAGE_SIZE for audit logs
 
-  useEffect(() => {
-    document.title = 'Administrative Audit Logs | RCCG Emmanuel Sanctuary';
-  }, []);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -72,14 +70,15 @@ export default function AuditLogs() {
   };
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-slate-50/50 dark:bg-slate-950">
+    <div className="flex min-h-screen w-full flex-col bg-background/50">
+      <MetaManager title="Audit Logs" description="Church administrative activity and security audit trail." />
       <Header title="Administrative Audit Logs" />
       
       <main className="flex-1 p-4 lg:p-8">
         <div className="mx-auto max-w-7xl">
           {/* Stats Bar */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <Card className="border-none shadow-lg shadow-slate-200/50 dark:bg-slate-900 dark:shadow-none bg-indigo-600 text-white overflow-hidden relative">
+            <Card className="border-none shadow-sm bg-indigo-600 text-white overflow-hidden relative">
                 <CardContent className="p-6 relative z-10">
                     <div className="flex items-center gap-4">
                         <div className="h-12 w-12 rounded-2xl bg-white/20 flex items-center justify-center">
@@ -94,7 +93,7 @@ export default function AuditLogs() {
                 <div className="absolute -bottom-8 -right-8 h-32 w-32 bg-white/10 rounded-full blur-3xl" />
             </Card>
 
-            <Card className="border-none shadow-lg shadow-slate-200/50 dark:bg-slate-900 dark:shadow-none bg-white">
+            <Card className="border-none shadow-sm bg-card">
                 <CardContent className="p-6">
                     <div className="flex items-center gap-4">
                         <div className="h-12 w-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
@@ -102,13 +101,13 @@ export default function AuditLogs() {
                         </div>
                         <div>
                             <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Action Status</p>
-                            <h2 className="text-3xl font-black text-slate-900 dark:text-white">Active</h2>
+                            <h2 className="text-3xl font-black text-foreground">Active</h2>
                         </div>
                     </div>
                 </CardContent>
             </Card>
 
-            <Card className="border-none shadow-lg shadow-slate-200/50 dark:bg-slate-900 dark:shadow-none bg-white">
+            <Card className="border-none shadow-sm bg-card">
                 <CardContent className="p-6">
                     <div className="flex items-center gap-4">
                         <div className="h-12 w-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
@@ -116,16 +115,16 @@ export default function AuditLogs() {
                         </div>
                         <div>
                             <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Server Connectivity</p>
-                            <h2 className="text-3xl font-black text-slate-900 dark:text-white">Linked</h2>
+                            <h2 className="text-3xl font-black text-foreground">Linked</h2>
                         </div>
                     </div>
                 </CardContent>
             </Card>
           </div>
 
-          <Card className="overflow-hidden border-none shadow-xl shadow-slate-200/50 dark:bg-slate-900 dark:shadow-none bg-white lg:p-4">
+          <Card className="overflow-hidden border-none shadow-sm bg-card lg:p-4">
             <CardContent className="p-0">
-              <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between border-b border-slate-50 dark:border-slate-800">
+              <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between border-b border-border">
                 <div className="relative flex-1 max-w-sm">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <Input 
@@ -186,7 +185,7 @@ export default function AuditLogs() {
                                 >
                                     <TableCell>
                                         <div className="flex flex-col">
-                                            <span className="text-sm font-bold text-slate-900 dark:text-white">
+                                            <span className="text-sm font-bold text-foreground">
                                                 {format(parseISO(log.timestamp), 'h:mm a')}
                                             </span>
                                             <span className="text-[10px] text-slate-400 font-medium whitespace-nowrap">
@@ -199,7 +198,7 @@ export default function AuditLogs() {
                                             <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center">
                                                 <UserIcon className="h-4 w-4 text-slate-400" />
                                             </div>
-                                            <span className="text-sm font-black text-slate-700 dark:text-slate-300">{log.user_name}</span>
+                                            <span className="text-sm font-black text-foreground">{log.user_name}</span>
                                         </div>
                                     </TableCell>
                                     <TableCell>{getActionBadge(log.action)}</TableCell>
@@ -210,7 +209,7 @@ export default function AuditLogs() {
                                                     {log.model_name}
                                                 </Badge>
                                                 <ArrowRight className="h-3 w-3 text-slate-300" />
-                                                <span className="text-sm font-bold text-slate-900 dark:text-white truncate max-w-[200px]">{log.object_name || 'N/A'}</span>
+                                                <span className="text-sm font-bold text-foreground truncate max-w-[200px]">{log.object_name || 'N/A'}</span>
                                             </div>
                                         </div>
                                     </TableCell>

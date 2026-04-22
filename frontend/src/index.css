@@ -99,49 +99,6 @@
     --sidebar-ring: 145 70% 45%;
   }
 
-  .dark {
-    --background: 222 47% 4%;
-    --foreground: 210 40% 98%;
-
-    --card: 222 47% 7%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222 47% 7%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 100% 66%;
-    --primary-foreground: 222 47% 11%;
-
-    --secondary: 222 47% 11%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 223 47% 11%;
-    --muted-foreground: 215 30% 65%;
-
-    --accent: 0 100% 63%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 84% 44%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 217 32% 14%;
-    --input: 217 32% 14%;
-    --ring: 210 100% 66%;
-
-    --sidebar-background: 222 47% 6%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 210 100% 66%;
-    --sidebar-primary-foreground: 222 47% 11%;
-    --sidebar-accent: 217 33% 13%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217 32% 12%;
-    --sidebar-ring: 210 100% 66%;
-
-    /* Dark Mode Specific Shadows */
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
-    --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.5);
-    --shadow-lg: 0 12px 24px -4px rgb(0 0 0 / 0.6);
-  }
 }
 
 @layer base {
@@ -175,17 +132,9 @@
   }
 
   .stat-card-icon {
-    @apply absolute -right-6 -top-6 h-28 w-28 text-primary/5 dark:text-primary/10 transition-transform duration-500 blur-[2px];
+    @apply absolute -right-6 -top-6 h-28 w-28 text-primary/5 transition-transform duration-500 blur-[2px];
   }
 
-  .dark .stat-card {
-    background: linear-gradient(
-      145deg,
-      hsl(var(--card)) 0%,
-      hsl(var(--background)) 100%
-    );
-    @apply border-white/5 shadow-[0_8px_16px_-6px_rgba(0,0,0,0.5)];
-  }
 
   .stat-card:hover .stat-card-icon {
     @apply scale-110 rotate-12 blur-none;
@@ -234,18 +183,9 @@
 
   /* Glass effect */
   .glass {
-    @apply bg-white/5 dark:bg-black/20 backdrop-blur-xl border border-white/10 dark:border-white/5 shadow-2xl;
+    @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl;
   }
 
-  .dark .glass {
-    background: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.05) 0%,
-      rgba(255, 255, 255, 0.01) 100%
-    );
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    border-left: 1px solid rgba(255, 255, 255, 0.1);
-  }
 
   /* Auth Background */
   .bg-auth {

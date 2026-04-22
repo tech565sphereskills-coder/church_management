@@ -22,6 +22,7 @@ import {
   Printer
 } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
+import { MetaManager } from '@/components/common/MetaManager';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -74,9 +75,6 @@ export default function Financials() {
   const [startDate, setStartDate] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(endOfMonth(new Date()), 'yyyy-MM-dd'));
 
-  useEffect(() => {
-    document.title = 'Financial Dashboard | RCCG Emmanuel Sanctuary';
-  }, []);
 
   const { 
     contributions, 
@@ -224,7 +222,8 @@ export default function Financials() {
   }
 
   return (
-    <div className="min-h-screen pb-12">
+    <div className="min-h-screen pb-12 bg-background/50">
+      <MetaManager title="Financial Dashboard" description="Track church tithes, offerings, and operational expenses." />
       <Header title="Financials" subtitle="Track tithes and offerings" />
 
       <div className="p-6">

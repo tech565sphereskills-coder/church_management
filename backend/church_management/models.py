@@ -497,3 +497,25 @@ class CheckInQueue(models.Model):
 
     def __str__(self):
         return f"{self.phone_number} - {self.status}"
+
+class Notification(models.Model):
+    NOTIFICATION_TYPES = [
+        ('info', 'Info'),
+        ('success', 'Success'),
+        ('warning', 'Warning'),
+        ('error', 'Error'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications', null=True, blank=True)
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES, default='info')
+    read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.title} - {self.user if self.user else 'All'}"

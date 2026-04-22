@@ -46,6 +46,7 @@ interface LocationState {
 }
 import { useAuth } from '@/hooks/useAuth';
 import { NewMemberDialog } from '@/components/members/NewMemberDialog';
+import { MetaManager } from '@/components/common/MetaManager';
 import { QRScanner } from '@/components/qr/QRScanner';
 import { QRCodeDisplay } from '@/components/qr/QRCodeDisplay';
 import { OfflineIndicator } from '@/components/attendance/OfflineIndicator';
@@ -102,9 +103,6 @@ export default function Attendance() {
     setOfflineMarkedIds(offlineIds);
   }, [pendingRecords]);
 
-  useEffect(() => {
-    document.title = 'Attendance Tracking | RCCG Emmanuel Sanctuary';
-  }, []);
 
   const today = new Date().toLocaleDateString('en-NG', {
     weekday: 'long',
@@ -289,7 +287,8 @@ export default function Attendance() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background/50">
+      <MetaManager title="Attendance Tracking" description="Professional real-time attendance management and presence tracking." />
       <Header title="Mark Attendance" />
 
       <div className="p-6">
@@ -1018,7 +1017,7 @@ export default function Attendance() {
           >
             <Button
               onClick={() => setIsScannerOpen(true)}
-              className="h-16 w-16 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-[0_10px_40px_rgba(79,70,229,0.4)] flex items-center justify-center p-0 border-4 border-white dark:border-slate-800 transition-shadow"
+              className="h-16 w-16 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-[0_10px_40px_rgba(79,70,229,0.4)] flex items-center justify-center p-0 border-4 border-white transition-shadow"
             >
               <Camera className="h-6 w-6" />
             </Button>

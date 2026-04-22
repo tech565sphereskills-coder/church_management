@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./hooks/useAuth";
+import { NotificationProvider } from "./context/NotificationContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { MainLayout } from "./components/layout/MainLayout";
 import { ErrorBoundary } from "./components/common/ErrorBoundary";
@@ -77,91 +78,93 @@ const App = () => {
           <TooltipProvider>
             <BrowserRouter>
               <AuthProvider>
-                <Toaster />
-                <Sonner />
-                
-                <AnimatePresence mode="wait">
-                  {isInitializing ? (
-                    <SplashScreen key="splash" onComplete={() => setIsInitializing(false)} />
-                  ) : (
-                    <Suspense fallback={<PageLoader />}>
-                      <Routes>
-                        {/* Public route */}
-                        <Route path="/auth" element={<Auth />} />
-                        <Route path="/reset-password" element={<ResetPassword />} />
-                        <Route path="/submit-prayer" element={<SubmitPrayer />} />
-                        <Route path="/check-in" element={<CheckIn />} />
-                        <Route path="/register" element={<PublicRegister />} />
-                        
-                        {/* Protected routes */}
-                        <Route element={<ProtectedRoute />}>
-                          <Route element={<MainLayout />}>
-                            <Route path="/" element={<Dashboard />} />
-                            <Route path="/calendar" element={<ProtectedRoute requiredPermission="canManageCalendar" />}>
-                              <Route index element={<Calendar />} />
+                <NotificationProvider>
+                  <Toaster />
+                  <Sonner />
+                  
+                  <AnimatePresence mode="wait">
+                    {isInitializing ? (
+                      <SplashScreen key="splash" onComplete={() => setIsInitializing(false)} />
+                    ) : (
+                      <Suspense fallback={<PageLoader />}>
+                        <Routes>
+                          {/* Public route */}
+                          <Route path="/auth" element={<Auth />} />
+                          <Route path="/reset-password" element={<ResetPassword />} />
+                          <Route path="/submit-prayer" element={<SubmitPrayer />} />
+                          <Route path="/check-in" element={<CheckIn />} />
+                          <Route path="/register" element={<PublicRegister />} />
+                          
+                          {/* Protected routes */}
+                          <Route element={<ProtectedRoute />}>
+                            <Route element={<MainLayout />}>
+                              <Route path="/" element={<Dashboard />} />
+                              <Route path="/calendar" element={<ProtectedRoute requiredPermission="canManageCalendar" />}>
+                                <Route index element={<Calendar />} />
+                              </Route>
+                              <Route path="/attendance" element={<ProtectedRoute requiredPermission="canManageAttendance" />}>
+                                <Route index element={<Attendance />} />
+                              </Route>
+                              <Route path="/members" element={<ProtectedRoute requiredPermission="canManageMembers" />}>
+                                <Route index element={<Members />} />
+                                <Route path="add" element={<AddMember />} />
+                              </Route>
+                              <Route path="/members/:memberId" element={<ProtectedRoute requiredPermission="canManageMembers" />}>
+                                <Route index element={<MemberProfile />} />
+                              </Route>
+                              <Route path="/history" element={<ProtectedRoute requiredPermission="canManageAttendance" />}>
+                                <Route index element={<History />} />
+                              </Route>
+                              <Route path="/reports" element={<ProtectedRoute requiredPermission="canViewReports" />}>
+                                <Route index element={<Reports />} />
+                              </Route>
+                              <Route path="/settings" element={<ProtectedRoute requiredPermission="canManageSettings" />}>
+                                <Route index element={<Settings />} />
+                              </Route>
+                              <Route path="/audit-logs" element={<ProtectedRoute requiredRole="admin" />}>
+                                <Route index element={<AuditLogs />} />
+                              </Route>
+                              <Route path="/user-management" element={<ProtectedRoute requiredRole="admin" />}>
+                                <Route index element={<UserManagement />} />
+                              </Route>
+                              <Route path="/follow-up" element={<ProtectedRoute requiredPermission="canManageMembers" />}>
+                                <Route index element={<FollowUp />} />
+                              </Route>
+                              <Route path="/messaging" element={<ProtectedRoute requiredPermission="canManageMembers" />}>
+                                <Route index element={<Messaging />} />
+                              </Route>
+                              <Route path="/financials" element={<ProtectedRoute requiredPermission="canManageFinances" />}>
+                                <Route index element={<Financials />} />
+                              </Route>
+                              <Route path="/departments" element={<Departments />} />
+                              <Route path="/departments/reports" element={<ProtectedRoute requiredPermission="canViewReports" />}>
+                                <Route index element={<DepartmentReports />} />
+                              </Route>
+                              <Route path="/ministers" element={<ProtectedRoute requiredPermission="canManageDepartments" />}>
+                                <Route index element={<Ministers />} />
+                              </Route>
+                              <Route path="/family" element={<Family />} />
+                              <Route path="/inventory" element={<Inventory />} />
+                              <Route path="/children" element={<ProtectedRoute requiredPermission="canManageChildren" />}>
+                                <Route index element={<Children />} />
+                              </Route>
+                              <Route path="/prayer-requests" element={<ProtectedRoute requiredPermission="canManagePrayer" />}>
+                                <Route index element={<PrayerRequests />} />
+                              </Route>
+                              <Route path="/birthdays" element={<ProtectedRoute requiredPermission="canManageMembers" />}>
+                                <Route index element={<BirthdayManager />} />
+                              </Route>
+                              <Route path="/notifications" element={<Notifications />} />
                             </Route>
-                            <Route path="/attendance" element={<ProtectedRoute requiredPermission="canManageAttendance" />}>
-                              <Route index element={<Attendance />} />
-                            </Route>
-                            <Route path="/members" element={<ProtectedRoute requiredPermission="canManageMembers" />}>
-                              <Route index element={<Members />} />
-                              <Route path="add" element={<AddMember />} />
-                            </Route>
-                            <Route path="/members/:memberId" element={<ProtectedRoute requiredPermission="canManageMembers" />}>
-                              <Route index element={<MemberProfile />} />
-                            </Route>
-                            <Route path="/history" element={<ProtectedRoute requiredPermission="canManageAttendance" />}>
-                              <Route index element={<History />} />
-                            </Route>
-                            <Route path="/reports" element={<ProtectedRoute requiredPermission="canViewReports" />}>
-                              <Route index element={<Reports />} />
-                            </Route>
-                            <Route path="/settings" element={<ProtectedRoute requiredPermission="canManageSettings" />}>
-                              <Route index element={<Settings />} />
-                            </Route>
-                            <Route path="/audit-logs" element={<ProtectedRoute requiredRole="admin" />}>
-                              <Route index element={<AuditLogs />} />
-                            </Route>
-                            <Route path="/user-management" element={<ProtectedRoute requiredRole="admin" />}>
-                              <Route index element={<UserManagement />} />
-                            </Route>
-                            <Route path="/follow-up" element={<ProtectedRoute requiredPermission="canManageMembers" />}>
-                              <Route index element={<FollowUp />} />
-                            </Route>
-                            <Route path="/messaging" element={<ProtectedRoute requiredPermission="canManageMembers" />}>
-                              <Route index element={<Messaging />} />
-                            </Route>
-                            <Route path="/financials" element={<ProtectedRoute requiredPermission="canManageFinances" />}>
-                              <Route index element={<Financials />} />
-                            </Route>
-                            <Route path="/departments" element={<Departments />} />
-                            <Route path="/departments/reports" element={<ProtectedRoute requiredPermission="canViewReports" />}>
-                              <Route index element={<DepartmentReports />} />
-                            </Route>
-                            <Route path="/ministers" element={<ProtectedRoute requiredPermission="canManageDepartments" />}>
-                              <Route index element={<Ministers />} />
-                            </Route>
-                            <Route path="/family" element={<Family />} />
-                            <Route path="/inventory" element={<Inventory />} />
-                            <Route path="/children" element={<ProtectedRoute requiredPermission="canManageChildren" />}>
-                              <Route index element={<Children />} />
-                            </Route>
-                            <Route path="/prayer-requests" element={<ProtectedRoute requiredPermission="canManagePrayer" />}>
-                              <Route index element={<PrayerRequests />} />
-                            </Route>
-                            <Route path="/birthdays" element={<ProtectedRoute requiredPermission="canManageMembers" />}>
-                              <Route index element={<BirthdayManager />} />
-                            </Route>
-                            <Route path="/notifications" element={<Notifications />} />
                           </Route>
-                        </Route>
-                        
-                        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                        <Route path="*" element={<NotFound />} />
-                      </Routes>
-                    </Suspense>
-                  )}
-                </AnimatePresence>
+                          
+                          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                          <Route path="*" element={<NotFound />} />
+                        </Routes>
+                      </Suspense>
+                    )}
+                  </AnimatePresence>
+                </NotificationProvider>
               </AuthProvider>
             </BrowserRouter>
           </TooltipProvider>

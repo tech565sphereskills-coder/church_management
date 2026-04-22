@@ -276,17 +276,17 @@ export default function Settings() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50/50">
+      <div className="min-h-screen flex items-center justify-center bg-background/50">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          <p className="text-slate-500 font-medium animate-pulse">Loading settings...</p>
+          <p className="text-muted-foreground font-medium animate-pulse">Loading settings...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50/30">
+    <div className="min-h-screen bg-background/30">
       <Header 
         title="Settings & Administration" 
         subtitle="Command center for your church management system." 
@@ -310,8 +310,8 @@ export default function Settings() {
                     value={tab.id}
                     className={cn(
                       "flex items-center justify-start gap-3 px-4 py-3 w-auto min-w-max lg:w-full rounded-xl transition-all duration-200",
-                      "data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-primary data-[state=active]:ring-1 data-[state=active]:ring-slate-200",
-                      "data-[state=inactive]:text-black font-bold data-[state=inactive]:hover:bg-slate-100"
+                      "data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:text-primary data-[state=active]:ring-1 data-[state=active]:ring-border",
+                      "data-[state=inactive]:text-foreground font-bold data-[state=inactive]:hover:bg-muted"
                     )}
                   >
                     <tab.icon className="h-4 w-4" />
@@ -328,11 +328,11 @@ export default function Settings() {
                   </div>
                   <div className="space-y-2">
                     <div className="flex justify-between items-center text-xs">
-                      <span className="text-slate-500">Database</span>
+                      <span className="text-muted-foreground">Database</span>
                       <span className="text-emerald-600 font-bold">Online</span>
                     </div>
                     <div className="flex justify-between items-center text-xs">
-                      <span className="text-slate-500">Storage</span>
+                      <span className="text-muted-foreground">Storage</span>
                       <span className="text-emerald-600 font-bold">82% Free</span>
                     </div>
                   </div>
@@ -347,9 +347,9 @@ export default function Settings() {
                 <TabsContent value="general" className="mt-0 outline-none">
                   <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
                     <Card className="border-none shadow-sm overflow-hidden">
-                      <CardHeader className="bg-white border-b border-slate-100 pb-8">
-                        <CardTitle className="text-xl !text-black">Church Information</CardTitle>
-                        <CardDescription className="!text-slate-600">Update the primary details for RCCG Emmanuel Sanctuary.</CardDescription>
+                      <CardHeader className="bg-card border-b border-border pb-8">
+                        <CardTitle className="text-xl text-foreground">Church Information</CardTitle>
+                        <CardDescription className="text-muted-foreground">Update the primary details for RCCG Emmanuel Sanctuary.</CardDescription>
                       </CardHeader>
                       <CardContent className="p-8 space-y-8">
                         <div className="flex flex-col md:flex-row gap-8 items-start">
@@ -361,112 +361,112 @@ export default function Settings() {
                               accept="image/*" 
                               onChange={handleLogoChange}
                             />
-                            <div className="w-32 h-32 rounded-3xl bg-slate-100 border-2 border-dashed border-slate-300 flex flex-col items-center justify-center transition-all group-hover:border-primary group-hover:bg-primary/5">
+                            <div className="w-32 h-32 rounded-3xl bg-muted border-2 border-dashed border-border flex flex-col items-center justify-center transition-all group-hover:border-primary group-hover:bg-primary/5">
                               <img src={logoUrl} alt="Logo" className="w-20 h-20 object-contain transition-all group-hover:scale-110" />
                               <div className="absolute inset-0 bg-black/40 rounded-3xl opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                                 <span className="text-white text-xs font-bold">Change</span>
                               </div>
                             </div>
-                            <p className="text-[10px] text-center mt-2 text-slate-400 font-bold uppercase tracking-tighter">Church Emblem</p>
+                            <p className="text-[10px] text-center mt-2 text-muted-foreground font-bold uppercase tracking-tighter">Church Emblem</p>
                           </div>
                           
                           <div className="flex-1 space-y-6 w-full">
                             <div className="grid gap-2">
-                              <Label htmlFor="church" className="text-xs font-bold uppercase text-slate-500">Official Name</Label>
+                              <Label htmlFor="church" className="text-xs font-bold uppercase text-muted-foreground">Official Name</Label>
                               <Input 
                                 id="church" 
                                 value={churchName} 
                                 onChange={(e) => setChurchName(e.target.value)} 
                                 disabled={!isAdmin}
-                                className="h-12 border-slate-200 focus:ring-primary shadow-none text-lg" 
+                                className="h-12 border-border focus:ring-primary shadow-none text-lg" 
                               />
                             </div>
                           </div>
                         </div>
                         <div className="grid md:grid-cols-2 gap-8">
                           <div className="grid gap-2">
-                            <Label htmlFor="mail" className="text-xs font-bold uppercase text-slate-500">Contact Email Address</Label>
+                            <Label htmlFor="mail" className="text-xs font-bold uppercase text-muted-foreground">Contact Email Address</Label>
                             <Input 
                               id="mail" 
                               value={contactEmail} 
                               onChange={(e) => setContactEmail(e.target.value)} 
                               disabled={!isAdmin}
                               placeholder="church@email.com"
-                              className="h-12 border-slate-200 focus:ring-primary shadow-none" 
+                              className="h-12 border-border focus:ring-primary shadow-none" 
                             />
                           </div>
                           <div className="grid gap-2">
-                            <Label htmlFor="phone" className="text-xs font-bold uppercase text-slate-500">Contact Phone Number</Label>
+                            <Label htmlFor="phone" className="text-xs font-bold uppercase text-muted-foreground">Contact Phone Number</Label>
                             <Input 
                               id="phone" 
                               value={phoneNumber} 
                               onChange={(e) => setPhoneNumber(e.target.value)} 
                               disabled={!isAdmin}
                               placeholder="+234 ..."
-                              className="h-12 border-slate-200 focus:ring-primary shadow-none" 
+                              className="h-12 border-border focus:ring-primary shadow-none" 
                             />
                           </div>
                         </div>
 
                         <div className="grid gap-2">
-                          <Label htmlFor="addr" className="text-xs font-bold uppercase text-slate-500">Physical Address</Label>
+                          <Label htmlFor="addr" className="text-xs font-bold uppercase text-muted-foreground">Physical Address</Label>
                           <Input 
                             id="addr" 
                             value={address} 
                             onChange={(e) => setAddress(e.target.value)} 
                             disabled={!isAdmin}
                             placeholder="Church Street, Location"
-                            className="h-12 border-slate-200 focus:ring-primary shadow-none" 
+                            className="h-12 border-border focus:ring-primary shadow-none" 
                           />
                         </div>
 
                         <Separator className="my-8" />
 
                         <div className="space-y-6">
-                          <h4 className="text-sm font-bold uppercase tracking-wider text-slate-500">Social Media & Web Presence</h4>
+                          <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Social Media & Web Presence</h4>
                           <div className="grid md:grid-cols-2 gap-6">
                             <div className="grid gap-2">
-                              <Label htmlFor="website" className="text-xs font-bold uppercase text-slate-500">Official Website</Label>
+                              <Label htmlFor="website" className="text-xs font-bold uppercase text-muted-foreground">Official Website</Label>
                               <Input 
                                 id="website" 
                                 value={websiteUrl} 
                                 onChange={(e) => setWebsiteUrl(e.target.value)} 
                                 disabled={!isAdmin}
                                 placeholder="https://..."
-                                className="h-12 border-slate-200 focus:ring-primary shadow-none" 
+                                className="h-12 border-border focus:ring-primary shadow-none" 
                               />
                             </div>
                             <div className="grid gap-2">
-                              <Label htmlFor="facebook" className="text-xs font-bold uppercase text-slate-500">Facebook Page</Label>
+                              <Label htmlFor="facebook" className="text-xs font-bold uppercase text-muted-foreground">Facebook Page</Label>
                               <Input 
                                 id="facebook" 
                                 value={facebookUrl} 
                                 onChange={(e) => setFacebookUrl(e.target.value)} 
                                 disabled={!isAdmin}
                                 placeholder="facebook.com/..."
-                                className="h-12 border-slate-200 focus:ring-primary shadow-none" 
+                                className="h-12 border-border focus:ring-primary shadow-none" 
                               />
                             </div>
                             <div className="grid gap-2">
-                              <Label htmlFor="instagram" className="text-xs font-bold uppercase text-slate-500">Instagram Handle</Label>
+                              <Label htmlFor="instagram" className="text-xs font-bold uppercase text-muted-foreground">Instagram Handle</Label>
                               <Input 
                                 id="instagram" 
                                 value={instagramUrl} 
                                 onChange={(e) => setInstagramUrl(e.target.value)} 
                                 disabled={!isAdmin}
                                 placeholder="instagram.com/..."
-                                className="h-12 border-slate-200 focus:ring-primary shadow-none" 
+                                className="h-12 border-border focus:ring-primary shadow-none" 
                               />
                             </div>
                             <div className="grid gap-2">
-                              <Label htmlFor="youtube" className="text-xs font-bold uppercase text-slate-500">YouTube Channel</Label>
+                              <Label htmlFor="youtube" className="text-xs font-bold uppercase text-muted-foreground">YouTube Channel</Label>
                               <Input 
                                 id="youtube" 
                                 value={youtubeUrl} 
                                 onChange={(e) => setYoutubeUrl(e.target.value)} 
                                 disabled={!isAdmin}
                                 placeholder="youtube.com/..."
-                                className="h-12 border-slate-200 focus:ring-primary shadow-none" 
+                                className="h-12 border-border focus:ring-primary shadow-none" 
                               />
                             </div>
                           </div>
@@ -475,21 +475,21 @@ export default function Settings() {
                         <Separator className="my-8" />
 
                         <div className="space-y-4">
-                          <h4 className="text-sm font-bold uppercase tracking-wider text-slate-500">Service Configuration</h4>
+                          <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Service Configuration</h4>
                           <div className="grid gap-2">
-                            <Label htmlFor="service-times" className="text-xs font-bold uppercase text-slate-500">Service Times & Schedules</Label>
+                            <Label htmlFor="service-times" className="text-xs font-bold uppercase text-muted-foreground">Service Times & Schedules</Label>
                             <Input 
                               id="service-times" 
                               value={serviceTimes} 
                               onChange={(e) => setServiceTimes(e.target.value)} 
                               disabled={!isAdmin}
                               placeholder="e.g. Sundays: 8:00 AM, 11:00 AM | Midweek: Wednesday 6:00 PM"
-                              className="h-12 border-slate-200 focus:ring-primary shadow-none" 
+                              className="h-12 border-border focus:ring-primary shadow-none" 
                             />
                           </div>
                         </div>
                       </CardContent>
-                      <CardFooter className="bg-slate-50/50 border-t border-slate-100 p-6 flex justify-end">
+                      <CardFooter className="bg-muted/50 border-t border-border p-6 flex justify-end">
                         <Button onClick={handleSave} disabled={saving || !isAdmin} className="px-8 h-12 rounded-xl shadow-lg shadow-primary/10">
                           {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Database className="h-4 w-4 mr-2" />}
                           Save Configuration
@@ -503,9 +503,9 @@ export default function Settings() {
                 <TabsContent value="profile" className="mt-0 outline-none">
                   <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
                     <Card className="border-none shadow-sm overflow-hidden">
-                      <CardHeader className="bg-white border-b border-slate-100 pb-8">
-                        <CardTitle className="text-xl !text-black">User Profile</CardTitle>
-                        <CardDescription className="!text-slate-600">Personal information and preferences.</CardDescription>
+                      <CardHeader className="bg-card border-b border-border pb-8">
+                        <CardTitle className="text-xl text-foreground">User Profile</CardTitle>
+                        <CardDescription className="text-muted-foreground">Personal information and preferences.</CardDescription>
                       </CardHeader>
                       <CardContent className="p-8 space-y-8">
                         <div className="flex items-center gap-6">
@@ -513,8 +513,8 @@ export default function Settings() {
                             {user?.username?.[0]?.toUpperCase() || 'U'}
                           </div>
                           <div>
-                            <h4 className="text-lg font-bold text-slate-900">{user?.username}</h4>
-                            <p className="text-slate-500 font-medium">{user?.email}</p>
+                            <h4 className="text-lg font-bold text-foreground">{user?.username}</h4>
+                            <p className="text-muted-foreground font-medium">{user?.email}</p>
                             <Badge variant="outline" className="mt-2 bg-primary/5 border-primary/20 text-primary uppercase text-[10px] font-bold">
                               {role?.replace('_', ' ')}
                             </Badge>
@@ -523,22 +523,22 @@ export default function Settings() {
                         <Separator />
                         <div className="grid md:grid-cols-2 gap-6">
                           <div className="space-y-4">
-                            <h5 className="font-bold text-slate-900 flex items-center gap-2">
-                              <Smartphone className="h-4 w-4 text-slate-400" />
+                            <h5 className="font-bold text-foreground flex items-center gap-2">
+                              <Smartphone className="h-4 w-4 text-muted-foreground" />
                               Contact Information
                             </h5>
-                            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-3">
-                              <p className="text-sm text-slate-600 font-medium flex justify-between">
-                                Phone: <span className="text-slate-900">Not provided</span>
+                            <div className="p-4 rounded-xl bg-muted border border-border space-y-3">
+                              <p className="text-sm text-muted-foreground font-medium flex justify-between">
+                                Phone: <span className="text-foreground">Not provided</span>
                               </p>
                             </div>
                           </div>
                           <div className="space-y-4">
-                            <h5 className="font-bold text-slate-900 flex items-center gap-2">
-                              <Globe className="h-4 w-4 text-slate-400" />
+                            <h5 className="font-bold text-foreground flex items-center gap-2">
+                              <Globe className="h-4 w-4 text-muted-foreground" />
                               Interface Language
                             </h5>
-                            <Button variant="outline" className="w-full justify-start h-12 bg-white border-slate-200">
+                            <Button variant="outline" className="w-full justify-start h-12 bg-card border-border">
                               English (Default)
                             </Button>
                           </div>
@@ -552,9 +552,9 @@ export default function Settings() {
                 <TabsContent value="notifications" className="mt-0 outline-none">
                   <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
                     <Card className="border-none shadow-sm overflow-hidden">
-                      <CardHeader className="bg-white border-b border-slate-100 pb-8">
-                        <CardTitle className="text-xl !text-black">Preferences</CardTitle>
-                        <CardDescription className="!text-slate-600">Control how and when you receive system alerts.</CardDescription>
+                      <CardHeader className="bg-card border-b border-border pb-8">
+                        <CardTitle className="text-xl text-foreground">Preferences</CardTitle>
+                        <CardDescription className="text-muted-foreground">Control how and when you receive system alerts.</CardDescription>
                       </CardHeader>
                       <CardContent className="p-8 space-y-6">
                         {[
@@ -563,10 +563,10 @@ export default function Settings() {
                           { id: 'reports', label: 'Weekly Reports', desc: 'Detailed PDF analytics every Monday', state: weeklyReports, setter: setWeeklyReports },
                           { id: 'auto-confirm', label: 'Auto-confirm QR scans', desc: 'Immediately mark present on QR scan (no queue)', state: autoConfirmQrCheckin, setter: setAutoConfirmQrCheckin },
                         ].map((item) => (
-                          <div key={item.id} className="flex items-center justify-between p-4 rounded-2xl bg-white border border-slate-100 transition-hover hover:border-slate-200">
+                          <div key={item.id} className="flex items-center justify-between p-4 rounded-2xl bg-card border border-border transition-hover hover:border-border/80">
                             <div className="space-y-1">
-                              <Label htmlFor={item.id} className="text-base font-bold text-slate-900 cursor-pointer">{item.label}</Label>
-                              <p className="text-sm text-slate-500 font-medium">{item.desc}</p>
+                              <Label htmlFor={item.id} className="text-base font-bold text-foreground cursor-pointer">{item.label}</Label>
+                              <p className="text-sm text-muted-foreground font-medium">{item.desc}</p>
                             </div>
                             <Switch 
                               id={item.id} 
@@ -576,57 +576,61 @@ export default function Settings() {
                             />
                           </div>
                         ))}
-                        <div className="pt-6 border-t border-slate-100">
-                          <h4 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-6">Email Server (SMTP)</h4>
+                        <div className="pt-6 border-t border-border">
+                          <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-6">Email Server (SMTP)</h4>
                           <div className="grid gap-6">
                             <div className="grid md:grid-cols-2 gap-4">
                               <div className="grid gap-2">
-                                <Label htmlFor="smtp-server" className="text-xs font-bold uppercase text-slate-500">SMTP Host</Label>
+                                <Label htmlFor="smtp-server" className="text-xs font-bold uppercase text-muted-foreground">SMTP Host</Label>
                                 <Input 
                                   id="smtp-server" 
                                   value={smtpServer} 
                                   onChange={(e) => setSmtpServer(e.target.value)} 
                                   placeholder="smtp.gmail.com"
                                   disabled={!isAdmin}
+                                  className="border-border"
                                 />
                               </div>
                               <div className="grid gap-2">
-                                <Label htmlFor="smtp-port" className="text-xs font-bold uppercase text-slate-500">Port</Label>
+                                <Label htmlFor="smtp-port" className="text-xs font-bold uppercase text-muted-foreground">Port</Label>
                                 <Input 
                                   id="smtp-port" 
                                   type="number"
                                   value={smtpPort} 
                                   onChange={(e) => setSmtpPort(parseInt(e.target.value))} 
                                   disabled={!isAdmin}
+                                  className="border-border"
                                 />
                               </div>
                             </div>
                             <div className="grid md:grid-cols-2 gap-4">
                               <div className="grid gap-2">
-                                <Label htmlFor="smtp-user" className="text-xs font-bold uppercase text-slate-500">Username</Label>
+                                <Label htmlFor="smtp-user" className="text-xs font-bold uppercase text-muted-foreground">Username</Label>
                                 <Input 
                                   id="smtp-user" 
                                   value={smtpUser} 
                                   onChange={(e) => setSmtpUser(e.target.value)} 
                                   placeholder="church@email.com"
                                   disabled={!isAdmin}
+                                  className="border-border"
                                 />
                               </div>
                               <div className="grid gap-2">
-                                <Label htmlFor="smtp-pass" className="text-xs font-bold uppercase text-slate-500">Password</Label>
+                                <Label htmlFor="smtp-pass" className="text-xs font-bold uppercase text-muted-foreground">Password</Label>
                                 <Input 
                                   id="smtp-pass" 
                                   type="password"
                                   value={smtpPassword} 
                                   onChange={(e) => setSmtpPassword(e.target.value)} 
                                   disabled={!isAdmin}
+                                  className="border-border"
                                 />
                               </div>
                             </div>
-                            <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50/50 border border-slate-100">
+                            <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50 border border-border">
                                 <div className="space-y-1">
-                                  <Label htmlFor="smtp-tls" className="text-sm font-bold text-slate-900 cursor-pointer">Use TLS</Label>
-                                  <p className="text-xs text-slate-500">Secure connection for modern email providers</p>
+                                  <Label htmlFor="smtp-tls" className="text-sm font-bold text-foreground cursor-pointer">Use TLS</Label>
+                                  <p className="text-xs text-muted-foreground">Secure connection for modern email providers</p>
                                 </div>
                                 <Switch 
                                   id="smtp-tls" 
@@ -638,7 +642,7 @@ export default function Settings() {
                           </div>
                         </div>
                       </CardContent>
-                      <CardFooter className="bg-slate-50/50 border-t border-slate-100 p-6 flex justify-end">
+                      <CardFooter className="bg-muted/50 border-t border-border p-6 flex justify-end">
                         <Button onClick={handleSave} disabled={saving || !isAdmin} className="rounded-xl px-8 h-12">
                           Apply Changes
                         </Button>
@@ -651,25 +655,25 @@ export default function Settings() {
                 <TabsContent value="security" className="mt-0 outline-none">
                   <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
                     <Card className="border-none shadow-sm overflow-hidden">
-                      <CardHeader className="bg-white border-b border-slate-100 pb-8">
+                      <CardHeader className="bg-card border-b border-border pb-8">
                         <div className="flex items-center justify-between">
                           <div>
                             <CardTitle className="text-xl text-red-600 flex items-center gap-2">
                               <Lock className="h-5 w-5" />
                               Security Protocol
                             </CardTitle>
-                            <CardDescription>Protect your access and manage system authentication.</CardDescription>
+                            <CardDescription className="text-muted-foreground">Protect your access and manage system authentication.</CardDescription>
                           </div>
                           <Badge className="bg-emerald-500/10 text-emerald-600 border-none px-3 py-1 font-bold">Encrypted</Badge>
                         </div>
                       </CardHeader>
                       <CardContent className="p-8 space-y-6">
-                        <div className="p-6 rounded-2xl border border-slate-200 space-y-4">
-                          <h5 className="font-bold text-slate-900">Account Access</h5>
-                          <p className="text-sm text-slate-500 font-medium">It's recommended to update your security credentials every 90 days.</p>
+                        <div className="p-6 rounded-2xl border border-border space-y-4">
+                          <h5 className="font-bold text-foreground">Account Access</h5>
+                          <p className="text-sm text-muted-foreground font-medium">It's recommended to update your security credentials every 90 days.</p>
                           <Button 
                             variant="default" 
-                            className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl h-12 px-6 gap-2"
+                            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl h-12 px-6 gap-2"
                             onClick={() => setIsPasswordDialogOpen(true)}
                           >
                             <KeyRound className="h-4 w-4" />
@@ -680,10 +684,10 @@ export default function Settings() {
                         {isAdmin && (
                           <div className="p-6 rounded-2xl border border-primary/20 bg-primary/5 space-y-4">
                             <h5 className="font-bold text-primary">Administrative Controls</h5>
-                            <p className="text-sm text-slate-600 font-medium">Configure roles and permissions for other church officers.</p>
+                            <p className="text-sm text-muted-foreground font-medium">Configure roles and permissions for other church officers.</p>
                             <Button 
                               variant="outline" 
-                              className="w-full justify-start h-12 rounded-xl bg-white border-primary/20 text-primary gap-3 hover:bg-primary hover:text-white transition-all shadow-md"
+                              className="w-full justify-start h-12 rounded-xl bg-card border-primary/20 text-primary gap-3 hover:bg-primary hover:text-white transition-all shadow-md"
                               onClick={() => navigate('/user-management')}
                             >
                               <Users className="h-4 w-4" />
@@ -692,18 +696,18 @@ export default function Settings() {
                           </div>
                         )}
 
-                        <div className="p-6 rounded-2xl border border-slate-200 space-y-4">
+                        <div className="p-6 rounded-2xl border border-border space-y-4">
                           <div className="flex items-center justify-between">
                             <div className="space-y-1">
-                              <h5 className="font-bold text-slate-900 flex items-center gap-2">
+                              <h5 className="font-bold text-foreground flex items-center gap-2">
                                 <ShieldCheck className="h-4 w-4 text-emerald-500" />
                                 Two-Factor Authentication (2FA)
                               </h5>
-                              <p className="text-sm text-slate-500 font-medium">Add an extra layer of security to your account using an authenticator app.</p>
+                              <p className="text-sm text-muted-foreground font-medium">Add an extra layer of security to your account using an authenticator app.</p>
                             </div>
                             <Badge variant={is2FAEnabled ? "default" : "outline"} className={cn(
                               "uppercase text-[10px] font-bold px-3 py-1",
-                              is2FAEnabled ? "bg-emerald-500/10 text-emerald-600 border-none" : "text-slate-400"
+                              is2FAEnabled ? "bg-emerald-500/10 text-emerald-600 border-none" : "text-muted-foreground"
                             )}>
                               {is2FAEnabled ? "Active" : "Disabled"}
                             </Badge>
@@ -737,26 +741,26 @@ export default function Settings() {
                 <TabsContent value="system" className="mt-0 outline-none">
                   <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
                     <Card className="border-none shadow-sm overflow-hidden">
-                      <CardHeader className="bg-white border-b border-slate-100 pb-8">
-                        <CardTitle className="text-xl !text-black">System Infrastructure</CardTitle>
-                        <CardDescription className="!text-slate-600">Advanced maintenance and infrastructure health.</CardDescription>
+                      <CardHeader className="bg-card border-b border-border pb-8">
+                        <CardTitle className="text-xl text-foreground">System Infrastructure</CardTitle>
+                        <CardDescription className="text-muted-foreground">Advanced maintenance and infrastructure health.</CardDescription>
                       </CardHeader>
                       <CardContent className="p-8 space-y-8">
                         <div className="grid md:grid-cols-2 gap-6">
-                          <Card className="border-slate-100 shadow-none bg-slate-50/50">
+                          <Card className="border-border shadow-none bg-muted/50">
                             <CardContent className="p-6 space-y-4 text-center">
-                              <div className="mx-auto w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center mb-2">
+                              <div className="mx-auto w-12 h-12 bg-card rounded-full shadow-sm flex items-center justify-center mb-2">
                                 <Database className="h-6 w-6 text-indigo-500" />
                               </div>
-                              <h6 className="font-bold !text-black uppercase text-xs tracking-widest">Data Integrity</h6>
+                              <h6 className="font-bold text-foreground uppercase text-xs tracking-widest">Data Integrity</h6>
                               <div className="space-y-1">
-                                <p className="text-sm font-bold text-slate-700">Daily Backups: <span className="text-emerald-500">Active</span></p>
-                                <p className="text-xs text-slate-400">Last run: Today, 03:00 AM</p>
+                                <p className="text-sm font-bold text-foreground/80">Daily Backups: <span className="text-emerald-500">Active</span></p>
+                                <p className="text-xs text-muted-foreground">Last run: Today, 03:00 AM</p>
                               </div>
                               <div className="flex flex-col gap-2">
                                 <Button 
                                   variant="outline" 
-                                  className="w-full text-xs font-bold gap-2 bg-white h-10 !text-black"
+                                  className="w-full text-xs font-bold gap-2 bg-card h-10 text-foreground"
                                   onClick={handleExportArchive}
                                   disabled={isExporting}
                                 >
@@ -765,7 +769,7 @@ export default function Settings() {
                                 </Button>
                                 <Button 
                                   variant="outline" 
-                                  className="w-full text-xs font-bold gap-2 bg-white h-10 !text-black"
+                                  className="w-full text-xs font-bold gap-2 bg-card h-10 text-foreground"
                                   onClick={() => setIsApiLogsOpen(true)}
                                 >
                                   <Activity className="h-3 w-3" /> API Logs
@@ -773,19 +777,19 @@ export default function Settings() {
                               </div>
                             </CardContent>
                           </Card>
-                          <Card className="border-slate-100 shadow-none bg-slate-50/50">
+                          <Card className="border-border shadow-none bg-muted/50">
                             <CardContent className="p-6 space-y-4 text-center">
-                              <div className="mx-auto w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center mb-2">
+                              <div className="mx-auto w-12 h-12 bg-card rounded-full shadow-sm flex items-center justify-center mb-2">
                                 <Mail className="h-6 w-6 text-orange-500" />
                               </div>
-                              <h6 className="font-bold text-slate-900 uppercase text-xs tracking-widest">Service Gateway</h6>
+                              <h6 className="font-bold text-foreground uppercase text-xs tracking-widest">Service Gateway</h6>
                               <div className="space-y-1">
-                                <p className="text-sm font-bold text-slate-700">SMTP Server: <span className="text-emerald-500">Connected</span></p>
-                                <p className="text-xs text-slate-400">SMS Credit: 1,420 units</p>
+                                <p className="text-sm font-bold text-foreground/80">SMTP Server: <span className="text-emerald-500">Connected</span></p>
+                                <p className="text-xs text-muted-foreground">SMS Credit: 1,420 units</p>
                               </div>
                               <Button 
                                 variant="outline" 
-                                className="w-full text-xs font-bold gap-2 bg-white h-10 !text-black"
+                                className="w-full text-xs font-bold gap-2 bg-card h-10 text-foreground"
                                 onClick={() => setIsApiLogsOpen(true)}
                               >
                                 <SettingsIcon className="h-3 w-3" /> View API Logs
@@ -799,12 +803,12 @@ export default function Settings() {
                             <AlertTriangle className="h-6 w-6 text-red-600" />
                             <h5 className="font-extrabold text-red-600 uppercase tracking-tight">Danger Zone</h5>
                           </div>
-                          <p className="text-sm text-slate-600 font-medium">These actions are irreversible. Please proceed with extreme caution.</p>
+                          <p className="text-sm text-muted-foreground font-medium">These actions are irreversible. Please proceed with extreme caution.</p>
                           <div className="flex flex-wrap gap-4 pt-2">
-                            <Button variant="outline" className="border-red-200 text-red-600 hover:bg-red-600 hover:text-white transition-colors bg-white font-bold px-6">
+                            <Button variant="outline" className="border-red-200 text-red-600 hover:bg-red-600 hover:text-white transition-colors bg-card font-bold px-6">
                               Clear Logs
                             </Button>
-                            <Button variant="ghost" className="text-slate-400 hover:text-red-600 font-bold">
+                            <Button variant="ghost" className="text-muted-foreground hover:text-red-600 font-bold">
                               Request Instance Deletion
                             </Button>
                           </div>
@@ -828,14 +832,14 @@ export default function Settings() {
               <Shield className="h-6 w-6 text-primary" />
               Security Update
             </DialogTitle>
-            <DialogDescription className="text-slate-500 font-medium">
+            <DialogDescription className="text-muted-foreground font-medium">
               Update your account credentials for enhanced safety.
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-6 py-6">
             <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase text-slate-400">New Password</Label>
+              <Label className="text-xs font-bold uppercase text-muted-foreground">New Password</Label>
               <div className="relative">
                 <Input
                   type="password"
@@ -847,19 +851,19 @@ export default function Settings() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase text-slate-400">Confirm Password</Label>
+              <Label className="text-xs font-bold uppercase text-muted-foreground">Confirm Password</Label>
               <Input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="h-12 border-slate-200 focus:ring-primary pl-4 transition-all"
+                className="h-12 border-border focus:ring-primary pl-4 transition-all"
                 placeholder="Repeat new password"
               />
             </div>
           </div>
 
-          <DialogFooter className="flex-col sm:flex-row gap-3 pt-4 border-t border-slate-100">
-            <Button variant="ghost" className="flex-1 font-bold text-slate-500" onClick={() => setIsPasswordDialogOpen(false)}>
+          <DialogFooter className="flex-col sm:flex-row gap-3 pt-4 border-t border-border">
+            <Button variant="ghost" className="flex-1 font-bold text-muted-foreground" onClick={() => setIsPasswordDialogOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handlePasswordChange} disabled={isChangingPassword} className="flex-1 rounded-xl h-12 shadow-lg shadow-primary/20">
@@ -874,49 +878,49 @@ export default function Settings() {
       <Dialog open={isApiLogsOpen} onOpenChange={setIsApiLogsOpen}>
         <DialogContent className="max-w-[600px] rounded-3xl p-6">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-extrabold flex items-center gap-3 !text-black">
+            <DialogTitle className="text-2xl font-extrabold flex items-center gap-3 text-foreground">
               <Activity className="h-6 w-6 text-primary" />
               System API Logs
             </DialogTitle>
-            <DialogDescription className="text-slate-500 font-medium whitespace-nowrap">
+            <DialogDescription className="text-muted-foreground font-medium whitespace-nowrap">
               Real-time monitoring of system requests and responses.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="bg-slate-900 rounded-2xl p-4 font-mono text-[10px] text-emerald-400 h-[300px] overflow-y-auto space-y-2 mt-4">
+          <div className="bg-slate-950 rounded-2xl p-4 font-mono text-[10px] text-emerald-400 h-[300px] overflow-y-auto space-y-2 mt-4">
             <div className="flex gap-2">
-              <span className="text-slate-500">[{new Date().toISOString().split('T')[1].split('.')[0]}]</span>
+              <span className="text-muted-foreground">[{new Date().toISOString().split('T')[1].split('.')[0]}]</span>
               <span className="text-blue-400">GET</span>
               <span>/api/stats/quick_stats/ - 200 OK</span>
             </div>
             <div className="flex gap-2">
-              <span className="text-slate-500">[{new Date().toISOString().split('T')[1].split('.')[0]}]</span>
+              <span className="text-muted-foreground">[{new Date().toISOString().split('T')[1].split('.')[0]}]</span>
               <span className="text-emerald-400">POST</span>
               <span>/api/members/ - 201 Created</span>
             </div>
             <div className="flex gap-2">
-              <span className="text-slate-500">[{new Date().toISOString().split('T')[1].split('.')[0]}]</span>
+              <span className="text-muted-foreground">[{new Date().toISOString().split('T')[1].split('.')[0]}]</span>
               <span className="text-blue-400">GET</span>
               <span>/api/attendance/weekly/ - 200 OK</span>
             </div>
             <div className="flex gap-2">
-              <span className="text-slate-500">[{new Date().toISOString().split('T')[1].split('.')[0]}]</span>
+              <span className="text-muted-foreground">[{new Date().toISOString().split('T')[1].split('.')[0]}]</span>
               <span className="text-blue-400">GET</span>
               <span>/api/financials/summary/ - 200 OK</span>
             </div>
             <div className="flex gap-2">
-              <span className="text-slate-500">[{new Date().toISOString().split('T')[1].split('.')[0]}]</span>
+              <span className="text-muted-foreground">[{new Date().toISOString().split('T')[1].split('.')[0]}]</span>
               <span className="text-emerald-400">PATCH</span>
               <span>/api/settings/update/ - 200 OK</span>
             </div>
             <div className="text-slate-500 italic mt-4">... streaming active logs ...</div>
           </div>
 
-          <DialogFooter className="pt-4 border-t border-slate-100">
-            <Button variant="outline" className="rounded-xl h-11 px-6 !text-black" onClick={() => setIsApiLogsOpen(false)}>
+          <DialogFooter className="pt-4 border-t border-border">
+            <Button variant="outline" className="rounded-xl h-11 px-6 text-foreground" onClick={() => setIsApiLogsOpen(false)}>
               Close Monitor
             </Button>
-            <Button variant="default" className="rounded-xl h-11 px-6 bg-slate-900 text-white hover:bg-slate-800">
+            <Button variant="default" className="rounded-xl h-11 px-6 bg-slate-950 text-white hover:bg-slate-900 shadow-lg shadow-primary/20">
               <Download className="h-4 w-4 mr-2" /> Download Full Log
             </Button>
           </DialogFooter>
@@ -928,11 +932,11 @@ export default function Settings() {
         <DialogContent className="max-w-[440px] rounded-3xl p-8 border-none shadow-2xl overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1.5 bg-emerald-500" />
           <DialogHeader className="pt-2 text-center items-center">
-            <div className="h-16 w-16 bg-emerald-50 rounded-2xl flex items-center justify-center mb-4">
+            <div className="h-16 w-16 bg-emerald-50/50 rounded-2xl flex items-center justify-center mb-4">
               <ShieldCheck className="h-8 w-8 text-emerald-600" />
             </div>
-            <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">Enable 2FA Protection</DialogTitle>
-            <DialogDescription className="text-slate-500 font-medium">
+            <DialogTitle className="text-2xl font-black text-foreground tracking-tight">Enable 2FA Protection</DialogTitle>
+            <DialogDescription className="text-muted-foreground font-medium">
               Secure your account by scanning the QR code and entering the token.
             </DialogDescription>
           </DialogHeader>
@@ -940,20 +944,20 @@ export default function Settings() {
           <div className="space-y-6 py-6">
             <div className="flex flex-col items-center gap-6">
               {twoFactorData?.qr_code && (
-                <div className="p-4 bg-white rounded-3xl border border-slate-100 shadow-sm transition-transform hover:scale-105">
+                <div className="p-4 bg-white rounded-3xl border border-border shadow-sm transition-transform hover:scale-105">
                   <img src={twoFactorData.qr_code} alt="QR Code" className="w-48 h-48" />
                 </div>
               )}
               <div className="w-full space-y-3">
-                 <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between group">
+                 <div className="p-4 rounded-xl bg-muted/50 border border-border flex items-center justify-between group">
                     <div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Secret Key</p>
-                      <code className="text-sm font-bold text-slate-700 tracking-wider transition-colors group-hover:text-primary">{twoFactorData?.secret}</code>
+                      <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Secret Key</p>
+                      <code className="text-sm font-bold text-foreground tracking-wider transition-colors group-hover:text-primary">{twoFactorData?.secret}</code>
                     </div>
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      className="h-8 text-[10px] font-black uppercase text-slate-400 hover:text-primary"
+                      className="h-8 text-[10px] font-black uppercase text-muted-foreground hover:text-primary"
                       onClick={() => {
                         navigator.clipboard.writeText(twoFactorData?.secret || '');
                         toast({ title: 'Copied', description: 'Secret key copied to clipboard' });
@@ -962,15 +966,15 @@ export default function Settings() {
                       Copy
                     </Button>
                  </div>
-                 <p className="text-[11px] text-slate-400 text-center font-medium">Scan with Google Authenticator, Authy, or Microsoft Authenticator.</p>
+                 <p className="text-[11px] text-muted-foreground text-center font-medium">Scan with Google Authenticator, Authy, or Microsoft Authenticator.</p>
               </div>
             </div>
 
             <div className="space-y-4 pt-2">
               <div className="space-y-2 group">
-                <Label className="text-xs font-black uppercase text-slate-400 group-focus-within:text-emerald-600 transition-colors tracking-widest ml-1">Verification Token</Label>
+                <Label className="text-xs font-black uppercase text-muted-foreground group-focus-within:text-emerald-600 transition-colors tracking-widest ml-1">Verification Token</Label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 group-focus-within:text-emerald-600 transition-colors pointer-events-none">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-4 text-muted-foreground group-focus-within:text-emerald-600 transition-colors pointer-events-none">
                     <KeyRound className="h-4 w-4" />
                   </div>
                   <Input
@@ -979,7 +983,7 @@ export default function Settings() {
                     placeholder="Enter 6-digit code"
                     value={twoFactorToken}
                     onChange={(e) => setTwoFactorToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    className="h-12 border-slate-200 focus:ring-emerald-500/10 focus:border-emerald-500 pl-11 text-center font-black tracking-[0.5em] text-lg rounded-2xl transition-all"
+                    className="h-12 border-border focus:ring-emerald-500/10 focus:border-emerald-500 pl-11 text-center font-black tracking-[0.5em] text-lg rounded-2xl transition-all"
                   />
                 </div>
               </div>
@@ -989,7 +993,7 @@ export default function Settings() {
           <DialogFooter className="gap-3 pt-4 sm:flex-row flex-col">
             <Button 
               variant="ghost" 
-              className="flex-1 font-bold text-slate-400 h-12 rounded-2xl" 
+              className="flex-1 font-bold text-muted-foreground h-12 rounded-2xl" 
               onClick={() => setIs2FADialogOpen(false)}
             >
               Cancel
@@ -997,7 +1001,7 @@ export default function Settings() {
             <Button 
               onClick={handleVerify2FA} 
               disabled={isVerifying2FA || twoFactorToken.length !== 6} 
-              className="flex-[2] bg-emerald-600 hover:bg-slate-900 text-white font-black uppercase tracking-widest text-xs h-12 rounded-2xl shadow-xl shadow-emerald-100 transition-all active:scale-[0.98]"
+              className="flex-[2] bg-emerald-600 hover:bg-slate-950 text-white font-black uppercase tracking-widest text-xs h-12 rounded-2xl shadow-xl shadow-emerald-500/10 transition-all active:scale-[0.98]"
             >
               {isVerifying2FA ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ShieldCheck className="h-4 w-4 mr-2" />}
               Complete Activation
@@ -1010,20 +1014,20 @@ export default function Settings() {
       <Dialog open={isDisableDialogOpen} onOpenChange={setIsDisableDialogOpen}>
         <DialogContent className="max-w-[400px] rounded-[2.5rem] p-8 border-none shadow-2xl">
           <DialogHeader className="space-y-4 pt-4">
-            <div className="h-16 w-16 bg-red-50 rounded-2xl flex items-center justify-center">
+            <div className="h-16 w-16 bg-red-50/50 rounded-2xl flex items-center justify-center">
               <AlertTriangle className="h-8 w-8 text-red-600" />
             </div>
-            <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">Disable Security?</DialogTitle>
-            <DialogDescription className="text-sm font-medium text-slate-500 leading-relaxed">
+            <DialogTitle className="text-2xl font-black text-foreground tracking-tight">Disable Security?</DialogTitle>
+            <DialogDescription className="text-sm font-medium text-muted-foreground leading-relaxed">
               Disabling 2FA makes your account significantly more vulnerable. Please enter your 6-digit code to confirm.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-6 pt-6 pb-4">
             <div className="space-y-2 group">
-              <Label className="text-xs font-black uppercase text-slate-400 group-focus-within:text-red-600 transition-colors tracking-widest ml-1">Confirmation Token</Label>
+              <Label className="text-xs font-black uppercase text-muted-foreground group-focus-within:text-red-600 transition-colors tracking-widest ml-1">Confirmation Token</Label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 group-focus-within:text-red-600 transition-colors">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-4 text-muted-foreground group-focus-within:text-red-600 transition-colors">
                   <Lock className="h-4 w-4" />
                 </div>
                 <Input
@@ -1032,7 +1036,7 @@ export default function Settings() {
                   placeholder="000 000"
                   value={twoFactorToken}
                   onChange={(e) => setTwoFactorToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  className="h-12 border-slate-200 focus:ring-red-500/10 focus:border-red-500 pl-11 text-center font-black tracking-[0.5em] text-lg rounded-2xl"
+                  className="h-12 border-border focus:ring-red-500/10 focus:border-red-500 pl-11 text-center font-black tracking-[0.5em] text-lg rounded-2xl"
                 />
               </div>
             </div>
@@ -1044,13 +1048,13 @@ export default function Settings() {
                   setIsDisableDialogOpen(false);
                   setTwoFactorToken('');
                 }} 
-                className="flex-1 h-12 rounded-2xl font-black text-slate-400 text-[10px] tracking-widest uppercase"
+                className="flex-1 h-12 rounded-2xl font-black text-muted-foreground text-[10px] tracking-widest uppercase"
               >
                 Keep Protected
               </Button>
               <Button 
                 onClick={handleDisable2FA} 
-                className="flex-[2] h-12 rounded-2xl bg-red-600 hover:bg-slate-900 text-white font-black text-xs tracking-widest uppercase shadow-xl shadow-red-100 transition-all hover:scale-[1.02]"
+                className="flex-[2] h-12 rounded-2xl bg-red-600 hover:bg-slate-950 text-white font-black text-xs tracking-widest uppercase shadow-xl shadow-red-500/10 transition-all hover:scale-[1.02]"
                 disabled={isVerifying2FA || twoFactorToken.length !== 6}
               >
                 {isVerifying2FA ? 'Confirming...' : 'Disable Security'}

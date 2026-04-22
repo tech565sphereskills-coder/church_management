@@ -45,7 +45,10 @@ import { useToast } from '@/hooks/use-toast';
 import { useDepartments } from '@/hooks/useDepartments';
 import { MemberDetailsSheet } from '@/components/members/MemberDetailsSheet';
 import { PublicRegistrationLink } from '@/components/members/PublicRegistrationLink';
+import { MetaManager } from '@/components/common/MetaManager';
+import { useWindowSize } from '@/hooks/useWindowSize';
 import { Share2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const PAGE_SIZE = 20;
 
@@ -68,7 +71,7 @@ function MemberCard({ member, index, onView, onEdit, onQR }: MemberCardProps) {
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay: index * 0.02 }}
-      className="rounded-2xl border border-slate-100 bg-white shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col"
+      className="rounded-2xl border border-border bg-card shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col"
     >
       <div className="p-5 flex-1">
         <div className="flex items-start justify-between">
@@ -205,13 +208,17 @@ export default function Members() {
   const [viewingMember, setViewingMember] = useState<Member | null>(null);
   const [isInsightsOpen, setIsInsightsOpen] = useState(false);
 
+  const { isMobile, isTablet } = useWindowSize();
+  const [isExporting, setIsExporting] = useState(false);
+
   useEffect(() => {
-    document.title = 'Church Directory | RCCG Emmanuel Sanctuary';
-    // Auto-switch to grid view on mobile
-    if (window.innerWidth < 768) {
+    // Dynamically switch view based on screen size
+    if (isMobile) {
       setViewMode('grid');
+    } else {
+      setViewMode('table');
     }
-  }, []);
+  }, [isMobile]);
 
   useEffect(() => { 
     setCurrentPage(1); 
@@ -317,7 +324,8 @@ export default function Members() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50/50">
+    <div className="min-h-screen bg-background/50">
+      <MetaManager title="Church Directory" description="Manage and track your sanctuary congregation with professional tools." />
       <Header title="Church Directory" subtitle="Manage and track your congregation" />
 
       <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto">
@@ -431,16 +439,16 @@ export default function Members() {
           initial={{ opacity: 0, y: 20 }} 
           animate={{ opacity: 1, y: 0 }} 
           transition={{ delay: 0.1 }} 
-          className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+          className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between bg-card p-4 rounded-2xl border border-border shadow-sm"
         >
           <div className="flex flex-col sm:flex-row flex-1 items-start sm:items-center gap-3">
             <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input type="text" placeholder="Search members..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 h-11 rounded-xl w-full border-slate-200 shadow-sm" />
+              <Input type="text" placeholder="Search members..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 h-11 rounded-xl w-full border-border bg-background focus:ring-primary shadow-none" />
             </div>
             <div className="flex flex-wrap gap-2 w-full sm:w-auto">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="flex-1 sm:w-[130px] h-11 rounded-xl bg-white border-slate-200 shadow-sm font-bold"><SelectValue placeholder="Status" /></SelectTrigger>
+                <SelectTrigger className="flex-1 sm:w-[130px] h-11 rounded-xl bg-background border-border shadow-none font-bold"><SelectValue placeholder="Status" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
@@ -449,24 +457,26 @@ export default function Members() {
                 </SelectContent>
               </Select>
               <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                 <SelectTrigger className="flex-1 sm:w-[150px] h-11 rounded-xl bg-white border-slate-200 shadow-sm font-bold"><SelectValue placeholder="Dept" /></SelectTrigger>
+                 <SelectTrigger className="flex-1 sm:w-[150px] h-11 rounded-xl bg-background border-border shadow-none font-bold"><SelectValue placeholder="Dept" /></SelectTrigger>
                  <SelectContent>
                     <SelectItem value="all">All Depts</SelectItem>
                     {departments.map((dept) => <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>)}
                   </SelectContent>
                </Select>
-               <Select value={genderFilter} onValueChange={setGenderFilter}>
-                 <SelectTrigger className="flex-1 sm:w-[100px] h-11 rounded-xl bg-white border-slate-200 shadow-sm font-bold"><SelectValue placeholder="Gender" /></SelectTrigger>
-                 <SelectContent>
-                   <SelectItem value="all">Gender</SelectItem>
-                   <SelectItem value="male">Male</SelectItem>
-                   <SelectItem value="female">Female</SelectItem>
-                 </SelectContent>
-               </Select>
+               {!isMobile && (
+                 <Select value={genderFilter} onValueChange={setGenderFilter}>
+                   <SelectTrigger className="flex-1 sm:w-[100px] h-11 rounded-xl bg-background border-border shadow-none font-bold"><SelectValue placeholder="Gender" /></SelectTrigger>
+                   <SelectContent>
+                     <SelectItem value="all">Gender</SelectItem>
+                     <SelectItem value="male">Male</SelectItem>
+                     <SelectItem value="female">Female</SelectItem>
+                   </SelectContent>
+                 </Select>
+               )}
             </div>
            </div>
           <div className="flex flex-wrap gap-2">
-            <div className="flex border rounded-xl overflow-hidden bg-white shadow-sm h-11">
+            <div className="flex border border-border rounded-xl overflow-hidden bg-background h-11">
               <Button 
                 variant={viewMode === 'table' ? 'secondary' : 'ghost'} 
                 size="icon" 
@@ -485,12 +495,12 @@ export default function Members() {
               </Button>
             </div>
             {selectedIds.size > 0 && (
-              <Button variant="outline" onClick={handleBulkSMS} className="h-11 rounded-xl">
-                <MessageSquare className="mr-2 h-4 w-4" /> SMS Selected
+              <Button variant="outline" onClick={handleBulkSMS} className="h-11 rounded-xl border-border">
+                <MessageSquare className="mr-2 h-4 w-4" /> {isMobile ? '' : 'SMS Selected'}
               </Button>
             )}
             {canManageAttendance && (
-              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+              <div className="flex gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 scrollbar-hide">
                 <input
                   type="file"
                   id="member-import-input"
@@ -498,20 +508,24 @@ export default function Members() {
                   accept=".xlsx,.xls,.csv"
                   onChange={handleImport}
                 />
-                <Button variant="outline" onClick={() => document.getElementById('member-import-input')?.click()} className="flex-1 sm:flex-none h-11 rounded-xl">
-                  <FileUp className="mr-2 h-4 w-4" /> Import
-                </Button>
-                <Button variant="outline" onClick={handleExport} className="flex-1 sm:flex-none h-11 rounded-xl">
-                  <FileDown className="mr-2 h-4 w-4" /> Export
-                </Button>
+                {!isMobile && (
+                  <>
+                    <Button variant="outline" onClick={() => document.getElementById('member-import-input')?.click()} className="flex-1 sm:flex-none h-11 rounded-xl border-border">
+                      <FileUp className="mr-2 h-4 w-4" /> Import
+                    </Button>
+                    <Button variant="outline" onClick={handleExport} className="flex-1 sm:flex-none h-11 rounded-xl border-border">
+                      <FileDown className="mr-2 h-4 w-4" /> Export
+                    </Button>
+                  </>
+                )}
                 <Button 
                    variant="outline" 
                    onClick={() => setIsShareLinkOpen(true)} 
-                   className="flex-1 sm:flex-none h-11 rounded-xl gap-2 text-primary border-primary/20 hover:bg-primary/5 hover:text-primary transition-all"
+                   className="flex-1 sm:flex-none h-11 rounded-xl gap-2 text-primary border-primary/20 hover:bg-primary/5 transition-all"
                 >
-                  <Share2 className="h-4 w-4" /> Share Link
+                  <Share2 className="h-4 w-4" /> {isMobile ? '' : 'Share'}
                 </Button>
-                <Button onClick={() => navigate('/members/add')} className="btn-gold flex-1 sm:flex-none h-11 rounded-xl">
+                <Button onClick={() => navigate('/members/add')} className="btn-gold flex-1 sm:flex-none h-11 rounded-xl px-6 font-black uppercase tracking-widest text-[10px]">
                   <Plus className="mr-2 h-4 w-4" /> Add Member
                 </Button>
               </div>
@@ -533,21 +547,13 @@ export default function Members() {
                       />
                     </TableHead>
                     <TableHead className="whitespace-nowrap font-black text-[10px] uppercase tracking-wider sticky left-12 bg-slate-50 z-20 border-r border-slate-100">Surname</TableHead>
-                    <TableHead className="whitespace-nowrap font-black text-[10px] uppercase tracking-wider">First Name and Other Name</TableHead>
-                    <TableHead className="whitespace-nowrap font-black text-[10px] uppercase tracking-wider">Address</TableHead>
-                    <TableHead className="whitespace-nowrap font-black text-[10px] uppercase tracking-wider">Phone number</TableHead>
-                    <TableHead className="whitespace-nowrap font-black text-[10px] uppercase tracking-wider">Email</TableHead>
-                    <TableHead className="whitespace-nowrap font-black text-[10px] uppercase tracking-wider">Date of birth</TableHead>
-                    <TableHead className="whitespace-nowrap font-black text-[10px] uppercase tracking-wider">Marital status</TableHead>
-                    <TableHead className="whitespace-nowrap font-black text-[10px] uppercase tracking-wider">Spouse Details</TableHead>
-                    <TableHead className="whitespace-nowrap font-black text-[10px] uppercase tracking-wider">Church Membership</TableHead>
-                    <TableHead className="whitespace-nowrap font-black text-[10px] uppercase tracking-wider">Department & Post</TableHead>
-                    <TableHead className="whitespace-nowrap font-black text-[10px] uppercase tracking-wider">Family</TableHead>
-                    <TableHead className="whitespace-nowrap font-black text-[10px] uppercase tracking-wider text-center">RCCG Join</TableHead>
-                    <TableHead className="whitespace-nowrap font-black text-[10px] uppercase tracking-wider text-center">Workforce Join</TableHead>
-                    <TableHead className="whitespace-nowrap font-black text-[10px] uppercase tracking-wider text-center">Ordination</TableHead>
+                    <TableHead className="whitespace-nowrap font-black text-[10px] uppercase tracking-wider">First Name</TableHead>
                     <TableHead className="whitespace-nowrap font-black text-[10px] uppercase tracking-wider">Status</TableHead>
-                    <TableHead className="w-12 text-center">QR</TableHead>
+                    {isTablet || !isMobile && <TableHead className="whitespace-nowrap font-black text-[10px] uppercase tracking-wider">Phone</TableHead>}
+                    {isTablet || !isMobile && <TableHead className="whitespace-nowrap font-black text-[10px] uppercase tracking-wider">Level</TableHead>}
+                    {!isMobile && !isTablet && <TableHead className="whitespace-nowrap font-black text-[10px] uppercase tracking-wider">Email</TableHead>}
+                    {isTablet || !isMobile && <TableHead className="whitespace-nowrap font-black text-[10px] uppercase tracking-wider">Family</TableHead>}
+                    {!isMobile && !isTablet && <TableHead className="whitespace-nowrap font-black text-[10px] uppercase tracking-wider text-center">RCCG Join</TableHead>}
                     <TableHead className="w-12 sticky right-0 bg-slate-50 z-20 shadow-[-4px_0_12px_rgba(0,0,0,0.02)] border-l border-slate-100"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -565,59 +571,27 @@ export default function Members() {
                        </TableCell>
                        <TableCell className="whitespace-nowrap">
                          <span className="font-bold text-slate-700">{member.firstname}</span>
-                         <span className="text-slate-400 ml-1 italic">{member.other_name || ''}</span>
-                       </TableCell>
-                       <TableCell className="whitespace-nowrap text-slate-500 text-xs truncate max-w-[150px]">{member.address || '-'}</TableCell>
-                       <TableCell className="whitespace-nowrap font-bold text-xs">{member.phone}</TableCell>
-                       <TableCell className="whitespace-nowrap text-xs text-blue-600 hover:underline cursor-pointer">{member.email || '-'}</TableCell>
-                       <TableCell className="whitespace-nowrap text-xs text-slate-500">{member.date_of_birth || '-'}</TableCell>
-                       <TableCell className="whitespace-nowrap capitalize text-xs">{member.marital_status}</TableCell>
-                       <TableCell className="whitespace-nowrap text-xs">
-                         {member.spouse_full_name ? (
-                           <div className="flex flex-col">
-                             <span className="font-medium">{member.spouse_full_name}</span>
-                             <span className="text-[10px] text-slate-400">{member.spouse_phone_number}</span>
-                           </div>
-                         ) : '-'}
+                         {!isMobile && <span className="text-slate-400 ml-1 italic">{member.other_name || ''}</span>}
                        </TableCell>
                        <TableCell className="whitespace-nowrap">
-                         <Badge variant="outline" className="capitalize text-[10px] h-5 bg-blue-50 text-blue-700 border-blue-100">
-                           {member.church_membership || 'member'}
+                         <Badge variant="outline" className={cn(
+                           "text-[9px] h-5 font-black uppercase tracking-tighter",
+                           member.status === 'active' ? 'badge-active' : member.status === 'first_timer' ? 'badge-first-timer' : 'badge-inactive'
+                         )}>
+                           {member.status === 'first_timer' ? 'FT' : member.status}
                          </Badge>
                        </TableCell>
-                       <TableCell className="whitespace-nowrap">
-                         <div className="flex flex-col gap-1 min-w-[120px]">
-                           <div className="flex flex-wrap gap-1">
-                              {member.department_names?.map(name => (
-                                <Badge key={name} variant="secondary" className="text-[9px] py-0 px-1 bg-slate-100 text-slate-600 font-medium whitespace-nowrap">
-                                  {name}
-                                </Badge>
-                              ))}
-                           </div>
-                            {member.department_post && <p className="text-[9px] text-slate-400 italic truncate max-w-[120px]">{member.department_post}</p>}
-                         </div>
-                       </TableCell>
-                       <TableCell className="whitespace-nowrap text-xs font-bold text-slate-600">{member.family_name || '-'}</TableCell>
-                       <TableCell className="whitespace-nowrap text-center text-xs font-black">{member.year_joined || '-'}</TableCell>
-                       <TableCell className="whitespace-nowrap text-center text-xs font-bold text-slate-500">{member.year_joined_workforce || '-'}</TableCell>
-                       <TableCell className="whitespace-nowrap">
-                         {member.is_ordained ? (
-                           <div className="flex flex-col text-[10px]">
-                             <span className="font-black text-indigo-600 uppercase tracking-tighter">{member.ordained_as?.replace('_', ' ')}</span>
-                             <span className="text-slate-400 text-[9px]">{member.year_ordination}</span>
-                           </div>
-                         ) : <span className="text-slate-300 text-[10px]">No</span>}
-                       </TableCell>
-                       <TableCell>
-                         <Badge variant="outline" className={member.status === 'active' ? 'badge-active' : member.status === 'first_timer' ? 'badge-first-timer' : 'badge-inactive'}>
-                           {member.status === 'first_timer' ? 'First Timer' : member.status}
-                         </Badge>
-                       </TableCell>
-                       <TableCell className="text-center">
-                         <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-slate-100 rounded-lg" onClick={() => setSelectedMemberQR({ name: member.full_name, qrCode: member.qr_code || '' })}>
-                           <QrCode className="h-4 w-4 text-slate-400" />
-                         </Button>
-                       </TableCell>
+                       {(isTablet || !isMobile) && <TableCell className="whitespace-nowrap font-bold text-xs">{member.phone}</TableCell>}
+                       {(isTablet || !isMobile) && (
+                         <TableCell className="whitespace-nowrap">
+                            <Badge variant="outline" className="capitalize text-[10px] h-5 bg-blue-50 text-blue-700 border-blue-100">
+                             {member.church_membership || 'member'}
+                           </Badge>
+                         </TableCell>
+                       )}
+                       {!isMobile && !isTablet && <TableCell className="whitespace-nowrap text-xs text-blue-600 truncate max-w-[120px]">{member.email || '-'}</TableCell>}
+                       {(isTablet || !isMobile) && <TableCell className="whitespace-nowrap text-xs font-bold text-slate-600">{member.family_name || '-'}</TableCell>}
+                       {!isMobile && !isTablet && <TableCell className="whitespace-nowrap text-center text-xs font-black">{member.year_joined || '-'}</TableCell>}
                        <TableCell className="sticky right-0 bg-white z-10 group-hover:bg-muted/50 transition-colors border-l border-slate-50 shadow-[-4px_0_12px_rgba(0,0,0,0.02)]">
                          {canManageAttendance && (
                            <DropdownMenu>

@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Header } from '@/components/layout/Header';
 import { motion } from 'framer-motion';
-import { Users, Shield, UserCheck, Eye, Loader2, Plus, Lock, Mail, UserPlus, Trash2, AlertTriangle } from 'lucide-react';
+import { Users, Shield, UserCheck, Eye, Loader2, Plus, Lock, Mail, UserPlus, Trash2, AlertTriangle, Smartphone, Calendar, MoreVertical } from 'lucide-react';
+import { useWindowSize } from '@/hooks/useWindowSize';
+import { MetaManager } from '@/components/common/MetaManager';
+import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useUserManagement, UserWithRole, AppRole } from '@/hooks/useUserManagement';
@@ -106,9 +109,9 @@ const PermissionSummary = ({ user }: { user: UserWithRole }) => {
     }
     
     return (
-        <div className="flex gap-1 justify-end flex-wrap max-w-[150px]">
+        <div className="flex gap-1 justify-start flex-wrap max-w-full sm:max-w-[200px]">
             {active.map(p => (
-                <Badge key={p.key} variant="outline" className="h-5 px-1.5 text-[10px] bg-slate-50 border-slate-200 whitespace-nowrap">
+                <Badge key={p.key} variant="outline" className="h-5 px-1.5 text-[9px] bg-muted/30 border-border whitespace-nowrap">
                     {p.label}
                 </Badge>
             ))}
@@ -118,6 +121,7 @@ const PermissionSummary = ({ user }: { user: UserWithRole }) => {
 
 export default function UserManagement() {
   const { users, loading, assignRole, updatePermissions, fetchUsers, createUser, deleteUser } = useUserManagement();
+  const { isMobile, isTablet } = useWindowSize();
 
   const handlePermissionsUpdate = async (userId: string, permissions: Partial<UserWithRole>) => {
     const success = await updatePermissions(userId, permissions);
@@ -156,7 +160,8 @@ export default function UserManagement() {
   const activeUsers = users.filter(u => u.role);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background/50">
+      <MetaManager title="User Management" description="Manage church staff roles and system access permissions." />
       <Header title="User Management" subtitle="Manage user roles and permissions" />
 
       <div className="p-6 space-y-6">
@@ -165,7 +170,7 @@ export default function UserManagement() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="rounded-xl border border-accent/20 bg-accent/5 p-6"
+            className="rounded-xl border border-warning/20 bg-warning/5 p-4 sm:p-6"
           >
             <div className="flex items-center gap-3 mb-4">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10">
@@ -179,57 +184,101 @@ export default function UserManagement() {
               </div>
             </div>
 
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Registered</TableHead>
-                  <TableHead>Assign Role</TableHead>
-                  <TableHead className="text-right">Permissions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pendingUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">
-                      {user.full_name || 'No name'}
-                    </TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      {format(new Date(user.created_at), 'MMM d, yyyy')}
-                    </TableCell>
-                    <TableCell>
-                      <Select onValueChange={(value) => handleRoleChange(user.id, value)}>
-                        <SelectTrigger className="w-[180px]">
-                          <SelectValue placeholder="Select role..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="admin">Admin</SelectItem>
-                          <SelectItem value="attendance_officer">Attendance Officer</SelectItem>
-                          <SelectItem value="finance_officer">Finance Officer</SelectItem>
-                          <SelectItem value="children_officer">Children Officer</SelectItem>
-                          <SelectItem value="prayer_officer">Prayer Officer</SelectItem>
-                          <SelectItem value="viewer">Viewer</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                            <div className="flex flex-col items-end gap-1">
-                                <PermissionSummary user={user} />
-                                <PermissionDialog 
-                                    user={user} 
-                                    onSave={(perms) => handlePermissionsUpdate(user.id, perms)} 
-                                />
-                            </div>
-                            <DeleteUserDialog user={user} onDelete={() => deleteUser(user.id)} />
+            <div className="mt-4">
+              {isMobile ? (
+                <div className="space-y-4">
+                  {pendingUsers.map(user => (
+                    <div key={user.id} className="p-4 rounded-xl border border-border bg-card shadow-sm space-y-4">
+                      <div className="flex justify-between items-start">
+                        <div className="min-w-0">
+                          <h4 className="font-black text-foreground truncate">{user.full_name || 'No name'}</h4>
+                          <p className="text-[10px] text-muted-foreground font-medium truncate">{user.email}</p>
+                          <p className="text-[9px] text-muted-foreground mt-1 flex items-center gap-1 font-black uppercase">
+                            <Calendar className="h-3 w-3" />
+                            Joined {format(new Date(user.created_at), 'MMM d, yyyy')}
+                          </p>
                         </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                        <DeleteUserDialog user={user} onDelete={() => deleteUser(user.id)} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[9px] font-black uppercase text-muted-foreground">Assign Role</Label>
+                        <Select onValueChange={(value) => handleRoleChange(user.id, value)}>
+                          <SelectTrigger className="w-full h-11 bg-muted/20 border-border">
+                            <SelectValue placeholder="Select role..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="admin">Admin</SelectItem>
+                            <SelectItem value="attendance_officer">Attendance Officer</SelectItem>
+                            <SelectItem value="finance_officer">Finance Officer</SelectItem>
+                            <SelectItem value="children_officer">Children Officer</SelectItem>
+                            <SelectItem value="prayer_officer">Prayer Officer</SelectItem>
+                            <SelectItem value="viewer">Viewer</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="pt-2 border-t border-border flex justify-between items-center">
+                        <PermissionSummary user={user} />
+                        <PermissionDialog user={user} onSave={(perms) => handlePermissionsUpdate(user.id, perms)} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/30">
+                        <TableHead className="font-black text-[10px] uppercase tracking-wider">Name</TableHead>
+                        <TableHead className="font-black text-[10px] uppercase tracking-wider">Email</TableHead>
+                        <TableHead className="font-black text-[10px] uppercase tracking-wider">Registered</TableHead>
+                        <TableHead className="font-black text-[10px] uppercase tracking-wider">Assign Role</TableHead>
+                        <TableHead className="text-right font-black text-[10px] uppercase tracking-wider">Permissions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pendingUsers.map((user) => (
+                        <TableRow key={user.id} className="hover:bg-muted/50 transition-colors">
+                          <TableCell className="font-bold text-slate-700">
+                            {user.full_name || 'No name'}
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{user.email}</TableCell>
+                          <TableCell className="text-xs font-medium text-slate-500">
+                            {format(new Date(user.created_at), 'MMM d, yyyy')}
+                          </TableCell>
+                          <TableCell>
+                            <Select onValueChange={(value) => handleRoleChange(user.id, value)}>
+                              <SelectTrigger className="w-full h-10 bg-muted/20 border-border">
+                                <SelectValue placeholder="Select role..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="admin">Admin</SelectItem>
+                                <SelectItem value="attendance_officer">Attendance Officer</SelectItem>
+                                <SelectItem value="finance_officer">Finance Officer</SelectItem>
+                                <SelectItem value="children_officer">Children Officer</SelectItem>
+                                <SelectItem value="prayer_officer">Prayer Officer</SelectItem>
+                                <SelectItem value="viewer">Viewer</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                  <div className="flex flex-col items-end gap-1">
+                                      <PermissionSummary user={user} />
+                                      <PermissionDialog 
+                                          user={user} 
+                                          onSave={(perms) => handlePermissionsUpdate(user.id, perms)} 
+                                      />
+                                  </div>
+                                  <DeleteUserDialog user={user} onDelete={() => deleteUser(user.id)} />
+                              </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </div>
           </motion.div>
         )}
 
@@ -264,60 +313,114 @@ export default function UserManagement() {
                     No active users yet
                 </p>
             ) : (
-            <div className="overflow-x-auto">
-                <Table>
+            <div className="mt-4">
+              {isMobile ? (
+                <div className="grid gap-4">
+                  {activeUsers.map(user => (
+                    <div key={user.id} className="p-5 rounded-2xl border border-border bg-card shadow-sm space-y-4 hover:shadow-md transition-all group">
+                      <div className="flex justify-between items-start">
+                        <div className="min-w-0">
+                          <h4 className="font-black text-foreground text-lg leading-tight truncate">{user.full_name || 'No name'}</h4>
+                          <p className="text-xs text-muted-foreground font-medium truncate">{user.email}</p>
+                        </div>
+                        <DeleteUserDialog user={user} onDelete={() => deleteUser(user.id)} />
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <div className="text-[10px] font-black uppercase text-muted-foreground">Current Status:</div>
+                        {getRoleBadge(user.role as AppRole)}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-[9px] font-black uppercase text-muted-foreground">Modify Role</Label>
+                        <Select
+                          defaultValue={user.role || undefined}
+                          onValueChange={(value) => handleRoleChange(user.id, value)}
+                        >
+                          <SelectTrigger className="w-full h-11 bg-muted/20 border-border">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="admin">Admin</SelectItem>
+                            <SelectItem value="attendance_officer">Attendance Officer</SelectItem>
+                            <SelectItem value="finance_officer">Finance Officer</SelectItem>
+                            <SelectItem value="children_officer">Children Officer</SelectItem>
+                            <SelectItem value="prayer_officer">Prayer Officer</SelectItem>
+                            <SelectItem value="viewer">Viewer</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="pt-4 border-t border-border flex flex-col gap-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] font-black uppercase text-muted-foreground">Access Rights</span>
+                          <PermissionDialog 
+                              user={user} 
+                              onSave={(perms) => handlePermissionsUpdate(user.id, perms)} 
+                          />
+                        </div>
+                        <PermissionSummary user={user} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
                     <TableHeader>
-                        <TableRow>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Email</TableHead>
-                            <TableHead>Current Role</TableHead>
-                            <TableHead>Change Role</TableHead>
-                            <TableHead className="text-right whitespace-nowrap">Access Rights</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
+                      <TableRow className="bg-muted/30">
+                        <TableHead className="font-black text-[10px] uppercase tracking-wider">Name</TableHead>
+                        {!isTablet && <TableHead className="font-black text-[10px] uppercase tracking-wider">Email</TableHead>}
+                        <TableHead className="font-black text-[10px] uppercase tracking-wider">Role</TableHead>
+                        <TableHead className="font-black text-[10px] uppercase tracking-wider">Change Role</TableHead>
+                        <TableHead className="text-right font-black text-[10px] uppercase tracking-wider">Access Rights</TableHead>
+                        <TableHead className="text-right font-black text-[10px] uppercase tracking-wider"></TableHead>
+                      </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {activeUsers.map((user) => (
-                            <TableRow key={user.id}>
-                                <TableCell className="font-medium">
-                                    {user.full_name || 'No name'}
-                                </TableCell>
-                                <TableCell>{user.email}</TableCell>
-                                <TableCell>{getRoleBadge(user.role as AppRole)}</TableCell>
-                                <TableCell>
-                                    <Select
-                                        defaultValue={user.role || undefined}
-                                        onValueChange={(value) => handleRoleChange(user.id, value)}
-                                    >
-                                        <SelectTrigger className="w-[180px]">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="admin">Admin</SelectItem>
-                                            <SelectItem value="attendance_officer">Attendance Officer</SelectItem>
-                                            <SelectItem value="finance_officer">Finance Officer</SelectItem>
-                                            <SelectItem value="children_officer">Children Officer</SelectItem>
-                                            <SelectItem value="prayer_officer">Prayer Officer</SelectItem>
-                                            <SelectItem value="viewer">Viewer</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                    <PermissionSummary user={user} />
-                                </TableCell>
-                                <TableCell className="text-right">
-                                    <div className="flex items-center justify-end gap-2">
-                                        <PermissionDialog 
-                                            user={user} 
-                                            onSave={(perms) => handlePermissionsUpdate(user.id, perms)} 
-                                        />
-                                        <DeleteUserDialog user={user} onDelete={() => deleteUser(user.id)} />
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        ))}
+                      {activeUsers.map((user) => (
+                        <TableRow key={user.id} className="hover:bg-muted/50 transition-colors">
+                          <TableCell className="font-bold text-slate-700">
+                            {user.full_name || 'No name'}
+                          </TableCell>
+                          {!isTablet && <TableCell className="text-xs text-muted-foreground">{user.email}</TableCell>}
+                          <TableCell>{getRoleBadge(user.role as AppRole)}</TableCell>
+                          <TableCell>
+                            <Select
+                              defaultValue={user.role || undefined}
+                              onValueChange={(value) => handleRoleChange(user.id, value)}
+                            >
+                              <SelectTrigger className="w-full sm:w-[160px] h-10 bg-muted/20 border-border">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="admin">Admin</SelectItem>
+                                <SelectItem value="attendance_officer">Attendance Officer</SelectItem>
+                                <SelectItem value="finance_officer">Finance Officer</SelectItem>
+                                <SelectItem value="children_officer">Children Officer</SelectItem>
+                                <SelectItem value="prayer_officer">Prayer Officer</SelectItem>
+                                <SelectItem value="viewer">Viewer</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <PermissionSummary user={user} />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-2 text-muted-foreground">
+                              <PermissionDialog 
+                                user={user} 
+                                onSave={(perms) => handlePermissionsUpdate(user.id, perms)} 
+                              />
+                              <DeleteUserDialog user={user} onDelete={() => deleteUser(user.id)} />
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
                     </TableBody>
-                </Table>
+                  </Table>
+                </div>
+              )}
             </div>
             )}
         </motion.div>
@@ -406,13 +509,13 @@ function PermissionDialog({ user, onSave }: { user: UserWithRole; onSave: (perms
                             </div>
                         ) : (
                             <>
-                                <div className="space-y-2 pb-4 border-b border-slate-100">
-                                    <label className="text-sm font-bold text-slate-700">Link to Church Member</label>
+                                <div className="space-y-2 pb-4 border-b border-border">
+                                    <label className="text-sm font-black text-foreground">Link to Church Member</label>
                                     <Select 
                                         value={String(tempPermissions.member || 'none')} 
                                         onValueChange={(val) => setTempPermissions(prev => ({ ...prev, member: val === 'none' ? null : val }))}
                                     >
-                                        <SelectTrigger className="w-full bg-slate-50 border-slate-200">
+                                        <SelectTrigger className="w-full bg-muted/20 border-border h-11">
                                             <SelectValue placeholder="Select member record..." />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -422,18 +525,18 @@ function PermissionDialog({ user, onSave }: { user: UserWithRole; onSave: (perms
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                    <p className="text-[10px] text-slate-400 italic">Required for the "Head of Dept." portal to identify their team.</p>
+                                    <p className="text-[10px] text-muted-foreground italic font-medium">Required for the "Head of Dept." portal to identify their team.</p>
                                 </div>
 
                                 <div className="grid grid-cols-1 gap-2 max-h-[320px] overflow-y-auto pr-1">
                                     {permissionsList.map((perm) => (
                                         <div 
                                             key={perm.key} 
-                                            className="flex items-center justify-between space-x-2 rounded-xl border border-slate-100 p-3 hover:bg-slate-50 transition-all group"
+                                            className="flex items-center justify-between space-x-2 rounded-xl border border-border p-3 hover:bg-muted/30 transition-all group"
                                         >
                                             <label
                                                 htmlFor={`${user.id}-${perm.key}`}
-                                                className="text-sm font-bold text-slate-700 cursor-pointer flex-1 group-hover:text-primary transition-colors"
+                                                className="text-sm font-black text-foreground cursor-pointer flex-1 group-hover:text-primary transition-colors"
                                             >
                                                 {perm.label}
                                             </label>
@@ -441,7 +544,7 @@ function PermissionDialog({ user, onSave }: { user: UserWithRole; onSave: (perms
                                                 id={`${user.id}-${perm.key}`}
                                                 checked={!!tempPermissions[perm.key as keyof UserWithRole]}
                                                 onCheckedChange={(checked) => handleToggle(perm.key as keyof UserWithRole, !!checked)}
-                                                className="rounded-md border-slate-300 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                                                className="rounded-md border-input data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                             />
                                         </div>
                                     ))}
@@ -514,7 +617,7 @@ function CreateUserDialog({ onCreate }: { onCreate: (email: string, fullName: st
 
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="space-y-1.5">
-                            <Label htmlFor="create-fullName" className="text-xs font-bold text-slate-700 ml-1">Full Name</Label>
+                            <Label htmlFor="create-fullName" className="text-xs font-black text-muted-foreground ml-1">Full Name</Label>
                             <div className="relative group">
                                 <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none group-focus-within:text-primary transition-colors">
                                     <Users className="h-4 w-4 text-slate-400" />
@@ -524,14 +627,14 @@ function CreateUserDialog({ onCreate }: { onCreate: (email: string, fullName: st
                                     placeholder="Enter full name"
                                     value={fullName}
                                     onChange={(e) => setFullName(e.target.value)}
-                                    className="pl-11 h-11 bg-slate-50 border-slate-200 rounded-xl font-medium focus:ring-primary/20"
+                                    className="pl-11 h-11 bg-muted/20 border-border rounded-xl font-bold focus:ring-primary/20"
                                     required
                                 />
                             </div>
                         </div>
 
                         <div className="space-y-1.5">
-                            <Label htmlFor="create-email" className="text-xs font-bold text-slate-700 ml-1">Email Address</Label>
+                            <Label htmlFor="create-email" className="text-xs font-black text-muted-foreground ml-1">Email Address</Label>
                             <div className="relative group">
                                 <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none group-focus-within:text-primary transition-colors">
                                     <Mail className="h-4 w-4 text-slate-400" />
@@ -542,14 +645,14 @@ function CreateUserDialog({ onCreate }: { onCreate: (email: string, fullName: st
                                     placeholder="user@example.com"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="pl-11 h-11 bg-slate-50 border-slate-200 rounded-xl font-medium focus:ring-primary/20"
+                                    className="pl-11 h-11 bg-muted/20 border-border rounded-xl font-bold focus:ring-primary/20"
                                     required
                                 />
                             </div>
                         </div>
 
                         <div className="space-y-1.5 pb-2">
-                            <Label htmlFor="create-password" className="text-xs font-bold text-slate-700 ml-1">Initial Password</Label>
+                            <Label htmlFor="create-password" className="text-xs font-black text-muted-foreground ml-1">Initial Password</Label>
                             <div className="relative group">
                                 <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none group-focus-within:text-primary transition-colors">
                                     <Lock className="h-4 w-4 text-slate-400" />
@@ -560,7 +663,7 @@ function CreateUserDialog({ onCreate }: { onCreate: (email: string, fullName: st
                                     placeholder="Enter initial password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="pl-11 h-11 bg-slate-50 border-slate-200 rounded-xl font-medium focus:ring-primary/20"
+                                    className="pl-11 h-11 bg-muted/20 border-border rounded-xl font-bold focus:ring-primary/20"
                                     required
                                 />
                             </div>
@@ -603,7 +706,7 @@ function DeleteUserDialog({ user, onDelete }: { user: UserWithRole; onDelete: ()
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-destructive hover:bg-destructive/10">
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10">
                     <Trash2 className="h-4 w-4" />
                 </Button>
             </DialogTrigger>
@@ -616,10 +719,10 @@ function DeleteUserDialog({ user, onDelete }: { user: UserWithRole; onDelete: ()
                             Delete Account
                         </DialogTitle>
                         <div className="pt-2">
-                            <p className="text-sm text-slate-600">
-                                Are you sure you want to delete <span className="font-bold text-slate-900">{user.full_name || user.email}</span>?
+                            <p className="text-sm text-muted-foreground font-medium">
+                                Are you sure you want to delete <span className="font-black text-foreground">{user.full_name || user.email}</span>?
                             </p>
-                            <p className="text-xs text-slate-400 mt-2 bg-slate-50 p-3 rounded-lg border border-slate-100 italic">
+                            <p className="text-xs text-muted-foreground mt-2 bg-muted/20 p-3 rounded-lg border border-border italic font-medium">
                                 This action is permanent and will remove all authentication and profile data for this user.
                             </p>
                         </div>

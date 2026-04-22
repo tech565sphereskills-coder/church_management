@@ -12,8 +12,6 @@ import {
   LogOut,
   AlertTriangle,
   MessageSquare,
-  Sun,
-  Moon,
   Banknote,
   Building2,
   Baby,
@@ -28,10 +26,13 @@ import {
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
-import { useTheme } from 'next-themes';
 import { useSidebar } from '@/context/sidebar-context';
 import { prefetchRoute } from '@/lib/prefetcher';
 import { useQueryClient } from '@tanstack/react-query';
+import {
+  Sheet,
+  SheetContent,
+} from "@/components/ui/sheet";
 
 const RCCG_LOGO_URL = 'https://res.cloudinary.com/dnglp9qfd/image/upload/v1770460225/Rccg_logo_ttgxko.png';
 
@@ -66,24 +67,10 @@ const menuItems: MenuItem[] = [
   { icon: Settings, label: 'Settings', path: '/settings' },
 ];
 
-interface AppSidebarProps {
-  isCollapsed: boolean;
-  onToggle: () => void;
-  isMobile?: boolean;
-  mobileOpen?: boolean;
-  onMobileClose?: () => void;
-}
-
-import {
-  Sheet,
-  SheetContent,
-} from "@/components/ui/sheet";
-
 export function AppSidebar() {
   const { isCollapsed, setIsCollapsed, isMobile, mobileOpen, setMobileOpen } = useSidebar();
   const location = useLocation();
   const { user, role, signOut, isAdmin, ...authProps } = useAuth();
-  const { theme, setTheme } = useTheme();
   const queryClient = useQueryClient();
 
   const onToggle = () => {
@@ -128,8 +115,6 @@ export function AppSidebar() {
       getUserInitials={getUserInitials}
       getRoleLabel={getRoleLabel}
       onNavClick={handleNavClick}
-      theme={theme}
-      setTheme={setTheme}
       isMobile={isMobile || false}
       onMobileClose={onMobileClose}
       queryClient={queryClient}
@@ -138,7 +123,6 @@ export function AppSidebar() {
 
   return (
     <>
-      {/* Mobile Professional Drawer (Sheet) */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="left" className="p-0 border-none w-[280px]">
           <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground shadow-2xl">
@@ -147,7 +131,6 @@ export function AppSidebar() {
         </SheetContent>
       </Sheet>
 
-      {/* Desktop Aside Version (Responsively hidden below LG) */}
       <motion.aside
         initial={false}
         animate={{ width: isCollapsed ? 80 : 280 }}
@@ -165,28 +148,25 @@ interface SidebarContentProps {
   onToggle: () => void;
   location: ReturnType<typeof useLocation>;
   isAdmin: boolean;
-  authProps: Omit<import('@/types/auth').AuthContextType, 'user' | 'role' | 'loading' | 'signIn' | 'signInWithGoogle' | 'signUp' | 'signOut' | 'isAdmin' | 'isOfficer' | 'isFinanceOfficer' | 'isChildrenOfficer' | 'isPrayerOfficer'>;
+  authProps: any;
   user: { email?: string; username?: string } | null;
   role: string | null;
   signOut: () => void;
   getUserInitials: () => string;
   getRoleLabel: () => string;
   onNavClick: () => void;
-  theme: string | undefined;
-  setTheme: (t: string) => void;
   isMobile: boolean;
   onMobileClose?: () => void;
-  queryClient: import('@tanstack/react-query').QueryClient;
+  queryClient: any;
 }
 
 function SidebarContent({
   isCollapsed, onToggle, location, isAdmin, authProps, user, signOut,
-  getUserInitials, getRoleLabel, onNavClick, theme, setTheme, isMobile, onMobileClose,
+  getUserInitials, getRoleLabel, onNavClick, isMobile, onMobileClose,
   queryClient
 }: SidebarContentProps) {
   return (
     <>
-      {/* Header */}
       <div className="flex h-20 items-center justify-between px-4">
         <AnimatePresence mode="wait">
           {!isCollapsed && (
@@ -197,7 +177,7 @@ function SidebarContent({
               transition={{ duration: 0.2 }}
               className="flex items-center gap-3"
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white dark:bg-white/10 p-1 ring-1 ring-white/10">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white p-1 ring-1 ring-white/10">
                 <img src={RCCG_LOGO_URL} alt="RCCG Logo" className="h-full w-full object-contain" />
               </div>
               <div className="flex flex-col">
@@ -208,15 +188,13 @@ function SidebarContent({
           )}
         </AnimatePresence>
 
-
         {isCollapsed && (
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-white dark:bg-white/10 p-1 ring-1 ring-white/10">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-white p-1 ring-1 ring-white/10">
             <img src={RCCG_LOGO_URL} alt="RCCG Logo" className="h-full w-full object-contain" />
           </div>
         )}
       </div>
 
-      {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-3 py-4">
         <ul className="space-y-1">
           {menuItems.map((item) => {
@@ -243,19 +221,16 @@ function SidebarContent({
                   )}
                 >
                   <item.icon className={cn('h-5 w-5 shrink-0 transition-transform duration-200', !isActive && 'group-hover:scale-110')} />
-                  <AnimatePresence mode="wait">
-                    {!isCollapsed && (
-                      <motion.span
-                        initial={{ opacity: 0, width: 0 }}
-                        animate={{ opacity: 1, width: 'auto' }}
-                        exit={{ opacity: 0, width: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="whitespace-nowrap"
-                      >
-                        {item.label}
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
+                  {!isCollapsed && (
+                    <motion.span
+                      initial={{ opacity: 0, width: 0 }}
+                      animate={{ opacity: 1, width: 'auto' }}
+                      transition={{ duration: 0.2 }}
+                      className="whitespace-nowrap"
+                    >
+                      {item.label}
+                    </motion.span>
+                  )}
                 </NavLink>
               </li>
             );
@@ -263,7 +238,6 @@ function SidebarContent({
         </ul>
       </nav>
 
-      {/* Footer */}
       <div className="border-t border-sidebar-border p-3">
         <AnimatePresence mode="wait">
           {!isCollapsed && (
@@ -285,16 +259,6 @@ function SidebarContent({
         </AnimatePresence>
 
         <div className="flex items-center gap-2">
-          {/* Dark mode toggle */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-          >
-            {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-          </Button>
-
           <Button
             variant="ghost"
             size="sm"

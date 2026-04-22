@@ -3,7 +3,7 @@ from .models import (
     Profile, Member, Service, AttendanceRecord, MemberFollowUp, 
     Contribution, Department, Child, ChildCheckIn, PrayerRequest,
     ChurchSettings, CommunicationLog, Expense, CalendarEvent, AuditLog,
-    SMSTemplate, Budget, Pledge, CheckInQueue, Family, InventoryItem
+    SMSTemplate, Budget, Pledge, CheckInQueue, Family, InventoryItem, Notification
 )
 from django.contrib.auth.models import User
 
@@ -173,6 +173,19 @@ class ChurchSettingsSerializer(serializers.ModelSerializer):
         model = ChurchSettings
         fields = '__all__'
 
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        request = self.context.get('request')
+        
+        # If user is not admin, mask sensitive SMTP fields
+        if request and request.user and request.user.is_authenticated:
+            if not (request.user.profile.role == 'admin' or request.user.profile.can_manage_settings):
+                sensitive_fields = ['smtp_password', 'smtp_user', 'smtp_server', 'smtp_port']
+                for field in sensitive_fields:
+                    if field in ret:
+                        ret[field] = '********'
+        return ret
+
 class CommunicationLogSerializer(serializers.ModelSerializer):
     sent_by_name = serializers.CharField(source='sent_by.username', read_only=True)
 
@@ -217,4 +230,9 @@ class PledgeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Pledge
+        fields = '__all__'
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
         fields = '__all__'

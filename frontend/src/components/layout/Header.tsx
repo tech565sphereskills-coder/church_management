@@ -1,9 +1,8 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSidebar } from '@/context/sidebar-context';
-import { Bell, Search, Menu, Sun, Moon, Check } from 'lucide-react';
+import { useNotifications } from '@/context/NotificationContext';
+import { Bell, Search, Menu, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useTheme } from 'next-themes';
 import { Input } from '@/components/ui/input';
 import {
   Popover,
@@ -12,6 +11,7 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface HeaderProps {
   title: string;
@@ -23,21 +23,7 @@ interface HeaderProps {
 export function Header({ title, subtitle }: HeaderProps) {
   const navigate = useNavigate();
   const { setMobileOpen, isMobile } = useSidebar();
-  const { theme, setTheme } = useTheme();
-  const [notifications, setNotifications] = useState([
-    { id: 1, title: 'New Member Registered', description: 'Michael Smith just joined the workforce.', time: '2m ago', icon: 'user' },
-    { id: 2, title: 'Tithe Payment', description: 'A new tithe payment of #50,000 has been received.', time: '1h ago', icon: 'money' },
-    { id: 3, title: 'Service Reminder', description: 'Midweek service starts in 30 minutes.', time: '2h ago', icon: 'clock' },
-    { id: 4, title: 'System Update', description: 'System will be under maintenance at 12 AM.', time: '5h ago', icon: 'alert' }
-  ]);
-
-  const clearNotification = (id: number) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
-  };
-
-  const clearAll = () => {
-    setNotifications([]);
-  };
+  const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll } = useNotifications();
 
   const today = new Date().toLocaleDateString('en-NG', {
     weekday: 'long',
@@ -76,14 +62,6 @@ export function Header({ title, subtitle }: HeaderProps) {
           />
         </div>
 
-        {/* Dark mode toggle */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-        >
-          {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-        </Button>
 
         {/* Notifications */}
         <Popover>
@@ -127,19 +105,26 @@ export function Header({ title, subtitle }: HeaderProps) {
                 ) : (
                   notifications.map((n) => (
                     <div key={n.id} className="group relative border-b last:border-0">
-                      <button className="flex flex-col gap-1 p-4 text-left hover:bg-muted/50 transition-colors w-full">
+                      <button className={cn(
+                        "flex flex-col gap-1 p-4 text-left hover:bg-muted/50 transition-colors w-full",
+                        !n.read && "bg-primary/5"
+                      )}>
                         <div className="flex justify-between items-start gap-2">
                           <span className="text-sm font-semibold leading-none group-hover:text-primary transition-colors">{n.title}</span>
-                          <span className="text-[10px] text-muted-foreground whitespace-nowrap">{n.time}</span>
+                          <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                            {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
                         </div>
                         <p className="text-xs text-muted-foreground line-clamp-2 pr-6">{n.description}</p>
                       </button>
-                      <button 
-                        onClick={() => clearNotification(n.id)}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full flex items-center justify-center bg-background/80 opacity-0 group-hover:opacity-100 transition-all hover:bg-destructive hover:text-white shadow-sm"
-                      >
-                        <Check className="h-3 w-3" />
-                      </button>
+                      {!n.read && (
+                        <button 
+                          onClick={() => markAsRead(n.id)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full flex items-center justify-center bg-background/80 opacity-0 group-hover:opacity-100 transition-all hover:bg-primary hover:text-white shadow-sm"
+                        >
+                          <Check className="h-3 w-3" />
+                        </button>
+                      )}
                     </div>
                   ))
                 )}

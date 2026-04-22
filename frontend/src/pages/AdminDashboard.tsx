@@ -19,6 +19,8 @@ import { Badge } from '@/components/ui/badge';
 import { DepartmentDistribution } from '@/components/dashboard/DepartmentDistribution';
 import { ActivityStream } from '@/components/dashboard/ActivityStream';
 import { LivePresenceFeed } from '@/components/dashboard/LivePresenceFeed';
+import { MetaManager } from '@/components/common/MetaManager';
+import { cn } from '@/lib/utils';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -106,22 +108,22 @@ export default function AdminDashboard() {
 
   if (!dashboardStats && statsLoading === false) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
-        <Card className="max-w-md w-full border-red-100 shadow-lg">
+      <div className="min-h-screen flex items-center justify-center p-6 bg-background">
+        <Card className="max-w-md w-full border-destructive/20 shadow-lg">
           <CardHeader className="text-center pb-2">
-            <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
-              <AlertTriangle className="h-6 w-6 text-red-600" />
+            <div className="mx-auto w-12 h-12 bg-destructive/10 rounded-full flex items-center justify-center mb-4">
+              <AlertTriangle className="h-6 w-6 text-destructive" />
             </div>
-            <CardTitle className="text-xl text-red-900">Connection Error</CardTitle>
+            <CardTitle className="text-xl text-foreground">Connection Error</CardTitle>
           </CardHeader>
           <CardContent className="text-center space-y-4">
-            <p className="text-slate-600">
+            <p className="text-muted-foreground">
               We couldn't load the church statistics. This could be due to a server connection issue or an expired session.
             </p>
             <div className="pt-2">
               <button 
                 onClick={() => window.location.reload()}
-                className="w-full py-2 px-4 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                className="w-full py-2 px-4 bg-destructive hover:bg-destructive/90 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
               >
                 Refresh Dashboard
               </button>
@@ -133,7 +135,8 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background/50">
+      <MetaManager title="Admin Dashboard" description="Church operational overview and live analytics." />
       <Header
         title="Dashboard"
         subtitle={`Welcome back${role ? `, ${role.replace('_', ' ')}` : ''}. Here's your church overview.`}
@@ -149,9 +152,9 @@ export default function AdminDashboard() {
           <div className="relative group">
             <StatCard title="Live Attendance" value={stats.todayAttendance} icon={TrendingUp} delay={0.2} />
             {stats.todayAttendance > 0 && (
-              <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 z-20">
-                <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] font-black text-emerald-600 uppercase tracking-tighter">Live</span>
+              <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-success/10 px-2 py-0.5 rounded-full border border-success/20 z-20">
+                <span className="flex h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
+                <span className="text-[10px] font-black text-success uppercase tracking-tighter">Live</span>
               </div>
             )}
           </div>
@@ -228,26 +231,26 @@ export default function AdminDashboard() {
             <ActivityStream />
           </div>
           <div className="space-y-6">
-            <Card className="border-slate-100 shadow-premium overflow-hidden">
-              <CardHeader className="bg-slate-50/50 border-b border-slate-100">
-                <CardTitle className="text-lg font-black text-slate-800 flex items-center gap-2">
+            <Card className="border-border shadow-premium overflow-hidden">
+              <CardHeader className="bg-muted/50 border-b border-border">
+                <CardTitle className="text-lg font-black text-foreground flex items-center gap-2">
                   <Calendar className="h-5 w-5 text-primary" />
                   Upcoming Services
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="divide-y divide-slate-100">
+                <div className="divide-y divide-border">
                   {[
                     { day: 'Sunday', time: '8:00 AM', name: 'First Service', type: 'Full' },
                     { day: 'Sunday', time: '10:30 AM', name: 'Second Service', type: 'Full' },
                     { day: 'Wednesday', time: '6:00 PM', name: 'Midweek Service', type: 'Interactive' },
                   ].map((service, index) => (
-                    <div key={index} className="flex items-center justify-between p-4 hover:bg-slate-50/50 transition-colors group">
+                    <div key={index} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors group">
                       <div>
-                        <p className="font-bold text-slate-800 group-hover:text-primary transition-colors">{service.name}</p>
-                        <p className="text-xs font-medium text-slate-400 capitalize">{service.day} at {service.time}</p>
+                        <p className="font-bold text-foreground group-hover:text-primary transition-colors">{service.name}</p>
+                        <p className="text-xs font-medium text-muted-foreground capitalize">{service.day} at {service.time}</p>
                       </div>
-                      <Badge variant="outline" className="text-[10px] font-black border-slate-200 text-slate-500">{service.type}</Badge>
+                      <Badge variant="outline" className="text-[10px] font-black border-border text-muted-foreground">{service.type}</Badge>
                     </div>
                   ))}
                 </div>

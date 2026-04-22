@@ -49,7 +49,7 @@ export function StatCard({
       transition={{ duration: 0.4, delay }}
       className={cn(
         'relative overflow-hidden p-6 rounded-2xl border transition-all duration-300',
-        variant === 'default' && 'bg-white border-slate-100 shadow-sm hover:shadow-md dark:bg-slate-900 dark:border-slate-800',
+        variant === 'default' && 'bg-card border-border shadow-sm hover:shadow-md',
         variant === 'primary' && 'bg-gradient-to-br from-indigo-600 to-indigo-700 text-white border-indigo-500 shadow-lg shadow-indigo-200',
         variant === 'accent' && 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-emerald-400 shadow-lg shadow-emerald-100'
       )}

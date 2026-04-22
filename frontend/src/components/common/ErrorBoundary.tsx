@@ -28,11 +28,11 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="flex min-h-[400px] flex-col items-center justify-center p-6 text-center">
-          <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-rose-50 text-rose-600">
+          <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10 text-destructive">
             <AlertCircle className="h-8 w-8" />
           </div>
-          <h2 className="mb-2 text-2xl font-bold text-slate-900">Something went wrong</h2>
-          <p className="mb-8 max-w-md text-slate-500">
+          <h2 className="mb-2 text-2xl font-bold text-foreground">Something went wrong</h2>
+          <p className="mb-8 max-w-md text-muted-foreground">
             We encountered an unexpected error. Please try refreshing the page or return to the dashboard.
           </p>
           <div className="flex gap-4">
@@ -46,14 +46,14 @@ export class ErrorBoundary extends Component<Props, State> {
             </Button>
             <Button 
               onClick={() => window.location.href = '/'}
-              className="btn-gold gap-2"
+              className="gap-2"
             >
               <Home className="h-4 w-4" />
               Go Home
             </Button>
           </div>
           {process.env.NODE_ENV === 'development' && (
-            <div className="mt-8 max-w-2xl overflow-auto rounded-lg bg-slate-50 p-4 text-left text-xs font-mono text-slate-700 border border-slate-200">
+            <div className="mt-8 max-w-2xl overflow-auto rounded-lg bg-muted p-4 text-left text-xs font-mono text-muted-foreground border border-border">
               {this.state.error?.toString()}
             </div>
           )}

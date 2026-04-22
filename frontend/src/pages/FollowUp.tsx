@@ -14,6 +14,8 @@ import {
   Smartphone
 } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
+import { MetaManager } from '@/components/common/MetaManager';
+import { cn } from '@/lib/utils';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -154,7 +156,8 @@ export default function FollowUp() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-background/50">
+      <MetaManager title="Member Follow-up" description="Church member retention and follow-up management." />
       <Header title="Member Follow-up" />
 
       <div className="p-6 max-w-7xl mx-auto">
